@@ -12,7 +12,7 @@ export class BuildingBlock extends Consumable {
     let pos: Vec2;
     const physicsComponent = <PhysicsBody>this.inventory.entity.getComponent(PhysicsBody);
     if (physicsComponent == null)
-      pos = (<PositionAndRotation>this.inventory.entity.getComponent(PositionAndRotation)).vec;
+      pos = (<PositionAndRotation>this.inventory.entity.getComponent(PositionAndRotation)).position;
     else pos = physicsComponent.getBody().getWorldPoint(Vec2(1, 0));
 
     let canPlace = true;
@@ -50,6 +50,7 @@ export class BuildingBlock extends Consumable {
     // Create player entity
     const entity = new Entity('Box', this.entity.world);
     entity.addComponent(new PhysicsBody(body));
+    entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
     (<NameTag>entity.addComponent(new NameTag())).setName('Box ' + Date.now());
 
     this.entity.world.addEntity(entity);

@@ -3,12 +3,13 @@ import { Item } from './items/item';
 import { ComponentIds, getBytes, Protocol } from '../protocol';
 import { Client } from 'elsa';
 import { Equipped } from './equipped';
+import GameRoom from '../game-room';
 
 export class Inventory extends Component {
   private items: Item[] = [];
   private _isDirty: boolean;
 
-  public addItem(item: Item) {
+  public addItem(item: Item): boolean {
     item.onPickup(this);
     this.items.push(item);
     this._isDirty = true;
@@ -16,7 +17,7 @@ export class Inventory extends Component {
     return true;
   }
 
-  public removeItem(item: Item) {
+  public removeItem(item: Item): void {
     this.items.splice(this.items.indexOf(item), 1);
     this._isDirty = true;
     this.entity._isDirty = true;

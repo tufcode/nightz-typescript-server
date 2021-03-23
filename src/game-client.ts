@@ -12,7 +12,6 @@ export interface InputState {
 }
 export class ClientData {
   public observing: Entity[] = null;
-  public score: number;
   public controlling: CharacterController;
   public input: InputState = { down: false, left: false, right: false, up: false, angle: 0, primary: false };
 }

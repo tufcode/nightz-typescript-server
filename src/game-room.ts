@@ -11,16 +11,17 @@ import { ClientData } from './game-client';
 import { PhysicsBody } from './components/physics-body';
 import { CharacterController } from './components/character-controller';
 import { NameTag } from './components/name-tag';
-import { Chain } from './components/chain';
 import { Equipped } from './components/equipped';
 import { Axe } from './components/items/axe';
 import { Inventory } from './components/inventory';
 import { World } from './systems/world';
 import { BuildingBlock } from './components/items/building-block';
+import { Gold } from './components/gold';
+import { PositionAndRotation } from './components/position-and-rotation';
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
-  private startTime: number;
+  public startTime: number;
   private gameWorld: World;
   private observerUpdateTick = 0;
   private playableArea: [number, number] = [200, 200];
@@ -36,14 +37,13 @@ export default class GameRoom extends Room {
       {
         gravity: planck.Vec2.zero(),
       },
-      { positionIterations: 2, timeStep: 1 / 10, velocityIterations: 4 },
+      { positionIterations: 3, timeStep: 1 / 10, velocityIterations: 2 },
     );
 
     // Create boundaries
     this.gameWorld.updateBounds(this.playableArea);
 
     // Add timers
-
     this.addSimulationInterval(this.gameWorld.step.bind(this.gameWorld), 1000 / 10);
     this.addSimulationInterval(this.update.bind(this), 1000 / 10);
   }
@@ -122,11 +122,11 @@ export default class GameRoom extends Room {
       type: 'dynamic',
       position: planck.Vec2(0, 0),
       fixedRotation: true,
-      linearDamping: 20,
+      linearDamping: 10,
     });
     body.createFixture({
       shape: planck.Circle(0.5),
-      density: 5.0,
+      density: 20.0,
       filterCategoryBits: EntityCategory.PLAYER,
       filterMaskBits:
         EntityCategory.PLAYER |
@@ -138,7 +138,9 @@ export default class GameRoom extends Room {
 
     // Create player entity
     const entity = new Entity('Player', this.gameWorld, client);
+    entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
     entity.addComponent(new PhysicsBody(body));
+    entity.addComponent(new Gold());
     const equipped = <Equipped>entity.addComponent(new Equipped());
     const inventory = <Inventory>entity.addComponent(new Inventory());
     const controller = <CharacterController>entity.addComponent(new CharacterController());
@@ -183,7 +185,7 @@ export default class GameRoom extends Room {
       }
     });
     // Add new entities
-    client.send(getBytes[Protocol.Entities](client, newEntities));
+    if (newEntities.length > 0) client.send(getBytes[Protocol.Entities](client, newEntities));
 
     // Destroy out-of-view entities
     const noLongerObserving = cache.filter((e) => {

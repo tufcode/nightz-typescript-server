@@ -34,6 +34,7 @@ export enum ComponentIds {
   Equipped = 3,
   Inventory = 4,
   BuildingBlock,
+  Gold = 6,
 }
 export enum EntityCategory {
   BOUNDARY = 0x0001,
@@ -81,13 +82,16 @@ export const getBytes = {
     return buf;
   },
   [Protocol.EntityUpdate]: (client: Client, entities: Entity[], time: number) => {
-    let buf = Buffer.allocUnsafe(7);
-    buf.writeUInt8(Protocol.EntityUpdate, 0);
-    buf.writeUInt16LE(entities.length, 1);
-    buf.writeUInt32LE(time, 3);
+    const buffers = [];
+    let totalLength = 7;
+    let totalEntities = 0;
     for (let i = 0; i < entities.length; i++) {
       const entity = entities[i];
       const serialized = entity.serialize(client);
+
+      // Check if this entity actually had any updates to save some traffic
+      if (serialized.length == 0) continue;
+
       const entityBuf = Buffer.allocUnsafe(5);
       let index = 0;
       // Object id
@@ -101,9 +105,20 @@ export const getBytes = {
       for (let j = 0; j < serialized.length; j++) {
         serializedByteLength += serialized[j].length;
       }
-      buf = Buffer.concat([buf, entityBuf, ...serialized], buf.length + entityBuf.length + serializedByteLength);
+      totalLength += entityBuf.length + serializedByteLength;
+      totalEntities++;
+
+      buffers.push(entityBuf, ...serialized);
     }
-    return buf;
+    // Check if this patch actually had any updates to save some more traffic
+    if (totalEntities == 0) return null;
+
+    const buf = Buffer.allocUnsafe(7);
+    buf.writeUInt8(Protocol.EntityUpdate, 0);
+    buf.writeUInt16LE(totalEntities, 1);
+    buf.writeUInt32LE(time, 3);
+
+    return Buffer.concat([buf, ...buffers], totalLength);
   },
   [Protocol.RemoveEntities]: (entities: Entity[]) => {
     const buf = Buffer.allocUnsafe(3 + 4 * entities.length);

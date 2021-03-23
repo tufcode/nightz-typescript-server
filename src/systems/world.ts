@@ -4,6 +4,18 @@ import * as planck from 'planck-js';
 import { Entity } from '../entity';
 import { EntityCategory, getBytes, Protocol } from '../protocol';
 import { Room } from 'elsa';
+import * as debugModule from 'debug';
+import { performance } from 'perf_hooks';
+const debug = debugModule('Physics');
+
+// eslint-disable-next-line no-var
+const filterStrength = 20;
+
+let frameTime;
+let lastLoop;
+let thisLoop;
+frameTime = 0;
+lastLoop = performance.now();
 
 export class World extends System {
   public entities: Entity[] = [];
@@ -12,7 +24,7 @@ export class World extends System {
   private lastEntityId = 1;
   private bounds: Body;
   private simulation: { timeStep: number; velocityIterations: number; positionIterations: number };
-  private room: Room;
+  public room: Room;
 
   constructor(
     room: Room,
@@ -91,5 +103,26 @@ export class World extends System {
 
   public step(deltaTime: number) {
     this._world.step(this.simulation.timeStep, this.simulation.velocityIterations, this.simulation.positionIterations);
+    const thisFrameTime = (thisLoop = performance.now()) - lastLoop;
+    frameTime += (thisFrameTime - frameTime) / filterStrength;
+    lastLoop = thisLoop;
+
+    // broken console.log('TPS', (1000 / frameTime).toFixed(2));
   }
 }
+
+const fps = {
+  startTime: 0,
+  frameNumber: 0,
+  getFPS: function () {
+    this.frameNumber++;
+    const d = performance.now(),
+      currentTime = (d - this.startTime) / 1000,
+      result = (this.frameNumber / currentTime).toFixed(2);
+    if (currentTime > 1) {
+      this.startTime = performance.now();
+      this.frameNumber = 0;
+    }
+    return result;
+  },
+};

@@ -6,7 +6,7 @@ import { Client } from 'elsa';
 export class NameTag extends Component {
   public buffer: Buffer;
   private name: any;
-  private _dirty: boolean;
+  private _isDirty: boolean;
 
   public setName(name: string) {
     this.name = name;
@@ -24,17 +24,13 @@ export class NameTag extends Component {
       this.buffer.writeUInt16LE(this.name.charCodeAt(j), index);
       index += 2;
     }
-    this._dirty = true;
+    this._isDirty = true;
     this.entity._isDirty = true;
   }
 
   public serialize(client: Client, initialization = false): Buffer {
-    if (this._dirty) {
-      this._dirty = false;
-      return this.buffer;
-    } else if (initialization) {
-      return this.buffer;
-    }
-    return null;
+    if (!this._isDirty && !initialization) return null;
+    this._isDirty = false;
+    return this.buffer;
   }
 }
