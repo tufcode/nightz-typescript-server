@@ -18,7 +18,7 @@ export class Entity {
 
   public _isDirty: boolean;
 
-  constructor(id: string = 'Entity', world: World, owner?: Client) {
+  constructor(id = 'Entity', world: World, owner?: Client) {
     this.id = id;
     this.world = world;
     this.owner = owner;
@@ -45,6 +45,7 @@ export class Entity {
     component.entity = this;
     this.components.push(component);
     component.init();
+
     return component;
   }
 
@@ -59,7 +60,7 @@ export class Entity {
     }
   }
 
-  public serialize(client: Client, initialization: boolean = false) {
+  public serialize(client: Client, initialization = false) {
     // Components
     const buffers = [];
     for (let i = 0; i < this.components.length; i++) {

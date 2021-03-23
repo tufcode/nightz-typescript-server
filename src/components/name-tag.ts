@@ -28,7 +28,7 @@ export class NameTag extends Component {
     this.entity._isDirty = true;
   }
 
-  public serialize(client: Client, initialization: boolean = false): Buffer {
+  public serialize(client: Client, initialization = false): Buffer {
     if (this._dirty) {
       this._dirty = false;
       return this.buffer;

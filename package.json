@@ -8,7 +8,6 @@
   },
   "devDependencies": {
     "@types/debug": "^4.1.5",
-    "@types/matter-js": "^0.14.10",
     "@types/node": "^14.14.31",
     "@typescript-eslint/eslint-plugin": "^4.16.1",
     "@typescript-eslint/parser": "^4.16.1",
@@ -20,9 +19,7 @@
     "typescript": "^4.2.3"
   },
   "dependencies": {
-    "@dimforge/rapier2d": "^0.4.1",
     "debug": "^4.3.1",
-    "matter-js": "^0.16.1",
     "planck-js": "^0.3.28"
   }
 }

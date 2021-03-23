@@ -3,11 +3,14 @@ import { Entity } from './entity';
 import { ClientData } from './game-client';
 import GameRoom from './game-room';
 import { Equipped } from './components/equipped';
+import { Component } from './components/component';
 
 export enum Protocol {
   Entities = 0,
   EntityUpdate = 1,
   RemoveEntities = 2,
+  AddComponent = 3,
+  RemoveComponent = 4,
 
   PlayerData = 10,
   Leaderboard = 11,
@@ -116,6 +119,30 @@ export const getBytes = {
     }
     return buf;
   },
+  [Protocol.AddComponent]: (client: Client, component: Component, entity: Entity) => {
+    let buf = Buffer.allocUnsafe(5);
+    buf.writeUInt8(Protocol.AddComponent, 0);
+
+    const serialized = component.serialize(client, true);
+    // Object id
+    buf.writeUInt32LE(entity.objectId, 1);
+
+    // Merge buffers
+    buf = Buffer.concat([buf, serialized], buf.length + serialized.length);
+
+    return buf;
+  },
+  [Protocol.RemoveComponent]: (component: ComponentIds, entity: Entity) => {
+    const buf = Buffer.allocUnsafe(6);
+    buf.writeUInt8(Protocol.RemoveComponent, 0);
+
+    // Object id
+    buf.writeUInt32LE(entity.objectId, 1);
+    // Component id
+    buf.writeUInt8(component, 5);
+
+    return buf;
+  },
   [Protocol.SetPlayerEntity]: (id: number) => {
     const buf = Buffer.allocUnsafe(1 + 4);
 
@@ -125,11 +152,9 @@ export const getBytes = {
     return buf;
   },
   [Protocol.TemporaryMessage]: (m: string, duration: number) => {
-    const buf = Buffer.allocUnsafe(4 + 2 * m.length);
+    const buf = Buffer.allocUnsafe(3 + 2 * m.length);
     let index = 0;
     buf.writeUInt8(Protocol.TemporaryMessage, index);
-    index += 1;
-    buf.writeUInt8(duration, index);
     index += 1;
     buf.writeUInt16LE(m.length, index);
     index += 2;

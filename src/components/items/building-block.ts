@@ -1,19 +1,14 @@
-import { Item, ItemState } from './item';
 import { Consumable } from './consumable';
 import * as planck from 'planck-js';
 import { Entity } from '../../entity';
 import { PhysicsBody } from '../physics-body';
-import { Equipped } from '../equipped';
-import { Inventory } from '../inventory';
-import { CharacterController } from '../character-controller';
 import { NameTag } from '../name-tag';
 import { AABB, Vec2 } from 'planck-js';
 import { PositionAndRotation } from '../position-and-rotation';
-import { ComponentIds, EntityCategory, getBytes, Protocol } from '../../protocol';
-import { Client } from 'elsa';
+import { EntityCategory, getBytes, Protocol } from '../../protocol';
 
 export class BuildingBlock extends Consumable {
-  protected onConsume() {
+  protected onConsume(): void {
     let pos: Vec2;
     const physicsComponent = <PhysicsBody>this.inventory.entity.getComponent(PhysicsBody);
     if (physicsComponent == null)
@@ -34,7 +29,7 @@ export class BuildingBlock extends Consumable {
       return;
     }
 
-    let body = this.entity.world.getPhysicsWorld().createBody({
+    const body = this.entity.world.getPhysicsWorld().createBody({
       type: 'static',
       position: pos,
       fixedRotation: true,

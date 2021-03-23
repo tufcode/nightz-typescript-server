@@ -22,7 +22,7 @@ const debug = debugModule('GameRoom');
 export default class GameRoom extends Room {
   private startTime: number;
   private gameWorld: World;
-  private observerUpdateTick: number = 0;
+  private observerUpdateTick = 0;
   private playableArea: [number, number] = [200, 200];
   public clientData: { [key: number]: ClientData } = {};
 
@@ -118,10 +118,11 @@ export default class GameRoom extends Room {
     // Create a ClientData object for this client
     this.clientData[client.id] = new ClientData();
 
-    let body = this.gameWorld.getPhysicsWorld().createBody({
+    const body = this.gameWorld.getPhysicsWorld().createBody({
       type: 'dynamic',
       position: planck.Vec2(0, 0),
       fixedRotation: true,
+      linearDamping: 20,
     });
     body.createFixture({
       shape: planck.Circle(0.5),

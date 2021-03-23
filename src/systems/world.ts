@@ -9,7 +9,7 @@ export class World extends System {
   public entities: Entity[] = [];
 
   private readonly _world: planck.World;
-  private lastEntityId: number = 1;
+  private lastEntityId = 1;
   private bounds: Body;
   private simulation: { timeStep: number; velocityIterations: number; positionIterations: number };
   private room: Room;
