@@ -32,9 +32,7 @@ export class CharacterController extends Component {
     const hasMoveInput = targetVelocity.lengthSquared() != 0;
 
     if (hasMoveInput) {
-      const sqr = targetVelocity.lengthSquared() || 1;
-      targetVelocity.x /= sqr;
-      targetVelocity.y /= sqr;
+      targetVelocity.normalize();
       targetVelocity.mul(this.speed);
 
       const currentVelocity = body.getLinearVelocity();

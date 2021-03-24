@@ -6,6 +6,7 @@ import { EntityCategory, getBytes, Protocol } from '../protocol';
 import { Room } from 'elsa';
 import * as debugModule from 'debug';
 import { performance } from 'perf_hooks';
+import { AIController } from '../components/ai-controller';
 const debug = debugModule('Physics');
 
 // eslint-disable-next-line no-var
@@ -26,7 +27,7 @@ export class World extends System {
   private simulation: { timeStep: number; velocityIterations: number; positionIterations: number };
   public room: Room;
 
-  constructor(
+  public constructor(
     room: Room,
     physicsOptions: WorldDef | Vec2,
     simulation: {
@@ -39,6 +40,35 @@ export class World extends System {
     this.room = room;
     this.simulation = simulation;
     this._world = planck.World(physicsOptions);
+
+    this._world.on('begin-contact', (contact) => {
+      const fixtureA = contact.getFixtureA();
+      const fixtureB = contact.getFixtureB();
+
+      const AEntity = <Entity>fixtureA.getBody().getUserData();
+      const BEntity = <Entity>fixtureB.getBody().getUserData();
+      if (fixtureA.isSensor() || fixtureB.isSensor()) {
+        AEntity.onTriggerEnter(fixtureA, fixtureB);
+        BEntity.onTriggerEnter(fixtureB, fixtureA);
+      } else {
+        AEntity.onCollisionEnter(fixtureA, fixtureB);
+        BEntity.onCollisionEnter(fixtureB, fixtureA);
+      }
+    });
+    this._world.on('end-contact', (contact) => {
+      const fixtureA = contact.getFixtureA();
+      const fixtureB = contact.getFixtureB();
+
+      const AEntity = <Entity>fixtureA.getBody().getUserData();
+      const BEntity = <Entity>fixtureB.getBody().getUserData();
+      if (fixtureA.isSensor() || fixtureB.isSensor()) {
+        AEntity.onTriggerExit(fixtureA, fixtureB);
+        BEntity.onTriggerExit(fixtureB, fixtureA);
+      } else {
+        AEntity.onCollisionExit(fixtureA, fixtureB);
+        BEntity.onCollisionExit(fixtureB, fixtureA);
+      }
+    });
   }
 
   public update(deltaTime: number) {

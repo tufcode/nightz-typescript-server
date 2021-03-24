@@ -11,6 +11,7 @@ export class Gold extends Component {
 
   public set amount(value: number) {
     this._amount = value;
+    this.entity._isDirty = true;
     this._isDirty = true;
   }
   private _amount = 0;
@@ -18,8 +19,6 @@ export class Gold extends Component {
 
   public update(): void {
     this.amount += 1;
-    this.entity._isDirty = true;
-    this._isDirty = true;
   }
 
   public serialize(client: Client, initialization?: boolean): Buffer {

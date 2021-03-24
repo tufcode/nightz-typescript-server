@@ -6,6 +6,7 @@ import { Component } from './components/component';
 import { Type } from './types';
 import GameRoom from './game-room';
 import { World } from './systems/world';
+import { Fixture } from 'planck-js';
 
 export class Entity {
   public id: string;
@@ -47,6 +48,32 @@ export class Entity {
     component.init();
 
     return component;
+  }
+
+  public onCollisionEnter(me: Fixture, other: Fixture): void {
+    // Components
+    for (let i = 0; i < this.components.length; i++) {
+      this.components[i].onCollisionEnter(me, other);
+    }
+  }
+  public onCollisionExit(me: Fixture, other: Fixture): void {
+    // Components
+    for (let i = 0; i < this.components.length; i++) {
+      this.components[i].onCollisionExit(me, other);
+    }
+  }
+
+  public onTriggerEnter(me: Fixture, other: Fixture): void {
+    // Components
+    for (let i = 0; i < this.components.length; i++) {
+      this.components[i].onTriggerEnter(me, other);
+    }
+  }
+  public onTriggerExit(me: Fixture, other: Fixture): void {
+    // Components
+    for (let i = 0; i < this.components.length; i++) {
+      this.components[i].onTriggerExit(me, other);
+    }
   }
 
   public onCheckObserver(candidate: ClientData) {

@@ -18,6 +18,8 @@ import { World } from './systems/world';
 import { BuildingBlock } from './components/items/building-block';
 import { Gold } from './components/gold';
 import { PositionAndRotation } from './components/position-and-rotation';
+import { Health } from './components/health';
+import { AIController } from './components/ai-controller';
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
@@ -42,6 +44,40 @@ export default class GameRoom extends Room {
 
     // Create boundaries
     this.gameWorld.updateBounds(this.playableArea);
+
+    // Add test AI
+    /*for (let i = 0; i < 5; i++) {
+      const body = this.gameWorld.getPhysicsWorld().createBody({
+        type: 'dynamic',
+        position: planck.Vec2(10, i),
+        fixedRotation: true,
+        linearDamping: 10,
+      });
+      body.createFixture({
+        shape: planck.Circle(0.5),
+        density: 20.0,
+        friction: 0,
+        filterCategoryBits: EntityCategory.NPC,
+        filterMaskBits:
+          EntityCategory.PLAYER |
+          EntityCategory.BOUNDARY |
+          EntityCategory.BULLET |
+          EntityCategory.NPC |
+          EntityCategory.STRUCTURE,
+      });
+
+      // Create AI entity
+      const entity = new Entity('Player', this.gameWorld);
+      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
+      entity.addComponent(new PhysicsBody(body));
+      entity.addComponent(new Health(null));
+      //const equipped = <Equipped>entity.addComponent(new Equipped());
+      //const inventory = <Inventory>entity.addComponent(new Inventory());
+      entity.addComponent(new AIController());
+      (<NameTag>entity.addComponent(new NameTag())).setName('Test AI');
+
+      this.gameWorld.addEntity(entity);
+    }*/
 
     // Add timers
     this.addSimulationInterval(this.gameWorld.step.bind(this.gameWorld), 1000 / 10);
@@ -139,8 +175,9 @@ export default class GameRoom extends Room {
     // Create player entity
     const entity = new Entity('Player', this.gameWorld, client);
     entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
-    entity.addComponent(new PhysicsBody(body));
+    const physicsBody = <PhysicsBody>entity.addComponent(new PhysicsBody(body));
     entity.addComponent(new Gold());
+    entity.addComponent(new Health(null));
     const equipped = <Equipped>entity.addComponent(new Equipped());
     const inventory = <Inventory>entity.addComponent(new Inventory());
     const controller = <CharacterController>entity.addComponent(new CharacterController());

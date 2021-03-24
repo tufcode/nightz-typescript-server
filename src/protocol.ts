@@ -29,12 +29,11 @@ export enum ClientProtocol {
 
 export enum ComponentIds {
   NameTag = 0,
-  PhysicsBody = 1,
-  PositionAndRotation = 2,
-  Equipped = 3,
-  Inventory = 4,
-  BuildingBlock,
-  Gold = 6,
+  PositionAndRotation = 1,
+  Equipped = 2,
+  Inventory = 3,
+  Gold = 4,
+  Health = 5,
 }
 export enum EntityCategory {
   BOUNDARY = 0x0001,

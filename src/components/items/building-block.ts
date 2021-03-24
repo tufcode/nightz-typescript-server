@@ -6,6 +6,7 @@ import { NameTag } from '../name-tag';
 import { AABB, Vec2 } from 'planck-js';
 import { PositionAndRotation } from '../position-and-rotation';
 import { EntityCategory, getBytes, Protocol } from '../../protocol';
+import { AIController } from '../ai-controller';
 
 export class BuildingBlock extends Consumable {
   protected onConsume(): void {
@@ -16,8 +17,13 @@ export class BuildingBlock extends Consumable {
     else pos = physicsComponent.getBody().getWorldPoint(Vec2(1, 0));
 
     let canPlace = true;
-    const aabb = new AABB(Vec2(pos.x - 0.5, pos.y - 0.5), Vec2(pos.x + 0.5, pos.y + 0.5));
+    const aabb = new AABB(Vec2(pos.x, pos.y), Vec2(pos.x + 0.5, pos.y + 0.5));
     this.entity.world.getPhysicsWorld().queryAABB(aabb, (fixture) => {
+      console.log(
+        aabb.getCenter(),
+        aabb.getPerimeter(),
+        (<Entity>fixture.getBody().getUserData()).getComponent(AIController) == null,
+      );
       canPlace = (fixture.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER;
       return canPlace;
     });
