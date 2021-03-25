@@ -10,7 +10,7 @@ import { AIController } from '../ai-controller';
 
 export class BuildingBlock extends Consumable {
   protected onConsume(): void {
-    let pos: Vec2;
+    /*let pos: Vec2;
     const physicsComponent = <PhysicsBody>this.inventory.entity.getComponent(PhysicsBody);
     if (physicsComponent == null)
       pos = (<PositionAndRotation>this.inventory.entity.getComponent(PositionAndRotation)).position;
@@ -61,6 +61,6 @@ export class BuildingBlock extends Consumable {
 
     this.entity.world.addEntity(entity);
 
-    //this.entity.destroy();
+    //this.entity.destroy();*/
   }
 }

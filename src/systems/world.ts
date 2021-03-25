@@ -9,6 +9,8 @@ import { performance } from 'perf_hooks';
 import { AIController } from '../components/ai-controller';
 const debug = debugModule('Physics');
 
+import { World as pWorld } from './physics2/world';
+
 // eslint-disable-next-line no-var
 const filterStrength = 20;
 
@@ -21,7 +23,7 @@ lastLoop = performance.now();
 export class World extends System {
   public entities: Entity[] = [];
 
-  private readonly _world: planck.World;
+  private readonly _world: pWorld;
   private lastEntityId = 1;
   private bounds: Body;
   private simulation: { timeStep: number; velocityIterations: number; positionIterations: number };
@@ -39,36 +41,7 @@ export class World extends System {
     super();
     this.room = room;
     this.simulation = simulation;
-    this._world = planck.World(physicsOptions);
-
-    this._world.on('begin-contact', (contact) => {
-      const fixtureA = contact.getFixtureA();
-      const fixtureB = contact.getFixtureB();
-
-      const AEntity = <Entity>fixtureA.getBody().getUserData();
-      const BEntity = <Entity>fixtureB.getBody().getUserData();
-      if (fixtureA.isSensor() || fixtureB.isSensor()) {
-        AEntity.onTriggerEnter(fixtureA, fixtureB);
-        BEntity.onTriggerEnter(fixtureB, fixtureA);
-      } else {
-        AEntity.onCollisionEnter(fixtureA, fixtureB);
-        BEntity.onCollisionEnter(fixtureB, fixtureA);
-      }
-    });
-    this._world.on('end-contact', (contact) => {
-      const fixtureA = contact.getFixtureA();
-      const fixtureB = contact.getFixtureB();
-
-      const AEntity = <Entity>fixtureA.getBody().getUserData();
-      const BEntity = <Entity>fixtureB.getBody().getUserData();
-      if (fixtureA.isSensor() || fixtureB.isSensor()) {
-        AEntity.onTriggerExit(fixtureA, fixtureB);
-        BEntity.onTriggerExit(fixtureB, fixtureA);
-      } else {
-        AEntity.onCollisionExit(fixtureA, fixtureB);
-        BEntity.onCollisionExit(fixtureB, fixtureA);
-      }
-    });
+    this._world = new pWorld();
   }
 
   public update(deltaTime: number) {
@@ -78,41 +51,7 @@ export class World extends System {
     }
   }
 
-  public updateBounds(size: number[]) {
-    if (this.bounds != null) {
-      this.bounds.destroyFixture(this.bounds.getFixtureList());
-    }
-
-    // Create boundaries
-    this.bounds = this._world.createBody({
-      type: 'static',
-      position: Vec2.zero(),
-    });
-    this.bounds.createFixture({
-      shape: Box(0.5, size[1], Vec2(size[0], 0), 0),
-      density: 50.0,
-      filterCategoryBits: EntityCategory.BOUNDARY,
-      filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
-    });
-    this.bounds.createFixture({
-      shape: Box(0.5, size[1], Vec2(-size[0], 0), 0),
-      density: 50.0,
-      filterCategoryBits: EntityCategory.BOUNDARY,
-      filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
-    });
-    this.bounds.createFixture({
-      shape: Box(size[0], 0.5, Vec2(0, size[1]), 0),
-      density: 50.0,
-      filterCategoryBits: EntityCategory.BOUNDARY,
-      filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
-    });
-    this.bounds.createFixture({
-      shape: Box(size[0], 0.5, Vec2(0, -size[1]), 0),
-      density: 50.0,
-      filterCategoryBits: EntityCategory.BOUNDARY,
-      filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
-    });
-  }
+  public updateBounds(size: number[]) {}
 
   public getPhysicsWorld() {
     return this._world;
@@ -132,7 +71,7 @@ export class World extends System {
   }
 
   public step(deltaTime: number) {
-    this._world.step(this.simulation.timeStep, this.simulation.velocityIterations, this.simulation.positionIterations);
+    this._world.update(deltaTime);
     const thisFrameTime = (thisLoop = performance.now()) - lastLoop;
     frameTime += (thisFrameTime - frameTime) / filterStrength;
     lastLoop = thisLoop;

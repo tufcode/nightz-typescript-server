@@ -1,8 +1,6 @@
 import { Component } from './component';
 import { Entity } from '../entity';
-import { Body, Shape } from 'planck-js';
-import { EntityCategory } from '../protocol';
-import { AIController } from './ai-controller';
+import { Body } from '../systems/physics2/body';
 
 export class PhysicsBody extends Component {
   public entity: Entity;
@@ -14,7 +12,7 @@ export class PhysicsBody extends Component {
   }
 
   public init(): void {
-    this.body.setUserData(this.entity);
+    //this.body.setUserData(this.entity);
   }
 
   public getBody(): Body {

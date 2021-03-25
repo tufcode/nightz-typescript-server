@@ -1,5 +1,4 @@
 import { Client } from 'elsa';
-import * as Matter from 'matter-js';
 import * as planck from 'planck-js';
 import { ClientData, InputState } from './game-client';
 import { Component } from './components/component';

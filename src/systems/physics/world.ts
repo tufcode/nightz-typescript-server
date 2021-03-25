@@ -2,7 +2,7 @@ import { Body } from './body';
 import { Collision } from './collision';
 
 export class World {
-  public bodies: Body[];
+  public bodies: Body[] = [];
 
   public step(deltaTime: number): void {
     for (const body of this.bodies) {

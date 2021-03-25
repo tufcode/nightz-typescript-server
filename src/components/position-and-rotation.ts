@@ -2,13 +2,14 @@ import { Component } from './component';
 import { ComponentIds } from '../protocol';
 import { Client } from 'elsa';
 import { Vec2 } from 'planck-js';
+import { Vector2 } from '../systems/physics2/body';
 
 export class PositionAndRotation extends Component {
-  private _position: Vec2;
+  private _position: Vector2;
   private _angle: number;
   private _isDirty: boolean;
 
-  public constructor(position: Vec2, angle: number) {
+  public constructor(position: Vector2, angle: number) {
     super();
     this._position = position;
     this._angle = angle;
@@ -24,11 +25,11 @@ export class PositionAndRotation extends Component {
     this.entity._isDirty = true;
   }
 
-  public get position(): Vec2 {
+  public get position(): Vector2 {
     return this._position;
   }
 
-  public set position(value: Vec2) {
+  public set position(value: Vector2) {
     this._position = value;
     this._isDirty = true;
     this.entity._isDirty = true;
