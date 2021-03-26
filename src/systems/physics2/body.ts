@@ -1,47 +1,11 @@
-export class Vector2 {
-  public x: number;
-  public y: number;
+import { Vector2 } from './vector2';
+import { World } from './world';
+import EventEmitter from 'eventemitter3';
 
-  public constructor(x: number, y: number) {
-    this.x = x;
-    this.y = y;
-  }
-
-  public add(vector: Vector2): Vector2 {
-    this.x += vector.x;
-    this.y += vector.y;
-    return this;
-  }
-
-  public minus(vector: Vector2): Vector2 {
-    this.x -= vector.x;
-    this.y -= vector.y;
-    return this;
-  }
-
-  public lengthSquared(): number {
-    return this.x * this.x + this.y * this.y;
-  }
-
-  public normalize(): Vector2 {
-    return this.divide(this.lengthSquared());
-  }
-
-  private divide(n: number): Vector2 {
-    this.x /= n;
-    this.y /= n;
-    return this;
-  }
-
-  public mul(n: number): Vector2 {
-    this.x *= n;
-    this.y *= n;
-    return this;
-  }
-
-  public toString(): string {
-    return `Vector2(x: ${this.x}, y:${this.y})`;
-  }
+export enum BodyType {
+  Dynamic,
+  Static,
+  Sensor,
 }
 
 export class Body {
@@ -51,10 +15,16 @@ export class Body {
   public isColliding: boolean;
   public mass: number;
   public angle: number = 0;
-  private fixedRotation: boolean;
+  public fixedRotation: boolean;
   public restitution: number = 0;
   public linearDamping = 0.1;
-  private _currentForce: Vector2 = new Vector2(0, 0);
+
+  public type: BodyType = BodyType.Dynamic;
+  public _bodyId: number;
+  public _world: World;
+  public _collidingBodies: Body[] = [];
+  private _forces: Vector2 = new Vector2(0, 0);
+  private _eventEmitter: EventEmitter;
 
   public constructor(position: Vector2, velocity: Vector2, radius: number, mass: number) {
     this.position = position;
@@ -62,32 +32,67 @@ export class Body {
     this.radius = radius;
     this.mass = mass;
 
+    this._eventEmitter = new EventEmitter();
+
     this.isColliding = false;
   }
 
   public update(deltaTime: number): void {
-    // Move with set velocity
-    this.position.x += this.velocity.x * deltaTime;
-    this.position.y += this.velocity.y * deltaTime;
+    if (this.isDynamic()) {
+      // Move with set velocity
+      this.position.x += this.velocity.x * deltaTime;
+      this.position.y += this.velocity.y * deltaTime;
 
-    // Add forces
-    this.velocity.add(
-      new Vector2(this._currentForce.x * (this.mass * deltaTime), this._currentForce.y * (this.mass * deltaTime)),
-    );
-    this._currentForce = new Vector2(0, 0);
+      // Add forces
+      this.velocity.add(
+        new Vector2(this._forces.x * (this.mass * deltaTime), this._forces.y * (this.mass * deltaTime)),
+      );
+      this._forces = new Vector2(0, 0);
 
-    // Decrease velocity
-    this.velocity.mul(1.0 / (1.0 + deltaTime * this.linearDamping));
+      // Apply gravity
+      //this.velocity.y += this._world.gravity * deltaTime;
 
-    // Calculate the angle (vy before vx)
-    if (!this.fixedRotation) this.angle = Math.atan2(this.velocity.y, this.velocity.x);
+      // Decrease velocity
+      this.velocity.mul(1.0 / (1.0 + deltaTime * this.linearDamping));
+
+      // Velocity threshold
+      if (this.velocity.lengthSquared() <= 0.0001) {
+        this.velocity = new Vector2(0, 0);
+      }
+
+      // Calculate the angle (vy before vx)
+      //if (!this.fixedRotation) this.angle = Math.atan2(this.velocity.y, this.velocity.x);
+    }
   }
 
   public addForce(f: Vector2): void {
-    this._currentForce.add(f);
+    this._forces.add(f);
   }
 
   public addImpulse(f: Vector2): void {
     this.velocity.add(f.mul(this.mass));
+  }
+
+  public isStatic(): boolean {
+    return this.type == BodyType.Static;
+  }
+
+  public isDynamic(): boolean {
+    return this.type == BodyType.Dynamic;
+  }
+
+  public isSensor(): boolean {
+    return this.type == BodyType.Sensor;
+  }
+
+  public on(
+    event: 'collision-start' | 'collision-end' | 'trigger-start' | 'trigger-end',
+    callback: (...args: unknown[]) => void,
+  ): EventEmitter {
+    return this._eventEmitter.on(event, callback);
+  }
+
+  public _emit(event: 'collision-start' | 'collision-end' | 'trigger-start' | 'trigger-end', ...args: unknown[]): void {
+    this._eventEmitter.emit(event, ...args);
   }
 }

@@ -2,7 +2,7 @@ import { Component } from './component';
 import { ComponentIds } from '../protocol';
 import { Client } from 'elsa';
 import { Vec2 } from 'planck-js';
-import { Vector2 } from '../systems/physics2/body';
+import { Vector2 } from '../systems/physics2/vector2';
 
 export class PositionAndRotation extends Component {
   private _position: Vector2;

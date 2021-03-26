@@ -21,6 +21,7 @@
   "dependencies": {
     "@dimforge/rapier2d": "^0.4.1",
     "debug": "^4.3.1",
+    "eventemitter3": "^4.0.7",
     "planck-js": "^0.3.28"
   }
 }

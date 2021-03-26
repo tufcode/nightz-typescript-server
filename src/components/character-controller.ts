@@ -3,7 +3,7 @@ import { Entity } from '../entity';
 import { PhysicsBody } from './physics-body';
 import { Vec2 } from 'planck-js';
 import { PositionAndRotation } from './position-and-rotation';
-import { Vector2 } from '../systems/physics2/body';
+import { Vector2 } from '../systems/physics2/vector2';
 
 export class CharacterController extends Component {
   public entity: Entity;
@@ -42,10 +42,12 @@ export class CharacterController extends Component {
     }
 
     // Clamp speeds
-    const newX = this.clamp(body.velocity.x, -this.speed, this.speed);
-    const newY = this.clamp(body.velocity.y, -this.speed, this.speed);
-    body.velocity.x = newX;
-    body.velocity.y = newY;
+    if (this.entity.owner != null) {
+      const newX = this.clamp(body.velocity.x, -this.speed, this.speed);
+      const newY = this.clamp(body.velocity.y, -this.speed, this.speed);
+      body.velocity.x = newX;
+      body.velocity.y = newY;
+    }
 
     // Set angle
     if (this.entity.input.angle.toFixed(2) != body.angle.toFixed(2)) {

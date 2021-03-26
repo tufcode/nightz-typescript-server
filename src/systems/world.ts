@@ -10,6 +10,7 @@ import { AIController } from '../components/ai-controller';
 const debug = debugModule('Physics');
 
 import { World as pWorld } from './physics2/world';
+import { Vector2 } from './physics2/vector2';
 
 // eslint-disable-next-line no-var
 const filterStrength = 20;
@@ -25,23 +26,13 @@ export class World extends System {
 
   private readonly _world: pWorld;
   private lastEntityId = 1;
-  private bounds: Body;
   private simulation: { timeStep: number; velocityIterations: number; positionIterations: number };
   public room: Room;
 
-  public constructor(
-    room: Room,
-    physicsOptions: WorldDef | Vec2,
-    simulation: {
-      timeStep: number;
-      velocityIterations: number;
-      positionIterations: number;
-    },
-  ) {
+  public constructor(room: Room, bounds: Vector2) {
     super();
     this.room = room;
-    this.simulation = simulation;
-    this._world = new pWorld();
+    this._world = new pWorld(bounds, 1);
   }
 
   public update(deltaTime: number) {
