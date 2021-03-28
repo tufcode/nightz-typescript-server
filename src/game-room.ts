@@ -2,7 +2,7 @@ import { Client, Room } from 'elsa';
 import * as debugModule from 'debug';
 import * as http from 'http';
 import { Entity } from './entity';
-import { ClientProtocol, getBytes, Protocol } from './protocol';
+import { ClientProtocol, EntityCategory, getBytes, Protocol } from './protocol';
 import { ClientData } from './game-client';
 import { PhysicsBody } from './components/physics-body';
 import { CharacterController } from './components/character-controller';
@@ -16,6 +16,8 @@ import { PositionAndRotation } from './components/position-and-rotation';
 import { Health } from './components/health';
 import { Body, BodyType } from './systems/physics2/body';
 import { Vector2 } from './systems/physics2/vector2';
+import { AIController } from './components/ai-controller';
+import { Circle, Vec2 } from 'planck-js';
 
 const debug = debugModule('GameRoom');
 
@@ -31,10 +33,47 @@ export default class GameRoom extends Room {
       'Room created! :) joinOptions: ' + JSON.stringify(options) + ', handlerOptions: ' + JSON.stringify(this.options),
     );
     this.startTime = Date.now();
-    this.gameWorld = new World(this, new Vector2(1200, 1200));
+    this.gameWorld = new World(
+      this,
+      {
+        gravity: Vec2.zero(),
+      },
+      { positionIterations: 2, timeStep: 1 / 10, velocityIterations: 4 },
+    );
 
     // Create boundaries
     this.gameWorld.updateBounds(this.playableArea);
+
+    for (let i = 0; i < 5; i++) {
+      const body = this.gameWorld.getPhysicsWorld().createBody({
+        type: 'dynamic',
+        position: Vec2(10, i),
+        fixedRotation: true,
+        linearDamping: 10,
+      });
+      body.createFixture({
+        shape: Circle(0.5),
+        density: 20.0,
+        friction: 0,
+        filterCategoryBits: EntityCategory.NPC,
+        filterMaskBits:
+          EntityCategory.PLAYER |
+          EntityCategory.BOUNDARY |
+          EntityCategory.BULLET |
+          EntityCategory.NPC |
+          EntityCategory.STRUCTURE,
+      });
+      // Create AI entity
+      const entity = new Entity('Player', this.gameWorld);
+      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
+      entity.addComponent(new PhysicsBody(body));
+      entity.addComponent(new Health(null));
+      //const equipped = <Equipped>entity.addComponent(new Equipped());
+      //const inventory = <Inventory>entity.addComponent(new Inventory());
+      entity.addComponent(new AIController());
+      (<NameTag>entity.addComponent(new NameTag())).setName('Test AI' + i);
+      this.gameWorld.addEntity(entity);
+    }
 
     // Add test AI
     /*for (let x = 0; x < 10; x++) {
@@ -62,46 +101,48 @@ export default class GameRoom extends Room {
 
     // Add test AI
 
-    console.log('loop');
-    for (let x = 0; x < 40; x++) {
-      for (let y = 0; y < 40; y++) {
-        const body = new Body(new Vector2(x * 1.5, y * 1.5), new Vector2(0, 0), 0.5, x + y + 1);
-        body.restitution = 0.75;
-        body.linearDamping = 0.2;
-        this.gameWorld.getPhysicsWorld().addBody(body);
+    /*{
+      const body = new Body(new Vector2(1.5, 1.5), new Vector2(0, 0), 0.5, 1);
+      body.restitution = 0.75;
+      body.linearDamping = 0.2;
+      body.collisionCategory = EntityCategory.NPC;
+      body.collisionMask = EntityCategory.PLAYER;
+      this.gameWorld.getPhysicsWorld().addBody(body);
 
-        // Create player entity
-        const entity = new Entity('Player', this.gameWorld);
-        entity.addComponent(new PositionAndRotation(body.position, body.angle));
-        entity.addComponent(new PhysicsBody(body));
-        //entity.addComponent(new Health(null));
-        //const equipped = <Equipped>entity.addComponent(new Equipped());
-        //const inventory = <Inventory>entity.addComponent(new Inventory());
-        entity.addComponent(new CharacterController());
-        (<NameTag>entity.addComponent(new NameTag())).setName('DynamicMass ' + (x + y + 1));
+      // Create player entity
+      const entity = new Entity('Player', this.gameWorld);
+      entity.addComponent(new PositionAndRotation(body.position, body.angle));
+      entity.addComponent(new PhysicsBody(body));
+      //entity.addComponent(new Health(null));
+      //const equipped = <Equipped>entity.addComponent(new Equipped());
+      //const inventory = <Inventory>entity.addComponent(new Inventory());
+      entity.addComponent(new CharacterController());
+      (<NameTag>entity.addComponent(new NameTag())).setName('DifferentCollisionMask');
 
-        this.gameWorld.addEntity(entity);
-      }
+      this.gameWorld.addEntity(entity);
     }
-    console.log('loopend');
 
     // Add big ball
-    const body = new Body(new Vector2(20, 0), new Vector2(0, 0), 8, Number.MAX_VALUE);
-    body.type = BodyType.Static;
-    body.restitution = 1;
-    body.linearDamping = 5;
-    this.gameWorld.getPhysicsWorld().addBody(body);
+    {
+      const body = new Body(new Vector2(20, 0), new Vector2(0, 0), 8, Number.MAX_VALUE);
+      body.type = BodyType.Static;
+      body.restitution = 1;
+      body.linearDamping = 5;
+      body.collisionCategory = EntityCategory.STRUCTURE;
+      body.collisionMask = EntityCategory.PLAYER | EntityCategory.BULLET;
+      this.gameWorld.getPhysicsWorld().addBody(body);
 
-    // Create player entity
-    const entity = new Entity('Big', this.gameWorld);
-    entity.addComponent(new PositionAndRotation(body.position, body.angle));
-    entity.addComponent(new PhysicsBody(body));
-    //const equipped = <Equipped>entity.addComponent(new Equipped());
-    //const inventory = <Inventory>entity.addComponent(new Inventory());
-    entity.addComponent(new CharacterController());
-    (<NameTag>entity.addComponent(new NameTag())).setName('Big static');
+      // Create player entity
+      const entity = new Entity('Big', this.gameWorld);
+      entity.addComponent(new PositionAndRotation(body.position, body.angle));
+      entity.addComponent(new PhysicsBody(body));
+      //const equipped = <Equipped>entity.addComponent(new Equipped());
+      //const inventory = <Inventory>entity.addComponent(new Inventory());
+      entity.addComponent(new CharacterController());
+      (<NameTag>entity.addComponent(new NameTag())).setName('Big static');
 
-    this.gameWorld.addEntity(entity);
+      this.gameWorld.addEntity(entity);
+    }*/
 
     // Add timers
     //this.addSimulationInterval(this.gameWorld.step.bind(this.gameWorld), 1000 / 10);
@@ -179,22 +220,34 @@ export default class GameRoom extends Room {
     // Create a ClientData object for this client
     this.clientData[client.id] = new ClientData();
 
-    const body = new Body(new Vector2(-10, 0), new Vector2(2, 0), 0.5, 50);
-    body.restitution = 0;
-    body.linearDamping = 1.5;
-    //setInterval(() => console.log(body.getPosition()), 1000 / 10);
-    this.gameWorld.getPhysicsWorld().addBody(body);
+    const body = this.gameWorld.getPhysicsWorld().createBody({
+      type: 'dynamic',
+      position: Vec2(0, 0),
+      fixedRotation: true,
+      linearDamping: 10,
+    });
+    body.createFixture({
+      shape: Circle(0.5),
+      density: 20.0,
+      filterCategoryBits: EntityCategory.PLAYER,
+      filterMaskBits:
+        EntityCategory.PLAYER |
+        EntityCategory.BOUNDARY |
+        EntityCategory.BULLET |
+        EntityCategory.NPC |
+        EntityCategory.STRUCTURE,
+    });
 
     // Create player entity
     const entity = new Entity('Player', this.gameWorld, client);
-    entity.addComponent(new PositionAndRotation(body.position, body.angle));
+    entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
     const physicsBody = <PhysicsBody>entity.addComponent(new PhysicsBody(body));
     entity.addComponent(new Gold());
     entity.addComponent(new Health(null));
     const equipped = <Equipped>entity.addComponent(new Equipped());
     const inventory = <Inventory>entity.addComponent(new Inventory());
     const controller = <CharacterController>entity.addComponent(new CharacterController());
-    (<NameTag>entity.addComponent(new NameTag())).setName('Mass 50');
+    (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + client.id);
 
     this.gameWorld.addEntity(entity); // TODO Components not initialized after addEntity
 
@@ -205,7 +258,6 @@ export default class GameRoom extends Room {
     /*const axeEntity = new Entity('Axe', this.gameWorld);
     const axe = <Axe>axeEntity.addComponent(new Axe());
     this.gameWorld.addEntity(axeEntity);
-
     // Equip the axe
     if (inventory.addItem(axe)) equipped.equip(axe);*/
     const axeEntity = new Entity('Box', this.gameWorld);

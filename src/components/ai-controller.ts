@@ -23,13 +23,13 @@ export class AIController extends Component {
       console.error('CharacterController requires PhysicsBody and PositionAndRotation components.');
     }
 
-    /*const body = this.bodyComponent.getBody();
+    const body = this.bodyComponent.getBody();
     body.createFixture({
       shape: Circle(5),
       filterCategoryBits: body.getFixtureList().getFilterCategoryBits(),
       filterMaskBits: EntityCategory.PLAYER | EntityCategory.STRUCTURE,
       isSensor: true,
-    });*/
+    });
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {
@@ -67,24 +67,24 @@ export class AIController extends Component {
       targetVelocity.normalize();
       targetVelocity.mul(this.speed);
 
-      //const currentVelocity = body.getLinearVelocity();
-      // const velocityChange = Vec2.sub(targetVelocity, currentVelocity);
+      const currentVelocity = body.getLinearVelocity();
+      const velocityChange = Vec2.sub(targetVelocity, currentVelocity);
 
-      // body.applyLinearImpulse(velocityChange, body.getWorldCenter(), true);
+      body.applyLinearImpulse(velocityChange, body.getWorldCenter(), true);
 
       // Set angle
       const myPosition = body.getPosition();
       const targetPosition = (<PositionAndRotation>this.activeTarget.getComponent(PositionAndRotation)).position;
       const targetAngle = Math.atan2(targetPosition.y - myPosition.y, targetPosition.x - myPosition.x);
       if (targetAngle.toFixed(2) != body.getAngle().toFixed(2)) {
-        //body.setAngle(targetAngle);
+        body.setAngle(targetAngle);
         this.syncComponent.angle = body.getAngle();
       }
     }
-    /*
+
     if (body.isAwake()) {
       this.syncComponent.position = body.getPosition();
-    }*/
+    }
   }
 
   public addTarget(entity: Entity): void {

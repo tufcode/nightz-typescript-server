@@ -5,7 +5,7 @@ import { Client } from 'elsa';
 
 export class NameTag extends Component {
   public buffer: Buffer;
-  private name: any;
+  public name: any;
   private _isDirty: boolean;
 
   public setName(name: string) {

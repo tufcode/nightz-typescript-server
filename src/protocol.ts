@@ -34,6 +34,7 @@ export enum ComponentIds {
   Inventory = 3,
   Gold = 4,
   Health = 5,
+  Scale = 6,
 }
 export enum EntityCategory {
   BOUNDARY = 0x0001,

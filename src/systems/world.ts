@@ -9,9 +9,6 @@ import { performance } from 'perf_hooks';
 import { AIController } from '../components/ai-controller';
 const debug = debugModule('Physics');
 
-import { World as pWorld } from './physics2/world';
-import { Vector2 } from './physics2/vector2';
-
 // eslint-disable-next-line no-var
 const filterStrength = 20;
 
@@ -24,15 +21,56 @@ lastLoop = performance.now();
 export class World extends System {
   public entities: Entity[] = [];
 
-  private readonly _world: pWorld;
+  private readonly _world: planck.World;
   private lastEntityId = 1;
+  private bounds: Body;
   private simulation: { timeStep: number; velocityIterations: number; positionIterations: number };
   public room: Room;
 
-  public constructor(room: Room, bounds: Vector2) {
+  public constructor(
+    room: Room,
+    physicsOptions: WorldDef | Vec2,
+    simulation: {
+      timeStep: number;
+      velocityIterations: number;
+      positionIterations: number;
+    },
+  ) {
     super();
     this.room = room;
-    this._world = new pWorld(bounds, 1);
+    this.simulation = simulation;
+    this._world = planck.World(physicsOptions);
+
+    this._world.on('begin-contact', (contact) => {
+      const fixtureA = contact.getFixtureA();
+      const fixtureB = contact.getFixtureB();
+
+      const AEntity = <Entity>fixtureA.getBody().getUserData();
+      const BEntity = <Entity>fixtureB.getBody().getUserData();
+      if (!AEntity || !BEntity) return;
+      if (fixtureA.isSensor() || fixtureB.isSensor()) {
+        AEntity.onTriggerEnter(fixtureA, fixtureB);
+        BEntity.onTriggerEnter(fixtureB, fixtureA);
+      } else {
+        AEntity.onCollisionEnter(fixtureA, fixtureB);
+        BEntity.onCollisionEnter(fixtureB, fixtureA);
+      }
+    });
+    this._world.on('end-contact', (contact) => {
+      const fixtureA = contact.getFixtureA();
+      const fixtureB = contact.getFixtureB();
+
+      const AEntity = <Entity>fixtureA.getBody().getUserData();
+      const BEntity = <Entity>fixtureB.getBody().getUserData();
+      if (!AEntity || !BEntity) return;
+      if (fixtureA.isSensor() || fixtureB.isSensor()) {
+        AEntity.onTriggerExit(fixtureA, fixtureB);
+        BEntity.onTriggerExit(fixtureB, fixtureA);
+      } else {
+        AEntity.onCollisionExit(fixtureA, fixtureB);
+        BEntity.onCollisionExit(fixtureB, fixtureA);
+      }
+    });
   }
 
   public update(deltaTime: number) {
@@ -42,7 +80,41 @@ export class World extends System {
     }
   }
 
-  public updateBounds(size: number[]) {}
+  public updateBounds(size: number[]) {
+    if (this.bounds != null) {
+      this.bounds.destroyFixture(this.bounds.getFixtureList());
+    }
+
+    // Create boundaries
+    this.bounds = this._world.createBody({
+      type: 'static',
+      position: Vec2.zero(),
+    });
+    this.bounds.createFixture({
+      shape: Box(0.5, size[1], Vec2(size[0], 0), 0),
+      density: 50.0,
+      filterCategoryBits: EntityCategory.BOUNDARY,
+      filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
+    });
+    this.bounds.createFixture({
+      shape: Box(0.5, size[1], Vec2(-size[0], 0), 0),
+      density: 50.0,
+      filterCategoryBits: EntityCategory.BOUNDARY,
+      filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
+    });
+    this.bounds.createFixture({
+      shape: Box(size[0], 0.5, Vec2(0, size[1]), 0),
+      density: 50.0,
+      filterCategoryBits: EntityCategory.BOUNDARY,
+      filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
+    });
+    this.bounds.createFixture({
+      shape: Box(size[0], 0.5, Vec2(0, -size[1]), 0),
+      density: 50.0,
+      filterCategoryBits: EntityCategory.BOUNDARY,
+      filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
+    });
+  }
 
   public getPhysicsWorld() {
     return this._world;
@@ -62,27 +134,6 @@ export class World extends System {
   }
 
   public step(deltaTime: number) {
-    this._world.update(deltaTime);
-    const thisFrameTime = (thisLoop = performance.now()) - lastLoop;
-    frameTime += (thisFrameTime - frameTime) / filterStrength;
-    lastLoop = thisLoop;
-
-    // broken console.log('TPS', (1000 / frameTime).toFixed(2));
+    this._world.step(this.simulation.timeStep, this.simulation.velocityIterations, this.simulation.positionIterations);
   }
 }
-
-const fps = {
-  startTime: 0,
-  frameNumber: 0,
-  getFPS: function () {
-    this.frameNumber++;
-    const d = performance.now(),
-      currentTime = (d - this.startTime) / 1000,
-      result = (this.frameNumber / currentTime).toFixed(2);
-    if (currentTime > 1) {
-      this.startTime = performance.now();
-      this.frameNumber = 0;
-    }
-    return result;
-  },
-};

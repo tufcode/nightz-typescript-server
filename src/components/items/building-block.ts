@@ -7,39 +7,65 @@ import { AABB, Vec2 } from 'planck-js';
 import { PositionAndRotation } from '../position-and-rotation';
 import { EntityCategory, getBytes, Protocol } from '../../protocol';
 import { AIController } from '../ai-controller';
+import { SyncScale } from '../sync-scale';
 
 export class BuildingBlock extends Consumable {
   protected onConsume(): void {
-    /*let pos: Vec2;
-    const physicsComponent = <PhysicsBody>this.inventory.entity.getComponent(PhysicsBody);
-    if (physicsComponent == null)
-      pos = (<PositionAndRotation>this.inventory.entity.getComponent(PositionAndRotation)).position;
-    else pos = physicsComponent.getBody().getWorldPoint(Vec2(1, 0));
+    const body = (<PhysicsBody>this.inventory.entity.getComponent(PhysicsBody)).getBody();
+    const pos = body.getWorldPoint(Vec2(1, 0));
 
-    let canPlace = true;
-    const aabb = new AABB(Vec2(pos.x, pos.y), Vec2(pos.x + 0.5, pos.y + 0.5));
-    this.entity.world.getPhysicsWorld().queryAABB(aabb, (fixture) => {
-      console.log(
-        aabb.getCenter(),
-        aabb.getPerimeter(),
-        (<Entity>fixture.getBody().getUserData()).getComponent(AIController) == null,
-      );
-      canPlace = (fixture.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER;
-      return canPlace;
-    });
-
-    console.log('Create?', canPlace);
-    if (!canPlace) {
-      if (this.inventory.entity.owner != null)
-        this.inventory.entity.owner.send(getBytes[Protocol.TemporaryMessage]('Occupied', 2));
-      return;
-    }
-
-    const body = this.entity.world.getPhysicsWorld().createBody({
-      type: 'static',
+    const placedBody = this.entity.world.getPhysicsWorld().createBody({
+      type: 'dynamic',
       position: pos,
       fixedRotation: true,
-      angle: physicsComponent.getBody().getAngle(),
+      linearDamping: 10,
+      angle: body.getAngle(),
+    });
+    placedBody.createFixture({
+      shape: planck.Box(0.5, 0.5),
+      density: 1.0,
+      filterCategoryBits: EntityCategory.STRUCTURE,
+      filterMaskBits: EntityCategory.BOUNDARY | EntityCategory.STRUCTURE,
+    });
+
+    // Create temporary entity
+    const p = placedBody.getFixtureList().getAABB(0).getPerimeter() * 100; /*100xScaleForUnity*/
+    const entity = new Entity('Placement', this.entity.world);
+    entity.addComponent(new PositionAndRotation(Vec2.zero(), 0));
+    entity.addComponent(new PhysicsBody(placedBody));
+    (<SyncScale>entity.addComponent(new SyncScale())).setScale(Vec2(p, p));
+    (<NameTag>entity.addComponent(new NameTag())).setName('Object ' + entity.objectId);
+
+    this.entity.world.addEntity(entity);
+
+    let tries = 0;
+    const fn = () => {
+      tries++;
+      if (!body.isAwake()) {
+        // Create the real entity
+        this.createRealEntity(placedBody.getPosition(), placedBody.getAngle());
+        // Destroy temporary entity
+        entity.destroy();
+      } else {
+        if (tries >= 10) {
+          entity.destroy();
+          if (this.inventory.entity.owner != null)
+            this.inventory.entity.owner.send(getBytes[Protocol.TemporaryMessage]('NoRest,' + entity.objectId, 2));
+        } else setTimeout(fn, 1000);
+      }
+    };
+
+    setTimeout(fn, 1000);
+
+    //this.entity.destroy();
+  }
+
+  private createRealEntity(position: Vec2, angle: number): void {
+    const body = this.entity.world.getPhysicsWorld().createBody({
+      type: 'static',
+      position: position,
+      fixedRotation: true,
+      angle: angle,
     });
     body.createFixture({
       shape: planck.Box(0.5, 0.5),
@@ -60,7 +86,5 @@ export class BuildingBlock extends Consumable {
     (<NameTag>entity.addComponent(new NameTag())).setName('Box ' + Date.now());
 
     this.entity.world.addEntity(entity);
-
-    //this.entity.destroy();*/
   }
 }

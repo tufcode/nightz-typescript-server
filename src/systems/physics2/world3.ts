@@ -2,7 +2,6 @@ import { Body, BodyType } from './body';
 import { Vector2 } from './vector2';
 import * as Flatbush from 'flatbush';
 import { performance } from 'perf_hooks';
-import { Solver } from './solver';
 
 interface ICell {
   bodies: Body[];
@@ -140,16 +139,9 @@ export class World {
       const cXEntityMax = Math.floor(obj1.position.x + bodySize);
       const cYEntityMin = Math.floor(obj1.position.y - bodySize);
       const cYEntityMax = Math.floor(obj1.position.y + bodySize);
-      const possibleCollisions = this._index.search(
-        cXEntityMin,
-        cYEntityMin,
-        cXEntityMax,
-        cYEntityMax,
-        (j) => this.bodies[j]._bodyId != obj1._bodyId,
-      );
+      const possibleCollisions = this._index.search(cXEntityMin, cYEntityMin, cXEntityMax, cYEntityMax);
       for (let j = 0; j < possibleCollisions.length; j++) {
         cp++;
-        //console.log('a', i, possibleCollisions[j]);
         const obj2 = this.bodies[possibleCollisions[j]];
         // This pair is already in the list
         if (addedPairs[obj1._bodyId] && addedPairs[obj1._bodyId][obj2._bodyId]) continue;
@@ -228,8 +220,56 @@ export class World {
         ) {
           continue;
         }
-        //console.log(obj1._bodyId, obj2._bodyId);
-        Solver.CircleToCircle(obj1, obj2);
+
+        const collisionVector = new Vector2(obj2.position.x - obj1.position.x, obj2.position.y - obj1.position.y);
+        const distance = Math.sqrt(
+          (obj2.position.x - obj1.position.x) * (obj2.position.x - obj1.position.x) +
+            (obj2.position.y - obj1.position.y) * (obj2.position.y - obj1.position.y),
+        );
+        const normalizedCollisionVector = new Vector2(collisionVector.x / distance, collisionVector.y / distance);
+        const relativeVelocityVector = new Vector2(
+          obj1.velocity.x - obj2.velocity.x,
+          obj1.velocity.y - obj2.velocity.y,
+        );
+        let speed =
+          relativeVelocityVector.x * normalizedCollisionVector.x +
+          relativeVelocityVector.y * normalizedCollisionVector.y;
+        const restitution = (obj1.restitution + obj2.restitution) / 2;
+        speed *= restitution;
+        if (Math.abs(speed) < this._bounceThreshold) speed = 0;
+        // The speed of the collision can be positive or negative. When it's positive, the objects are moving toward each other.
+        // When it's negative, they move away. When objects move away, there is no need to perform any further action. They will move out of collision on their own.
+        // For the other case, when objects are moving toward each other, apply the speed in the direction of the collision.
+        // Both objects get the same change in velocity from the collision. Subtract or add the velocity to the velocity of the two collided objects.
+        if (speed >= 0) {
+          // Apply physics even further and take mass into the equation by calculating the collision impulse from the speed.
+          // Use the impulse to calculate momentum. Heavy objects will push light ones aside.
+          const impulse = (2 * speed) / (obj1.mass + obj2.mass);
+          const s = obj1.radius + obj2.radius - distance; // Compute penetration depth
+
+          if (obj1.isDynamic()) {
+            obj1.position.x -= (normalizedCollisionVector.x * s) / 2; // Move first object by half of collision size
+            obj1.position.y -= (normalizedCollisionVector.y * s) / 2;
+            if (obj2.isDynamic()) {
+              obj1.velocity.x -= impulse * obj2.mass * normalizedCollisionVector.x;
+              obj1.velocity.y -= impulse * obj2.mass * normalizedCollisionVector.y;
+            } else {
+              obj1.velocity.x = -obj1.velocity.x * restitution;
+              obj1.velocity.y = -obj1.velocity.y * restitution;
+            }
+          }
+          if (obj2.isDynamic()) {
+            obj2.position.x += (normalizedCollisionVector.x * s) / 2; // Move other object by half of collision size in opposite direction
+            obj2.position.y += (normalizedCollisionVector.y * s) / 2;
+            if (obj1.isDynamic()) {
+              obj2.velocity.x += impulse * obj1.mass * normalizedCollisionVector.x;
+              obj2.velocity.y += impulse * obj1.mass * normalizedCollisionVector.y;
+            } else {
+              obj2.velocity.x = -obj2.velocity.x * restitution;
+              obj2.velocity.y = -obj2.velocity.y * restitution;
+            }
+          }
+        }
       }
     }
 

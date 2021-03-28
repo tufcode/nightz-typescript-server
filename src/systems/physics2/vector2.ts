@@ -13,7 +13,7 @@ export class Vector2 {
     return this;
   }
 
-  public minus(vector: Vector2): Vector2 {
+  public sub(vector: Vector2): Vector2 {
     this.x -= vector.x;
     this.y -= vector.y;
     return this;

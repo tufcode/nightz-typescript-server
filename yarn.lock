@@ -69,6 +69,11 @@
   resolved "https://registry.yarnpkg.com/@types/debug/-/debug-4.1.5.tgz#b14efa8852b7768d898906613c23f688713e02cd"
   integrity sha512-Q1y515GcOdTHgagaVFhHnIFQ38ygs/kmxdNpvpou+raI9UO3YZcHDngBSYKQklcKlvA7iuQlmIKbzvmxcOE9CQ==
 
+"@types/flatbush@^3.3.0":
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/@types/flatbush/-/flatbush-3.3.0.tgz#bd0ecc24e202ff095e3344bf48486e272e61e406"
+  integrity sha512-fSPSZ1d5v3DaAmWhuoFSCeaFA7JHdtcvF5F2Pdo0cAdrV4aRl9tCcKl1BuV7/QYWLN/vyefPGrsUHMGGtq6ASQ==
+
 "@types/json-schema@^7.0.3":
   version "7.0.7"
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.7.tgz#98a993516c859eb0d5c4c8f098317a9ea68db9ad"
@@ -551,6 +556,18 @@ flat-cache@^3.0.4:
   dependencies:
     flatted "^3.1.0"
     rimraf "^3.0.2"
+
+flatbush@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/flatbush/-/flatbush-3.3.0.tgz#b68c9149107ae86d2bce6373491f404ba4f4534e"
+  integrity sha512-F3EzQvKpdmXUbFwWxLKBpytOFEGYQMCTBLuqZ4GEajFOEAvnOIBiyxW3OFSZXIOtpCS8teN6bFEpNZtnVXuDQA==
+  dependencies:
+    flatqueue "^1.2.0"
+
+flatqueue@^1.2.0:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/flatqueue/-/flatqueue-1.2.1.tgz#82f501758fc5925742fbeb478637230456157ef2"
+  integrity sha512-X86TpWS1rGuY7m382HuA9vngLeDuWA9lJvhEG+GfgKMV5onSvx5a71cl7GMbXzhWtlN9dGfqOBrpfqeOtUfGYQ==
 
 flatted@^3.1.0:
   version "3.1.1"

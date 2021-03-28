@@ -3,7 +3,6 @@ import { Entity } from '../entity';
 import { PhysicsBody } from './physics-body';
 import { Vec2 } from 'planck-js';
 import { PositionAndRotation } from './position-and-rotation';
-import { Vector2 } from '../systems/physics2/vector2';
 
 export class CharacterController extends Component {
   public entity: Entity;
@@ -11,7 +10,7 @@ export class CharacterController extends Component {
   private bodyComponent: PhysicsBody;
   private syncComponent: PositionAndRotation;
 
-  private speed = 4;
+  private speed = 60;
 
   public init(): void {
     this.syncComponent = <PositionAndRotation>this.entity.getComponent(PositionAndRotation);
@@ -23,7 +22,7 @@ export class CharacterController extends Component {
 
   public update(): void {
     const body = this.bodyComponent.getBody();
-    const targetVelocity = new Vector2(0, 0);
+    const targetVelocity = Vec2.zero();
 
     if (this.entity.input.right) targetVelocity.x = 1;
     else if (this.entity.input.left) targetVelocity.x = -1;
@@ -36,28 +35,16 @@ export class CharacterController extends Component {
       targetVelocity.normalize();
       targetVelocity.mul(this.speed);
 
-      body.addImpulse(targetVelocity);
-      //body.velocity.x = targetVelocity.x;
-      //body.velocity.y = targetVelocity.y;
-    }
+      const currentVelocity = body.getLinearVelocity();
+      const velocityChange = Vec2.sub(targetVelocity, currentVelocity);
 
-    // Clamp speeds
-    if (this.entity.owner != null) {
-      const newX = this.clamp(body.velocity.x, -this.speed, this.speed);
-      const newY = this.clamp(body.velocity.y, -this.speed, this.speed);
-      body.velocity.x = newX;
-      body.velocity.y = newY;
+      body.applyLinearImpulse(velocityChange, body.getWorldCenter(), true);
     }
 
     // Set angle
-    if (this.entity.input.angle.toFixed(2) != body.angle.toFixed(2)) {
-      //body.setAngle(this.entity.input.angle);
-      this.syncComponent.angle = body.angle;
+    if (this.entity.input.angle.toFixed(2) != body.getAngle().toFixed(2)) {
+      body.setAngle(this.entity.input.angle);
+      this.syncComponent.angle = body.getAngle();
     }
-
-    this.syncComponent.position = body.position;
-  }
-  public clamp(val, min, max) {
-    return Math.min(Math.max(val, min), max);
   }
 }
