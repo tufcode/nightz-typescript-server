@@ -7,6 +7,7 @@ export class Health extends Component {
   private _maxHealth = 100;
   private _isDirty: boolean;
   private _deathCallback: () => void;
+  private _isDead: boolean;
 
   public constructor(deathCallback: () => void) {
     super();
@@ -25,10 +26,13 @@ export class Health extends Component {
     return this._currentHealth;
   }
   public set currentHealth(value: number) {
+    if (this._isDead) return;
     this._currentHealth = value;
     if (this._currentHealth <= 0) {
-      if (this._deathCallback != null) this._deathCallback();
-      this._currentHealth = this._maxHealth;
+      if (this._deathCallback != null) {
+        this._isDead = true;
+        this._deathCallback();
+      } else this._currentHealth = this._maxHealth;
     }
     this.entity._isDirty = true;
     this._isDirty = true;
@@ -47,5 +51,9 @@ export class Health extends Component {
     buf.writeUInt32LE(this.currentHealth, 5);
 
     return buf;
+  }
+
+  public isDead(): boolean {
+    return this._isDead;
   }
 }

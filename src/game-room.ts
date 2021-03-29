@@ -7,17 +7,16 @@ import { ClientData } from './game-client';
 import { PhysicsBody } from './components/physics-body';
 import { CharacterController } from './components/character-controller';
 import { NameTag } from './components/name-tag';
-import { Equipped } from './components/equipped';
-import { Inventory } from './components/inventory';
+import { Inventory, ItemSlot } from './components/inventory';
 import { World } from './systems/world';
-import { BuildingBlock } from './components/items/building-block';
+import { BuildingBlock } from './items/building-block';
 import { Gold } from './components/gold';
 import { PositionAndRotation } from './components/position-and-rotation';
 import { Health } from './components/health';
-import { Body, BodyType } from './systems/physics2/body';
-import { Vector2 } from './systems/physics2/vector2';
 import { AIController } from './components/ai-controller';
 import { Circle, Vec2 } from 'planck-js';
+import { Team } from './components/team';
+import { createBlock } from './items/util/create-object';
 
 const debug = debugModule('GameRoom');
 
@@ -38,41 +37,44 @@ export default class GameRoom extends Room {
       {
         gravity: Vec2.zero(),
       },
-      { positionIterations: 2, timeStep: 1 / 10, velocityIterations: 4 },
+      { positionIterations: 3, timeStep: 1 / 10, velocityIterations: 6 },
     );
 
     // Create boundaries
     this.gameWorld.updateBounds(this.playableArea);
 
-    for (let i = 0; i < 5; i++) {
-      const body = this.gameWorld.getPhysicsWorld().createBody({
-        type: 'dynamic',
-        position: Vec2(10, i),
-        fixedRotation: true,
-        linearDamping: 10,
-      });
-      body.createFixture({
-        shape: Circle(0.5),
-        density: 20.0,
-        friction: 0,
-        filterCategoryBits: EntityCategory.NPC,
-        filterMaskBits:
-          EntityCategory.PLAYER |
-          EntityCategory.BOUNDARY |
-          EntityCategory.BULLET |
-          EntityCategory.NPC |
-          EntityCategory.STRUCTURE,
-      });
-      // Create AI entity
-      const entity = new Entity('Player', this.gameWorld);
-      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
-      entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Health(null));
-      //const equipped = <Equipped>entity.addComponent(new Equipped());
-      //const inventory = <Inventory>entity.addComponent(new Inventory());
-      entity.addComponent(new AIController());
-      (<NameTag>entity.addComponent(new NameTag())).setName('Test AI' + i);
-      this.gameWorld.addEntity(entity);
+    for (let x = 0; x < 5; x++) {
+      for (let y = 0; y < 1; y++) {
+        const body = this.gameWorld.getPhysicsWorld().createBody({
+          type: 'dynamic',
+          position: Vec2(x, y),
+          fixedRotation: true,
+          linearDamping: 10,
+        });
+        body.createFixture({
+          shape: Circle(0.5),
+          density: 20.0,
+          friction: 0,
+          filterCategoryBits: EntityCategory.NPC,
+          filterMaskBits:
+            EntityCategory.PLAYER |
+            EntityCategory.BOUNDARY |
+            EntityCategory.BULLET |
+            EntityCategory.NPC |
+            EntityCategory.STRUCTURE,
+        });
+        // Create AI entity
+        const entity = new Entity('Player', this.gameWorld);
+        entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
+        entity.addComponent(new PhysicsBody(body));
+        entity.addComponent(new Health(null));
+        entity.addComponent(new Team(1));
+        //const equipped = <Equipped>entity.addComponent(new Equipped());
+        //const inventory = <Inventory>entity.addComponent(new Inventory());
+        entity.addComponent(new AIController());
+        (<NameTag>entity.addComponent(new NameTag())).setName('Test AI' + x + ',' + y);
+        this.gameWorld.addEntity(entity);
+      }
     }
 
     // Add test AI
@@ -240,34 +242,40 @@ export default class GameRoom extends Room {
 
     // Create player entity
     const entity = new Entity('Player', this.gameWorld, client);
+    entity.addComponent(new Team(0));
     entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
     const physicsBody = <PhysicsBody>entity.addComponent(new PhysicsBody(body));
-    entity.addComponent(new Gold());
+    const g = <Gold>entity.addComponent(new Gold());
     entity.addComponent(new Health(null));
-    const equipped = <Equipped>entity.addComponent(new Equipped());
-    const inventory = <Inventory>entity.addComponent(new Inventory());
     const controller = <CharacterController>entity.addComponent(new CharacterController());
     (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + client.id);
 
-    this.gameWorld.addEntity(entity); // TODO Components not initialized after addEntity
-
-    // Set controlling entity to created entity
-    this.clientData[client.id].controlling = controller;
-
-    // Create basic equipment
-    /*const axeEntity = new Entity('Axe', this.gameWorld);
-    const axe = <Axe>axeEntity.addComponent(new Axe());
-    this.gameWorld.addEntity(axeEntity);
-    // Equip the axe
-    if (inventory.addItem(axe)) equipped.equip(axe);*/
-    const axeEntity = new Entity('Box', this.gameWorld);
-    const axe = <BuildingBlock>axeEntity.addComponent(new BuildingBlock());
-    this.gameWorld.addEntity(axeEntity);
-
-    // Equip the axe
-    if (inventory.addItem(axe)) equipped.equip(axe);
+    // Add items and inventory
+    const inventory = <Inventory>entity.addComponent(new Inventory());
+    inventory.addItem(
+      new BuildingBlock(
+        'WoodenWall',
+        ItemSlot.Slot1,
+        Vec2(1, 1),
+        Circle(0.5),
+        (position, angle) => {
+          if (g.amount >= 20) {
+            g.amount -= 20;
+            return true;
+          }
+          return false;
+        },
+        () => {
+          g.amount += 20;
+        },
+        createBlock(client, new Team(0)),
+      ),
+    );
 
     // Update observing entities and set player entity for client
+    this.clientData[client.id].controlling = controller;
+    this.gameWorld.addEntity(entity);
+
     this.updateObserverCache(client);
     client.send(getBytes[Protocol.SetPlayerEntity](entity.objectId));
   }

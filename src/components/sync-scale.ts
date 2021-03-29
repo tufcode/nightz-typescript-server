@@ -1,8 +1,8 @@
 import { Component } from './component';
-import { Item } from './items/item';
+import { Item } from '../items/item';
 import { ComponentIds, getBytes, Protocol } from '../protocol';
 import { Client } from 'elsa/src/index';
-import { BuildingBlock } from './items/building-block';
+import { BuildingBlock } from '../items/building-block';
 import { Vec2 } from 'planck-js';
 
 export class SyncScale extends Component {
@@ -27,12 +27,12 @@ export class SyncScale extends Component {
     if ((this._isDirty || initialization) && this._scale != null) {
       this._isDirty = false;
 
-      const buf = Buffer.allocUnsafe(5);
+      const buf = Buffer.allocUnsafe(9);
       // Packet Id
       buf.writeUInt8(ComponentIds.Scale, 0);
       // Scale
-      buf.writeUInt16LE(this.scale.x, 1);
-      buf.writeUInt16LE(this.scale.y, 3);
+      buf.writeFloatLE(this.scale.x, 1);
+      buf.writeFloatLE(this.scale.y, 5);
 
       return buf;
     }

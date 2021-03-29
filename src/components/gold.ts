@@ -1,8 +1,8 @@
 import { Component } from './component';
-import { Item } from './items/item';
+import { Item } from '../items/item';
 import { ComponentIds, getBytes, Protocol } from '../protocol';
 import { Client } from 'elsa/src/index';
-import { BuildingBlock } from './items/building-block';
+import { BuildingBlock } from '../items/building-block';
 
 export class Gold extends Component {
   public get amount(): number {
@@ -18,7 +18,7 @@ export class Gold extends Component {
   private _isDirty: boolean;
 
   public update(): void {
-    this.amount += 1;
+    this.amount += 3;
   }
 
   public serialize(client: Client, initialization?: boolean): Buffer {

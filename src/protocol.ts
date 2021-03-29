@@ -1,8 +1,5 @@
 import { Client } from 'elsa';
 import { Entity } from './entity';
-import { ClientData } from './game-client';
-import GameRoom from './game-room';
-import { Equipped } from './components/equipped';
 import { Component } from './components/component';
 
 export enum Protocol {
@@ -30,11 +27,12 @@ export enum ClientProtocol {
 export enum ComponentIds {
   NameTag = 0,
   PositionAndRotation = 1,
-  Equipped = 2,
-  Inventory = 3,
+  InventoryActiveOnly = 2,
+  InventoryFull = 3,
   Gold = 4,
   Health = 5,
   Scale = 6,
+  Character = 7,
 }
 export enum EntityCategory {
   BOUNDARY = 0x0001,

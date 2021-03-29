@@ -16,6 +16,7 @@ export class Entity {
   public observingClients: Client[] = [];
   public components: Component[] = [];
 
+  private componentCache: { [key: string]: Component } = {};
   public _isDirty: boolean;
 
   constructor(id = 'Entity', world: World, owner?: Client) {
@@ -34,15 +35,12 @@ export class Entity {
   }
 
   public getComponent(componentType: Type<Component>): Component {
-    for (let i = 0; i < this.components.length; i++) {
-      const component = this.components[i];
-      if (component instanceof componentType) return component;
-    }
-    return null;
+    return this.componentCache[componentType.name];
   }
 
   public addComponent(component: Component): Component {
     component.entity = this;
+    this.componentCache[component.constructor.name] = component;
     this.components.push(component);
     component.init();
 
