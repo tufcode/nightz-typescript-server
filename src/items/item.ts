@@ -11,6 +11,8 @@ export class Item {
   public state: ItemState;
   public type: ItemSlot;
   public inventory: Inventory;
+  public used: number = 0;
+  public max: number = 0;
 
   public primary(): void {}
   public onEquip(): void {

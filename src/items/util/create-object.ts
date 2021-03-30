@@ -30,7 +30,7 @@ export const createBlock = (owner?: Client, team?: Team): ((world: World, positi
     });
 
     // Create entity
-    const entity = new Entity('WoodenWall', world, owner);
+    const entity = new Entity('WoodenBlock', world, owner);
     const healthComponent = <Health>entity.addComponent(new Health(() => entity.destroy()));
     healthComponent.maxHealth = 200;
     healthComponent.currentHealth = 200;

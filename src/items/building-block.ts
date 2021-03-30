@@ -10,6 +10,7 @@ import { Health } from '../components/health';
 import { Team } from '../components/team';
 import { ItemSlot } from '../components/inventory';
 import { World } from '../systems/world';
+import { Construction } from '../components/construction';
 
 export class BuildingBlock extends Consumable {
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;
@@ -62,31 +63,10 @@ export class BuildingBlock extends Consumable {
     const entity = new Entity('Placement', this.inventory.entity.world);
     entity.addComponent(new PositionAndRotation(pos, body.getAngle()));
     entity.addComponent(new PhysicsBody(placedBody));
+    entity.addComponent(new Construction(this.failureCallback, this.createCallback));
     (<SyncScale>entity.addComponent(new SyncScale())).setScale(this.constructionSize);
 
     this.inventory.entity.world.addEntity(entity);
-
-    let tries = 0;
-    const fn = () => {
-      tries++;
-      if (!placedBody.isAwake()) {
-        // Create the real entity
-        this.inventory.entity.world.addEntity(
-          this.createCallback(this.inventory.entity.world, placedBody.getPosition(), placedBody.getAngle()),
-        );
-        // Destroy temporary entity
-        entity.destroy();
-      } else {
-        if (tries >= 100) {
-          this.failureCallback();
-          entity.destroy();
-          if (this.inventory.entity.owner != null)
-            this.inventory.entity.owner.send(getBytes[Protocol.TemporaryMessage]('NoRest,' + entity.objectId, 2));
-        } else setTimeout(fn, 100);
-      }
-    };
-
-    setTimeout(fn, 100);
 
     //this.entity.destroy();
   }

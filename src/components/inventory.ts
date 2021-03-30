@@ -22,13 +22,19 @@ export class Inventory extends Component {
 
   private items: Item[] = [];
   private _isDirty: boolean;
+  private _lastPrimary: boolean;
 
   public init(): void {}
 
   public update(deltaTime: number): void {
     if (this.entity.input.primary) {
-      if (this.activeHand != null) this.activeHand.primary();
-      if (this.activeHat != null) this.activeHat.primary();
+      if (!this._lastPrimary) {
+        this._lastPrimary = true;
+        if (this.activeHand != null) this.activeHand.primary();
+        if (this.activeHat != null) this.activeHat.primary();
+      }
+    } else {
+      this._lastPrimary = false;
     }
   }
 
@@ -60,7 +66,7 @@ export class Inventory extends Component {
         }
 
         const buf = Buffer.allocUnsafe(
-          2 + 2 * this.items.length + totalItemIdLength + 2 + this.activeHand.id.length * 2,
+          2 + 4 * this.items.length + totalItemIdLength + 2 + this.activeHand.id.length * 2,
         );
 
         let index = 0;
@@ -70,6 +76,10 @@ export class Inventory extends Component {
         index += 1;
 
         for (let i = 0; i < this.items.length; i++) {
+          buf.writeUInt8(this.items[i].used, index);
+          index += 1;
+          buf.writeUInt8(this.items[i].max, index);
+          index += 1;
           buf.writeUInt16LE(this.items[i].id.length, index);
           index += 2;
           for (let j = 0; j < this.items[i].id.length; j++) {

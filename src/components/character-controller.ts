@@ -3,6 +3,7 @@ import { Entity } from '../entity';
 import { PhysicsBody } from './physics-body';
 import { Vec2 } from 'planck-js';
 import { PositionAndRotation } from './position-and-rotation';
+import { Gold } from './gold';
 
 export class CharacterController extends Component {
   public entity: Entity;
@@ -21,6 +22,7 @@ export class CharacterController extends Component {
   }
 
   public update(): void {
+    (<Gold>this.entity.getComponent(Gold)).amount += 100;
     const body = this.bodyComponent.getBody();
     const targetVelocity = Vec2.zero();
 

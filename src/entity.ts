@@ -1,6 +1,6 @@
 import { Client } from 'elsa';
 import * as planck from 'planck-js';
-import { ClientData, InputState } from './game-client';
+import { ClientData, InputState } from './client-data';
 import { Component } from './components/component';
 import { Type } from './types';
 import GameRoom from './game-room';

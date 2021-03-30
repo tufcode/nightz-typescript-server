@@ -130,8 +130,8 @@ export class AIController extends Component {
         }
       }
 
-      if (didAttack) this.isAttacking = true;
-      else this.isAttacking = false;
+      if (didAttack && !this.isAttacking) this.isAttacking = true;
+      else if (this.isAttacking) this.isAttacking = false;
     }
 
     const targetVelocity = Vec2.zero();

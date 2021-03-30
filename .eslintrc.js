@@ -14,5 +14,6 @@ module.exports = {
     '@typescript-eslint/explicit-member-accessibility': 1,
     '@typescript-eslint/no-unused-vars': 0,
     '@typescript-eslint/no-empty-function': 0,
+    '@typescript-eslint/no-explicit-any': 0,
   },
 };

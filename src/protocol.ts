@@ -1,6 +1,7 @@
 import { Client } from 'elsa';
 import { Entity } from './entity';
 import { Component } from './components/component';
+import { ITier } from './client-data';
 
 export enum Protocol {
   Entities = 0,
@@ -14,6 +15,8 @@ export enum Protocol {
 
   // Player-related (50-99)
   SetPlayerEntity = 50,
+  TierInfo = 60,
+  GoldInfo = 61,
   TemporaryMessage = 70,
 }
 
@@ -33,6 +36,7 @@ export enum ComponentIds {
   Health = 5,
   Scale = 6,
   Character = 7,
+  Tier = 8,
 }
 export enum EntityCategory {
   BOUNDARY = 0x0001,
@@ -161,6 +165,23 @@ export const getBytes = {
 
     buf.writeUInt8(Protocol.SetPlayerEntity, 0);
     buf.writeUInt32LE(id, 1);
+
+    return buf;
+  },
+  [Protocol.TierInfo]: (tier: ITier) => {
+    const buf = Buffer.allocUnsafe(1 + 1 + 4);
+
+    buf.writeUInt8(Protocol.TierInfo, 0);
+    buf.writeUInt8(tier.id, 1);
+    buf.writeUInt32LE(tier.upgradeCost, 2);
+
+    return buf;
+  },
+  [Protocol.GoldInfo]: (gold: number) => {
+    const buf = Buffer.allocUnsafe(1 + 4);
+
+    buf.writeUInt8(Protocol.GoldInfo, 0);
+    buf.writeUInt32LE(gold, 1);
 
     return buf;
   },

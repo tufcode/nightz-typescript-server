@@ -1,9 +1,9 @@
-import { Client, Room } from 'elsa';
+import { Client, Room, WSCloseCode } from 'elsa';
 import * as debugModule from 'debug';
 import * as http from 'http';
 import { Entity } from './entity';
 import { ClientProtocol, EntityCategory, getBytes, Protocol } from './protocol';
-import { ClientData } from './game-client';
+import { ClientData } from './client-data';
 import { PhysicsBody } from './components/physics-body';
 import { CharacterController } from './components/character-controller';
 import { NameTag } from './components/name-tag';
@@ -17,7 +17,7 @@ import { AIController } from './components/ai-controller';
 import { Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
 import { createBlock } from './items/util/create-object';
-
+import { Tiers } from './data/tiers';
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
@@ -25,7 +25,6 @@ export default class GameRoom extends Room {
   private gameWorld: World;
   private observerUpdateTick = 0;
   private playableArea: [number, number] = [200, 200];
-  public clientData: { [key: number]: ClientData } = {};
 
   public onCreate(options: any) {
     debug(
@@ -163,7 +162,7 @@ export default class GameRoom extends Room {
     // Send positions and update observers if necessary
     for (let i = 0; i < this.clients.length; i++) {
       const client = this.clients[i];
-      const clientData = this.clientData[client.id];
+      const clientData = client.getUserData();
       if (clientData == undefined) continue;
 
       if (isObserverUpdate || clientData.observing == null) {
@@ -191,7 +190,7 @@ export default class GameRoom extends Room {
   }
 
   public onMessage(client: Client, message: Buffer) {
-    const clientData = this.clientData[client.id];
+    const clientData = client.getUserData();
     if (!clientData) {
       debug('WARNING: Client ' + client.id + ' has no clientData but sent a message!');
       return;
@@ -218,9 +217,9 @@ export default class GameRoom extends Room {
     return true;
   }
 
-  public onJoin(client: Client, auth: any) {
+  public onJoin(client: Client, auth: any): void {
     // Create a ClientData object for this client
-    this.clientData[client.id] = new ClientData();
+    client.setUserData(new ClientData(client));
 
     const body = this.gameWorld.getPhysicsWorld().createBody({
       type: 'dynamic',
@@ -254,7 +253,7 @@ export default class GameRoom extends Room {
     const inventory = <Inventory>entity.addComponent(new Inventory());
     inventory.addItem(
       new BuildingBlock(
-        'WoodenWall',
+        'WoodenBlock',
         ItemSlot.Slot1,
         Vec2(1, 1),
         Circle(0.5),
@@ -267,21 +266,31 @@ export default class GameRoom extends Room {
         },
         () => {
           g.amount += 20;
+          client.send(getBytes[Protocol.TemporaryMessage]('NoRest,' + entity.objectId, 2));
         },
         createBlock(client, new Team(0)),
       ),
     );
 
     // Update observing entities and set player entity for client
-    this.clientData[client.id].controlling = controller;
+    client.getUserData().controlling = controller;
     this.gameWorld.addEntity(entity);
 
     this.updateObserverCache(client);
     client.send(getBytes[Protocol.SetPlayerEntity](entity.objectId));
+
+    client.getUserData().setTier(Tiers.Wood);
+  }
+
+  public onLeave(client: Client, closeReason: WSCloseCode): void {
+    const c = <ClientData>client.getUserData();
+    for (let i = 0; i < c.ownedEntities.length; i++) {
+      c.ownedEntities[i].destroy();
+    }
   }
 
   private updateObserverCache(client: Client): Entity[] {
-    const clientData = this.clientData[client.id];
+    const clientData = client.getUserData();
     const newEntities = [];
     const existingEntities = [];
     const cache = clientData.observing || [];

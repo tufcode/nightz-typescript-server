@@ -134,6 +134,8 @@ export class World extends System {
   }
 
   public step(deltaTime: number) {
+    //const s = performance.now();
     this._world.step(this.simulation.timeStep, this.simulation.velocityIterations, this.simulation.positionIterations);
+    //console.log(performance.now() - s);
   }
 }
