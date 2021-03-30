@@ -1,11 +1,8 @@
 import { Item, ItemState } from './item';
+import { Entity } from '../entity';
 
 export class Consumable extends Item {
-  private _lastPrimary: number;
-  public primary(): void {
-    if (Date.now() - this._lastPrimary < 100) return;
-
-    this._lastPrimary = Date.now();
+  public primaryStart(entity: Entity): void {
     this.onConsume();
   }
 

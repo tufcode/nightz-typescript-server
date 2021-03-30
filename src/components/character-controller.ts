@@ -22,7 +22,6 @@ export class CharacterController extends Component {
   }
 
   public update(): void {
-    (<Gold>this.entity.getComponent(Gold)).amount += 100;
     const body = this.bodyComponent.getBody();
     const targetVelocity = Vec2.zero();
 

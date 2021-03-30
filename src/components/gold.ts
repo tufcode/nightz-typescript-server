@@ -12,7 +12,6 @@ export class Gold extends Component {
   public set amount(value: number) {
     this._amount = value;
     if (this.entity.owner != null) {
-      console.log('sendgold');
       this.entity.owner.send(getBytes[Protocol.GoldInfo](this.amount));
     }
   }

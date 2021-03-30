@@ -27,9 +27,7 @@ export class BuildingBlock extends Consumable {
     failureCallback: () => void,
     createCallback: (world: World, position: Vec2, angle: number) => Entity,
   ) {
-    super();
-    this.id = id;
-    this.type = type;
+    super(id, type);
     this.constructionSize = constructionSize;
     this.constructionShape = constructionShape;
     this.permissionCallback = permissionCallback;

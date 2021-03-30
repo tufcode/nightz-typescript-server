@@ -30,10 +30,12 @@ export class Inventory extends Component {
     if (this.entity.input.primary) {
       if (!this._lastPrimary) {
         this._lastPrimary = true;
-        if (this.activeHand != null) this.activeHand.primary();
-        if (this.activeHat != null) this.activeHat.primary();
+        if (this.activeHand != null) this.activeHand.primaryStart(this.entity);
+        if (this.activeHat != null) this.activeHat.primaryStart(this.entity);
       }
-    } else {
+    } else if (this._lastPrimary) {
+      if (this.activeHand != null) this.activeHand.primaryEnd(this.entity);
+      if (this.activeHat != null) this.activeHat.primaryEnd(this.entity);
       this._lastPrimary = false;
     }
   }
@@ -44,6 +46,7 @@ export class Inventory extends Component {
 
     if (item.type == ItemSlot.Slot1 && this.activeHand == null) {
       this.activeHand = item;
+      item.onEquip(this.entity);
     }
 
     this._isDirty = true;

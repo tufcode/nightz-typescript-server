@@ -18,6 +18,7 @@ import { Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
 import { createBlock } from './items/util/create-object';
 import { Tiers } from './data/tiers';
+import { Axe } from './items/axe';
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
@@ -51,8 +52,8 @@ export default class GameRoom extends Room {
           linearDamping: 10,
         });
         body.createFixture({
-          shape: Circle(0.5),
-          density: 20.0,
+          shape: Circle(0.375),
+          density: 250.0,
           friction: 0,
           filterCategoryBits: EntityCategory.NPC,
           filterMaskBits:
@@ -63,7 +64,7 @@ export default class GameRoom extends Room {
             EntityCategory.STRUCTURE,
         });
         // Create AI entity
-        const entity = new Entity('Player', this.gameWorld);
+        const entity = new Entity('Zombie', this.gameWorld);
         entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
         entity.addComponent(new PhysicsBody(body));
         entity.addComponent(new Health(null));
@@ -161,7 +162,6 @@ export default class GameRoom extends Room {
     const isObserverUpdate = this.observerUpdateTick == 1;
     // Send positions and update observers if necessary
     for (let i = 0; i < this.clients.length; i++) {
-      console.log(i);
       const client = this.clients[i];
       const clientData = client.getUserData();
       if (clientData == undefined) continue;
@@ -255,7 +255,7 @@ export default class GameRoom extends Room {
     inventory.addItem(
       new BuildingBlock(
         'WoodenBlock',
-        ItemSlot.Slot1,
+        ItemSlot.Slot2,
         Vec2(1, 1),
         Circle(0.5),
         (position, angle) => {
@@ -272,6 +272,7 @@ export default class GameRoom extends Room {
         createBlock(client, new Team(0)),
       ),
     );
+    inventory.addItem(new Axe('WoodenAxe', ItemSlot.Slot1));
 
     // Update observing entities and set player entity for client
     client.getUserData().controlling = controller;
