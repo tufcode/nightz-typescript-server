@@ -74,6 +74,7 @@ export class World extends System {
   }
 
   public update(deltaTime: number) {
+    console.log('wup');
     // Update entities
     for (let i = 0; i < this.entities.length; i++) {
       this.entities[i].update(deltaTime);
@@ -134,6 +135,7 @@ export class World extends System {
   }
 
   public step(deltaTime: number) {
+    console.log('wup1');
     //const s = performance.now();
     this._world.step(this.simulation.timeStep, this.simulation.velocityIterations, this.simulation.positionIterations);
     //console.log(performance.now() - s);

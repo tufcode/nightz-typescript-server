@@ -161,6 +161,7 @@ export default class GameRoom extends Room {
     const isObserverUpdate = this.observerUpdateTick == 1;
     // Send positions and update observers if necessary
     for (let i = 0; i < this.clients.length; i++) {
+      console.log(i);
       const client = this.clients[i];
       const clientData = client.getUserData();
       if (clientData == undefined) continue;
@@ -276,6 +277,8 @@ export default class GameRoom extends Room {
     client.getUserData().controlling = controller;
     this.gameWorld.addEntity(entity);
 
+    (<ClientData>client.getUserData()).addOwnedEntity(entity);
+
     this.updateObserverCache(client);
     client.send(getBytes[Protocol.SetPlayerEntity](entity.objectId));
 
@@ -287,6 +290,10 @@ export default class GameRoom extends Room {
     for (let i = 0; i < c.ownedEntities.length; i++) {
       c.ownedEntities[i].destroy();
     }
+  }
+
+  public onDispose() {
+    console.log('dispose the room');
   }
 
   private updateObserverCache(client: Client): Entity[] {

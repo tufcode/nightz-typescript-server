@@ -24,7 +24,7 @@ export class PhysicsBody extends Component {
   }
 
   public update(deltaTime: number) {
-    if (this._syncComponent != null /* && this.body.isAwake()*/) {
+    if (this._syncComponent != null && this.body.isAwake()) {
       this._syncComponent.position = this.body.getPosition();
       this._syncComponent.angle = this.body.getAngle();
     }
