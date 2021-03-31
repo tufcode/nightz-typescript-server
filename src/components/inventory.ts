@@ -1,6 +1,6 @@
 import { Component } from './component';
 import { Item, ItemState } from '../items/item';
-import { ComponentIds } from '../protocol';
+import { ComponentIds, getBytes, Protocol } from '../protocol';
 import { Client } from 'elsa';
 
 export enum ItemSlot {
@@ -23,6 +23,18 @@ export class Inventory extends Component {
   private items: Item[] = [];
   private _isDirty: boolean;
   private _lastPrimary: boolean;
+  private _gold = 0;
+
+  public get gold(): number {
+    return this._gold;
+  }
+
+  public set gold(value: number) {
+    this._gold = value;
+    if (this.entity.owner != null) {
+      this.entity.owner.send(getBytes[Protocol.GoldInfo](this.gold));
+    }
+  }
 
   public init(): void {}
 
@@ -37,6 +49,20 @@ export class Inventory extends Component {
       if (this.activeHand != null) this.activeHand.primaryEnd(this.entity);
       if (this.activeHat != null) this.activeHat.primaryEnd(this.entity);
       this._lastPrimary = false;
+    }
+  }
+
+  public selectItem(id: number): void {
+    for (let i = 0; i < this.items.length; i++) {
+      const item = this.items[i];
+      if (item.entity.objectId == id) {
+        if (this.activeHand != null) this.activeHand.onUnequip();
+
+        this.activeHand = item;
+        this._isDirty = true;
+        this.entity._isDirty = true;
+        break;
+      }
     }
   }
 
@@ -68,9 +94,7 @@ export class Inventory extends Component {
           totalItemIdLength += this.items[i].id.length * 2;
         }
 
-        const buf = Buffer.allocUnsafe(
-          2 + 4 * this.items.length + totalItemIdLength + 2 + this.activeHand.id.length * 2,
-        );
+        const buf = Buffer.allocUnsafe(2 + 6 * this.items.length + 4);
 
         let index = 0;
         buf.writeUInt8(ComponentIds.InventoryFull, index);
@@ -83,37 +107,25 @@ export class Inventory extends Component {
           index += 1;
           buf.writeUInt8(this.items[i].max, index);
           index += 1;
-          buf.writeUInt16LE(this.items[i].id.length, index);
-          index += 2;
-          for (let j = 0; j < this.items[i].id.length; j++) {
-            buf.writeUInt16LE(this.items[i].id.charCodeAt(j), index);
-            index += 2;
-          }
+          buf.writeUInt32LE(this.items[i].entity.objectId, index);
+          index += 4;
         }
 
         // Item ids
-        buf.writeUInt16LE(this.activeHand.id.length, index);
-        index += 2;
-        for (let j = 0; j < this.activeHand.id.length; j++) {
-          buf.writeUInt16LE(this.activeHand.id.charCodeAt(j), index);
-          index += 2;
-        }
+        buf.writeUInt32LE(this.activeHand?.entity.objectId ?? 0, index);
+        index += 4;
 
         return buf;
       } else {
-        const buf = Buffer.allocUnsafe(3 + this.activeHand.id.length * 2);
+        const buf = Buffer.allocUnsafe(5);
 
         let index = 0;
         buf.writeUInt8(ComponentIds.InventoryActiveOnly, index);
         index += 1;
 
         // Item ids
-        buf.writeUInt16LE(this.activeHand.id.length, index);
-        index += 2;
-        for (let j = 0; j < this.activeHand.id.length; j++) {
-          buf.writeUInt16LE(this.activeHand.id.charCodeAt(j), index);
-          index += 2;
-        }
+        buf.writeUInt32LE(this.activeHand?.entity.objectId ?? 0, index);
+        index += 4;
       }
     }
     return null;

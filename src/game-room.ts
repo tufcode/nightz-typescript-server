@@ -16,16 +16,22 @@ import { Health } from './components/health';
 import { AIController } from './components/ai-controller';
 import { Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
-import { createBlock } from './items/util/create-object';
+import { createAxe, createBlock, createItem } from './items/util/create-object';
 import { Tiers } from './data/tiers';
 import { Axe } from './items/axe';
+import { requireGold } from './items/util/callbacks';
+import { Animation } from './components/animation';
+import { Spawner } from './systems/spawner';
+import { randomRange } from './utils';
+import { GoldMine } from './components/gold-mine';
+import { Observable } from './components/observable';
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
   public startTime: number;
   private gameWorld: World;
   private observerUpdateTick = 0;
-  private playableArea: [number, number] = [200, 200];
+  private playableArea: Vec2 = Vec2(200, 200);
 
   public onCreate(options: any) {
     debug(
@@ -43,111 +49,81 @@ export default class GameRoom extends Room {
     // Create boundaries
     this.gameWorld.updateBounds(this.playableArea);
 
-    for (let x = 0; x < 5; x++) {
-      for (let y = 0; y < 1; y++) {
-        const body = this.gameWorld.getPhysicsWorld().createBody({
-          type: 'dynamic',
-          position: Vec2(x, y),
-          fixedRotation: true,
-          linearDamping: 10,
-        });
-        body.createFixture({
-          shape: Circle(0.375),
-          density: 250.0,
-          friction: 0,
-          filterCategoryBits: EntityCategory.NPC,
-          filterMaskBits:
-            EntityCategory.PLAYER |
-            EntityCategory.BOUNDARY |
-            EntityCategory.BULLET |
-            EntityCategory.NPC |
-            EntityCategory.STRUCTURE,
-        });
-        // Create AI entity
-        const entity = new Entity('Zombie', this.gameWorld);
-        entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
-        entity.addComponent(new PhysicsBody(body));
-        entity.addComponent(new Health(null));
-        entity.addComponent(new Team(1));
-        //const equipped = <Equipped>entity.addComponent(new Equipped());
-        //const inventory = <Inventory>entity.addComponent(new Inventory());
-        entity.addComponent(new AIController());
-        (<NameTag>entity.addComponent(new NameTag())).setName('Test AI' + x + ',' + y);
-        this.gameWorld.addEntity(entity);
-      }
-    }
-
-    // Add test AI
-    /*for (let x = 0; x < 10; x++) {
-      for (let y = -x; y < x + 1; y++) {
-        const mass = x == 9 ? 5000 : (x + 1) * 2;
-        const body = new Body(new Vector2(x, y), new Vector2(0, 0), 0.5, Number.MAX_VALUE);
-        body.type = BodyType.Static;
-        body.restitution = 0.25;
-        body.linearDamping = 0.025;
-        this.gameWorld.getPhysicsWorld().addBody(body);
-
-        // Create player entity
-        const entity = new Entity('Player', this.gameWorld);
-        entity.addComponent(new PositionAndRotation(body.position, body.angle));
-        entity.addComponent(new PhysicsBody(body));
-        entity.addComponent(new Health(null));
-        //const equipped = <Equipped>entity.addComponent(new Equipped());
-        //const inventory = <Inventory>entity.addComponent(new Inventory());
-        entity.addComponent(new CharacterController());
-        (<NameTag>entity.addComponent(new NameTag())).setName('Static');
-
-        this.gameWorld.addEntity(entity);
-      }
-    }*/
-
-    // Add test AI
-
-    /*{
-      const body = new Body(new Vector2(1.5, 1.5), new Vector2(0, 0), 0.5, 1);
-      body.restitution = 0.75;
-      body.linearDamping = 0.2;
-      body.collisionCategory = EntityCategory.NPC;
-      body.collisionMask = EntityCategory.PLAYER;
-      this.gameWorld.getPhysicsWorld().addBody(body);
-
-      // Create player entity
-      const entity = new Entity('Player', this.gameWorld);
-      entity.addComponent(new PositionAndRotation(body.position, body.angle));
+    // Create mines
+    const mineCount = /*average area*/ (this.playableArea.x + this.playableArea.y) / 2;
+    for (let i = 0; i < mineCount; i++) {
+      const body = this.gameWorld.getPhysicsWorld().createBody({
+        type: 'static',
+        position: Vec2(
+          randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
+          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
+        ),
+      });
+      body.createFixture({
+        shape: Circle(1),
+        friction: 0,
+        filterCategoryBits: EntityCategory.STRUCTURE,
+        filterMaskBits:
+          EntityCategory.BOUNDARY |
+          EntityCategory.PLAYER |
+          EntityCategory.STRUCTURE |
+          EntityCategory.BULLET |
+          EntityCategory.NPC,
+      });
+      // Create AI entity
+      const entity = new Entity('GoldMine', this.gameWorld);
       entity.addComponent(new PhysicsBody(body));
-      //entity.addComponent(new Health(null));
-      //const equipped = <Equipped>entity.addComponent(new Equipped());
-      //const inventory = <Inventory>entity.addComponent(new Inventory());
-      entity.addComponent(new CharacterController());
-      (<NameTag>entity.addComponent(new NameTag())).setName('DifferentCollisionMask');
+      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
+      entity.addComponent(new Health(null));
+      entity.addComponent(new Team(1));
+      entity.addComponent(new GoldMine());
+      entity.addComponent(new Observable());
 
       this.gameWorld.addEntity(entity);
     }
 
-    // Add big ball
-    {
-      const body = new Body(new Vector2(20, 0), new Vector2(0, 0), 8, Number.MAX_VALUE);
-      body.type = BodyType.Static;
-      body.restitution = 1;
-      body.linearDamping = 5;
-      body.collisionCategory = EntityCategory.STRUCTURE;
-      body.collisionMask = EntityCategory.PLAYER | EntityCategory.BULLET;
-      this.gameWorld.getPhysicsWorld().addBody(body);
-
-      // Create player entity
-      const entity = new Entity('Big', this.gameWorld);
-      entity.addComponent(new PositionAndRotation(body.position, body.angle));
+    const zombieSpawner = new Spawner((this.playableArea.x + this.playableArea.y) / 2, 4, 1, 0.7, 0, () => {
+      const body = this.gameWorld.getPhysicsWorld().createBody({
+        type: 'dynamic',
+        position: Vec2(
+          randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
+          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
+        ),
+        fixedRotation: true,
+        linearDamping: 10,
+      });
+      body.createFixture({
+        shape: Circle(0.375),
+        density: 25.0,
+        friction: 0,
+        filterCategoryBits: EntityCategory.NPC,
+        filterMaskBits:
+          EntityCategory.PLAYER |
+          EntityCategory.BOUNDARY |
+          EntityCategory.BULLET |
+          EntityCategory.NPC |
+          EntityCategory.STRUCTURE,
+      });
+      // Create AI entity
+      const entity = new Entity('Zombie', this.gameWorld);
+      entity.addComponent(new Animation());
+      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      //const equipped = <Equipped>entity.addComponent(new Equipped());
-      //const inventory = <Inventory>entity.addComponent(new Inventory());
-      entity.addComponent(new CharacterController());
-      (<NameTag>entity.addComponent(new NameTag())).setName('Big static');
+      entity.addComponent(new Health(() => entity.destroy()));
+      entity.addComponent(new Team(1));
+      entity.addComponent(new AIController());
+      entity.addComponent(new Observable());
+      (<NameTag>entity.addComponent(new NameTag())).setName('Zombie ' + entity.objectId);
+
+      const inventory = <Inventory>entity.addComponent(new Inventory());
+      inventory.gold = Math.random() * 1000;
 
       this.gameWorld.addEntity(entity);
-    }*/
 
+      return entity;
+    });
+    this.addSimulationInterval(zombieSpawner.update.bind(zombieSpawner), 1000 / 10);
     // Add timers
-    //this.addSimulationInterval(this.gameWorld.step.bind(this.gameWorld), 1000 / 10);
     this.addSimulationInterval(this.update.bind(this), 1000 / 10);
   }
 
@@ -191,7 +167,7 @@ export default class GameRoom extends Room {
   }
 
   public onMessage(client: Client, message: Buffer) {
-    const clientData = client.getUserData();
+    const clientData = <ClientData>client.getUserData();
     if (!clientData) {
       debug('WARNING: Client ' + client.id + ' has no clientData but sent a message!');
       return;
@@ -209,6 +185,14 @@ export default class GameRoom extends Room {
         clientData.input.left = message.readUInt8(4) == 1;
         clientData.input.right = message.readUInt8(5) == 1;
         clientData.controlling.entity.input = clientData.input;
+        break;
+      case ClientProtocol.SelectItem:
+        if (!clientData.controlling) break;
+        const inventory = <Inventory>clientData.controlling.entity.getComponent(Inventory);
+        if (!inventory) break;
+
+        inventory.selectItem(message.readUInt32LE(1));
+
         break;
     }
   }
@@ -242,37 +226,17 @@ export default class GameRoom extends Room {
 
     // Create player entity
     const entity = new Entity('Player', this.gameWorld, client);
-    entity.addComponent(new Team(0));
+    entity.addComponent(new Animation());
+    entity.addComponent(new Team(100 + client.id));
     entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
-    const physicsBody = <PhysicsBody>entity.addComponent(new PhysicsBody(body));
-    const g = <Gold>entity.addComponent(new Gold());
+    <PhysicsBody>entity.addComponent(new PhysicsBody(body));
     entity.addComponent(new Health(null));
     const controller = <CharacterController>entity.addComponent(new CharacterController());
     (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + client.id);
+    entity.addComponent(new Observable());
 
     // Add items and inventory
     const inventory = <Inventory>entity.addComponent(new Inventory());
-    inventory.addItem(
-      new BuildingBlock(
-        'WoodenBlock',
-        ItemSlot.Slot2,
-        Vec2(1, 1),
-        Circle(0.5),
-        (position, angle) => {
-          if (g.amount >= 20) {
-            g.amount -= 20;
-            return true;
-          }
-          return false;
-        },
-        () => {
-          g.amount += 20;
-          client.send(getBytes[Protocol.TemporaryMessage]('NoRest,' + entity.objectId, 2));
-        },
-        createBlock(client, new Team(0)),
-      ),
-    );
-    inventory.addItem(new Axe('WoodenAxe', ItemSlot.Slot1));
 
     // Update observing entities and set player entity for client
     client.getUserData().controlling = controller;
@@ -280,8 +244,29 @@ export default class GameRoom extends Room {
 
     (<ClientData>client.getUserData()).addOwnedEntity(entity);
 
+    inventory.addItem(createAxe(this.gameWorld, client));
+    inventory.addItem(
+      createItem(
+        new BuildingBlock(
+          'WoodenBlock',
+          ItemSlot.Slot2,
+          Vec2(1, 1),
+          Circle(0.5),
+          () => requireGold(inventory, 20),
+          () => {
+            inventory.gold += 20;
+            client.send(getBytes[Protocol.TemporaryMessage]('NoRest,' + entity.objectId, 2));
+          },
+          createBlock(client, new Team(100 + client.id)),
+        ),
+        this.gameWorld,
+        client,
+      ),
+    );
+
     this.updateObserverCache(client);
     client.send(getBytes[Protocol.SetPlayerEntity](entity.objectId));
+    client.send(getBytes[Protocol.WorldSize](this.playableArea));
 
     client.getUserData().setTier(Tiers.Wood);
   }
@@ -303,14 +288,21 @@ export default class GameRoom extends Room {
     const existingEntities = [];
     const cache = clientData.observing || [];
     clientData.observing = this.gameWorld.entities.filter((e) => {
-      if (e.onCheckObserver(clientData)) {
+      const observable = <Observable>e.getComponent(Observable);
+      if (observable == null) return false; // Can't show without observable component
+
+      // Check observer
+      if (observable.onCheckObserver(client)) {
         if (!cache.includes(e)) {
           e.observingClients.push(client);
           newEntities.push(e);
         } else existingEntities.push(e);
         return true;
       }
+      // Client can't see this entity.
+      return false;
     });
+
     // Add new entities
     if (newEntities.length > 0) client.send(getBytes[Protocol.Entities](client, newEntities));
 

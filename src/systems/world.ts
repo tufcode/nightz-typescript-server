@@ -21,9 +21,11 @@ lastLoop = performance.now();
 export class World extends System {
   public entities: Entity[] = [];
 
+  public bounds: Vec2;
+
   private readonly _world: planck.World;
   private lastEntityId = 1;
-  private bounds: Body;
+  private _bounds: Body;
   private simulation: { timeStep: number; velocityIterations: number; positionIterations: number };
   public room: Room;
 
@@ -80,36 +82,37 @@ export class World extends System {
     }
   }
 
-  public updateBounds(size: number[]) {
-    if (this.bounds != null) {
-      this.bounds.destroyFixture(this.bounds.getFixtureList());
+  public updateBounds(size: Vec2) {
+    this.bounds = size;
+    if (this._bounds != null) {
+      this._bounds.destroyFixture(this._bounds.getFixtureList());
     }
 
     // Create boundaries
-    this.bounds = this._world.createBody({
+    this._bounds = this._world.createBody({
       type: 'static',
       position: Vec2.zero(),
     });
-    this.bounds.createFixture({
-      shape: Box(0.5, size[1], Vec2(size[0], 0), 0),
+    this._bounds.createFixture({
+      shape: Box(0.5, size.y, Vec2(size.x, 0), 0),
       density: 50.0,
       filterCategoryBits: EntityCategory.BOUNDARY,
       filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
     });
-    this.bounds.createFixture({
-      shape: Box(0.5, size[1], Vec2(-size[0], 0), 0),
+    this._bounds.createFixture({
+      shape: Box(0.5, size.y, Vec2(-size.x, 0), 0),
       density: 50.0,
       filterCategoryBits: EntityCategory.BOUNDARY,
       filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
     });
-    this.bounds.createFixture({
-      shape: Box(size[0], 0.5, Vec2(0, size[1]), 0),
+    this._bounds.createFixture({
+      shape: Box(size.x, 0.5, Vec2(0, size.y), 0),
       density: 50.0,
       filterCategoryBits: EntityCategory.BOUNDARY,
       filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
     });
-    this.bounds.createFixture({
-      shape: Box(size[0], 0.5, Vec2(0, -size[1]), 0),
+    this._bounds.createFixture({
+      shape: Box(size.x, 0.5, Vec2(0, -size.y), 0),
       density: 50.0,
       filterCategoryBits: EntityCategory.BOUNDARY,
       filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,

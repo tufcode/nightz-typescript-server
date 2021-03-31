@@ -6,6 +6,7 @@ import { Type } from './types';
 import GameRoom from './game-room';
 import { World } from './systems/world';
 import { Fixture } from 'planck-js';
+import * as EventEmitter from 'eventemitter3';
 
 export class Entity {
   public id: string;
@@ -18,16 +19,23 @@ export class Entity {
 
   private componentCache: { [key: string]: Component } = {};
   public _isDirty: boolean;
+  private _eventEmitter: EventEmitter;
 
-  constructor(id = 'Entity', world: World, owner?: Client) {
+  public constructor(id = 'Entity', world: World, owner?: Client) {
     this.id = id;
     this.world = world;
     this.owner = owner;
 
     this.objectId = world.getEntityId();
+    this._eventEmitter = new EventEmitter();
+  }
+
+  public on(event: 'destroy', fn: () => void): EventEmitter {
+    return this._eventEmitter.on(event, fn);
   }
 
   public destroy() {
+    this._eventEmitter.emit('destroy');
     this.world.removeEntity(this);
     for (let i = 0; i < this.components.length; i++) {
       this.components[i].onDestroy();

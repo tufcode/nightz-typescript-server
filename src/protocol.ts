@@ -2,6 +2,7 @@ import { Client } from 'elsa';
 import { Entity } from './entity';
 import { Component } from './components/component';
 import { ITier } from './client-data';
+import { Vec2 } from 'planck-js';
 
 export enum Protocol {
   Entities = 0,
@@ -10,7 +11,7 @@ export enum Protocol {
   AddComponent = 3,
   RemoveComponent = 4,
 
-  PlayerData = 10,
+  WorldSize = 10,
   Leaderboard = 11,
 
   // Player-related (50-99)
@@ -23,8 +24,7 @@ export enum Protocol {
 export enum ClientProtocol {
   InputAngle = 0,
   InputPrimary = 1,
-  InputUseItem = 6,
-  InputCancel = 7,
+  SelectItem = 2,
 }
 
 export enum ComponentIds {
@@ -35,7 +35,7 @@ export enum ComponentIds {
   Gold = 4,
   Health = 5,
   Scale = 6,
-  Character = 7,
+  Animation = 7,
   Tier = 8,
 }
 export enum EntityCategory {
@@ -44,6 +44,7 @@ export enum EntityCategory {
   STRUCTURE = 0x0004,
   BULLET = 0x0008,
   NPC = 0x0010,
+  SENSOR = 0x11,
 }
 
 export const getBytes = {
@@ -157,6 +158,15 @@ export const getBytes = {
     buf.writeUInt32LE(entity.objectId, 1);
     // Component id
     buf.writeUInt8(component, 5);
+
+    return buf;
+  },
+  [Protocol.WorldSize]: (size: Vec2) => {
+    const buf = Buffer.allocUnsafe(9);
+
+    buf.writeUInt8(Protocol.WorldSize, 0);
+    buf.writeFloatLE(size.x, 1);
+    buf.writeFloatLE(size.y, 5);
 
     return buf;
   },

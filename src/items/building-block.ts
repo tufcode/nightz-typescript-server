@@ -11,6 +11,7 @@ import { Team } from '../components/team';
 import { ItemSlot } from '../components/inventory';
 import { World } from '../systems/world';
 import { Construction } from '../components/construction';
+import { Observable } from '../components/observable';
 
 export class BuildingBlock extends Consumable {
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;
@@ -62,6 +63,7 @@ export class BuildingBlock extends Consumable {
     entity.addComponent(new PositionAndRotation(pos, body.getAngle()));
     entity.addComponent(new PhysicsBody(placedBody));
     entity.addComponent(new Construction(this.failureCallback, this.createCallback));
+    entity.addComponent(new Observable());
     (<SyncScale>entity.addComponent(new SyncScale())).setScale(this.constructionSize);
 
     this.inventory.entity.world.addEntity(entity);

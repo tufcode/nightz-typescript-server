@@ -1,9 +1,10 @@
 import { Component } from './component';
 import { Entity } from '../entity';
 import { PhysicsBody } from './physics-body';
-import { Vec2 } from 'planck-js';
+import { Fixture, Vec2 } from 'planck-js';
 import { PositionAndRotation } from './position-and-rotation';
 import { Gold } from './gold';
+import { Inventory } from './inventory';
 
 export class CharacterController extends Component {
   public entity: Entity;
@@ -19,6 +20,14 @@ export class CharacterController extends Component {
     if (this.bodyComponent == null || this.syncComponent == null) {
       console.error('CharacterController requires PhysicsBody and PositionAndRotation components.');
     }
+  }
+  // todo stop dis
+  public onTriggerEnter(me: Fixture, other: Fixture): void {
+    (<Inventory>this.entity.getComponent(Inventory)).activeHand.onTriggerEnter(me, other);
+  }
+
+  public onTriggerExit(me: Fixture, other: Fixture): void {
+    (<Inventory>this.entity.getComponent(Inventory)).activeHand.onTriggerExit(me, other);
   }
 
   public update(): void {
@@ -45,6 +54,7 @@ export class CharacterController extends Component {
     // Set angle
     if (this.entity.input.angle.toFixed(2) != body.getAngle().toFixed(2)) {
       body.setAngle(this.entity.input.angle);
+      body.setAwake(true);
       this.syncComponent.angle = body.getAngle();
     }
   }

@@ -9,15 +9,16 @@ export enum ItemState {
   EQUIPPED,
 }
 
-export class Item {
+export class Item extends Component {
   public id: string;
   public state: ItemState;
   public type: ItemSlot;
   public inventory: Inventory;
-  public used: number = 0;
-  public max: number = 0;
+  public used = 0;
+  public max = 0;
 
   public constructor(id: string, type: ItemSlot) {
+    super();
     this.id = id;
     this.type = type;
   }
