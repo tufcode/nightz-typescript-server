@@ -7,11 +7,23 @@ export class PositionAndRotation extends Component {
   private _position: Vec2;
   private _angle: number;
   private _isDirty: boolean;
+  private _velocity: Vec2;
 
-  public constructor(position: Vec2, angle: number) {
+  public constructor(position: Vec2, velocity: Vec2, angle: number) {
     super();
     this._position = position;
     this._angle = angle;
+    this._velocity = velocity;
+  }
+
+  public get velocity(): Vec2 {
+    return this._velocity;
+  }
+
+  public set velocity(value: Vec2) {
+    this._velocity = value;
+    this._isDirty = true;
+    this.entity._isDirty = true;
   }
 
   public get angle(): number {
@@ -38,14 +50,15 @@ export class PositionAndRotation extends Component {
     if (!this._isDirty && !initialization) return null;
     this._isDirty = false;
 
-    const buf = Buffer.allocUnsafe(13);
+    const buf = Buffer.allocUnsafe(17);
     // Packet Id
     buf.writeUInt8(ComponentIds.PositionAndRotation, 0);
     // Position
     buf.writeFloatLE(this._position.x, 1);
     buf.writeFloatLE(this._position.y, 5);
-    // Rotation
-    buf.writeFloatLE(this._angle, 9);
+    // Velocity
+    buf.writeFloatLE(this._velocity.x, 9);
+    buf.writeFloatLE(this._velocity.y, 13);
 
     return buf;
   }

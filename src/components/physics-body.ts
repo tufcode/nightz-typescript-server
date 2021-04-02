@@ -2,11 +2,13 @@ import { Component } from './component';
 import { Entity } from '../entity';
 import { Body } from 'planck-js';
 import { PositionAndRotation } from './position-and-rotation';
+import { Rotation } from './rotation';
 
 export class PhysicsBody extends Component {
   public entity: Entity;
   private readonly body: Body;
   private _syncComponent: PositionAndRotation;
+  private _rotationComponent: Rotation;
 
   public constructor(body: Body) {
     super();
@@ -26,7 +28,7 @@ export class PhysicsBody extends Component {
   public update(deltaTime: number) {
     if (this._syncComponent != null && this.body.isAwake()) {
       this._syncComponent.position = this.body.getPosition();
-      this._syncComponent.angle = this.body.getAngle();
+      this._syncComponent.velocity = this.body.getLinearVelocity();
     }
   }
 

@@ -26,20 +26,21 @@ export const createBlock = (owner?: Client, team?: Team): ((world: World, positi
       density: 0.0,
       filterCategoryBits: EntityCategory.STRUCTURE,
       filterMaskBits:
-        EntityCategory.PLAYER |
         EntityCategory.BOUNDARY |
-        EntityCategory.BULLET |
+        EntityCategory.STRUCTURE |
+        EntityCategory.RESOURCE |
+        EntityCategory.PLAYER |
         EntityCategory.NPC |
-        EntityCategory.STRUCTURE,
+        EntityCategory.BULLET |
+        EntityCategory.MELEE |
+        EntityCategory.SENSOR,
     });
 
     // Create entity
     const entity = new Entity('WoodenBlock', world, owner);
-    const healthComponent = <Health>entity.addComponent(new Health(() => entity.destroy()));
-    healthComponent.maxHealth = 200;
-    healthComponent.currentHealth = 200;
+    const healthComponent = <Health>entity.addComponent(new Health(200, 20, () => entity.destroy()));
     entity.addComponent(new PhysicsBody(body));
-    entity.addComponent(new PositionAndRotation(position, angle));
+    entity.addComponent(new PositionAndRotation(position, Vec2.zero(), angle));
     entity.addComponent(new Observable());
 
     if (team != null) entity.addComponent(team);

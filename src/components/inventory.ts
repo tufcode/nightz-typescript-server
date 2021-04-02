@@ -2,6 +2,9 @@ import { Component } from './component';
 import { Item, ItemState } from '../items/item';
 import { ComponentIds, getBytes, Protocol } from '../protocol';
 import { Client } from 'elsa';
+import * as EventEmitter from 'eventemitter3';
+import { Health } from './health';
+import { Entity } from '../entity';
 
 export enum ItemSlot {
   Slot1 = 0,
@@ -24,19 +27,29 @@ export class Inventory extends Component {
   private _isDirty: boolean;
   private _lastPrimary: boolean;
   private _gold = 0;
+  private _eventEmitter: EventEmitter;
 
-  public get gold(): number {
-    return this._gold;
+  public constructor() {
+    super();
+    this._eventEmitter = new EventEmitter();
+  }
+
+  public on(event: 'beforeUpdateGold' | 'afterUpdateGold', fn: (...args: any[]) => void): EventEmitter {
+    return this._eventEmitter.on(event, fn);
   }
 
   public set gold(value: number) {
+    this._eventEmitter.emit('beforeUpdateGold', value, this);
     this._gold = value;
+    this._eventEmitter.emit('afterUpdateGold', this);
+
     if (this.entity.owner != null) {
       this.entity.owner.send(getBytes[Protocol.GoldInfo](this.gold));
     }
   }
-
-  public init(): void {}
+  public get gold(): number {
+    return this._gold;
+  }
 
   public update(deltaTime: number): void {
     if (this.entity.input.primary) {

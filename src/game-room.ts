@@ -25,6 +25,10 @@ import { Spawner } from './systems/spawner';
 import { randomRange } from './utils';
 import { GoldMine } from './components/gold-mine';
 import { Observable } from './components/observable';
+import { Experience } from './components/experience';
+import { KillRewards } from './components/kill-rewards';
+import { Rotation } from './components/rotation';
+import { performance } from 'perf_hooks';
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
@@ -37,20 +41,20 @@ export default class GameRoom extends Room {
     debug(
       'Room created! :) joinOptions: ' + JSON.stringify(options) + ', handlerOptions: ' + JSON.stringify(this.options),
     );
-    this.startTime = Date.now();
+    this.startTime = performance.now();
     this.gameWorld = new World(
       this,
       {
         gravity: Vec2.zero(),
       },
-      { positionIterations: 3, timeStep: 1 / 10, velocityIterations: 6 },
+      { positionIterations: 2, timeStep: 1 / 30, velocityIterations: 4 },
     );
 
     // Create boundaries
     this.gameWorld.updateBounds(this.playableArea);
 
     // Create mines
-    const mineCount = /*average area*/ (this.playableArea.x + this.playableArea.y) / 2;
+    const mineCount = 0; ///*average area*/ (this.playableArea.x + this.playableArea.y) / 2;
     for (let i = 0; i < mineCount; i++) {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'static',
@@ -62,19 +66,21 @@ export default class GameRoom extends Room {
       body.createFixture({
         shape: Circle(1),
         friction: 0,
-        filterCategoryBits: EntityCategory.STRUCTURE,
+        filterCategoryBits: EntityCategory.RESOURCE,
         filterMaskBits:
           EntityCategory.BOUNDARY |
-          EntityCategory.PLAYER |
           EntityCategory.STRUCTURE |
+          EntityCategory.RESOURCE |
+          EntityCategory.PLAYER |
+          EntityCategory.NPC |
           EntityCategory.BULLET |
-          EntityCategory.NPC,
+          EntityCategory.MELEE,
       });
       // Create AI entity
       const entity = new Entity('GoldMine', this.gameWorld);
       entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
-      entity.addComponent(new Health(null));
+      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getLinearVelocity(), body.getAngle()));
+      entity.addComponent(new Health(0, 0, null));
       entity.addComponent(new Team(1));
       entity.addComponent(new GoldMine());
       entity.addComponent(new Observable());
@@ -98,25 +104,29 @@ export default class GameRoom extends Room {
         friction: 0,
         filterCategoryBits: EntityCategory.NPC,
         filterMaskBits:
-          EntityCategory.PLAYER |
           EntityCategory.BOUNDARY |
-          EntityCategory.BULLET |
+          EntityCategory.STRUCTURE |
+          EntityCategory.RESOURCE |
+          EntityCategory.PLAYER |
           EntityCategory.NPC |
-          EntityCategory.STRUCTURE,
+          EntityCategory.BULLET |
+          EntityCategory.MELEE |
+          EntityCategory.SENSOR,
       });
       // Create AI entity
       const entity = new Entity('Zombie', this.gameWorld);
       entity.addComponent(new Animation());
-      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
+      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getLinearVelocity(), body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Health(() => entity.destroy()));
       entity.addComponent(new Team(1));
-      entity.addComponent(new AIController());
+      entity.addComponent(new Health(40, 5, () => entity.destroy()));
       entity.addComponent(new Observable());
-      (<NameTag>entity.addComponent(new NameTag())).setName('Zombie ' + entity.objectId);
+      entity.addComponent(new KillRewards(20, 10));
 
-      const inventory = <Inventory>entity.addComponent(new Inventory());
-      inventory.gold = Math.random() * 1000;
+      const controller = <AIController>entity.addComponent(new AIController());
+      controller.speed = 20;
+
+      (<NameTag>entity.addComponent(new NameTag())).setName('Young Zombie');
 
       this.gameWorld.addEntity(entity);
 
@@ -124,18 +134,16 @@ export default class GameRoom extends Room {
     });
     this.addSimulationInterval(zombieSpawner.update.bind(zombieSpawner), 1000 / 10);
     // Add timers
-    this.addSimulationInterval(this.update.bind(this), 1000 / 10);
+    this.addSimulationInterval(this.update.bind(this), 1000 / 30);
+    this.addSimulationInterval(this.observerUpdate.bind(this), 1000 / 20);
+    //this.addSimulationInterval(this.gameWorld.step.bind(this.gameWorld), 1000 / 10);
   }
 
-  public update(deltaTime: number) {
-    const now = Date.now();
-
-    this.gameWorld.update(deltaTime);
-    this.gameWorld.step(deltaTime);
-
+  public observerUpdate(deltaTime: number): void {
+    const now = performance.now();
     // Only update observers every 100ms
-    this.observerUpdateTick++;
-    const isObserverUpdate = this.observerUpdateTick == 1;
+    this.observerUpdateTick += deltaTime;
+    const isObserverUpdate = this.observerUpdateTick >= 0.1;
     // Send positions and update observers if necessary
     for (let i = 0; i < this.clients.length; i++) {
       const client = this.clients[i];
@@ -164,6 +172,11 @@ export default class GameRoom extends Room {
       }
     }
     if (isObserverUpdate) this.observerUpdateTick = 0;
+  }
+
+  public update(deltaTime: number): void {
+    this.gameWorld.update(deltaTime);
+    this.gameWorld.step(deltaTime);
   }
 
   public onMessage(client: Client, message: Buffer) {
@@ -217,20 +230,24 @@ export default class GameRoom extends Room {
       density: 20.0,
       filterCategoryBits: EntityCategory.PLAYER,
       filterMaskBits:
-        EntityCategory.PLAYER |
         EntityCategory.BOUNDARY |
-        EntityCategory.BULLET |
+        EntityCategory.STRUCTURE |
+        EntityCategory.PLAYER |
         EntityCategory.NPC |
-        EntityCategory.STRUCTURE,
+        EntityCategory.BULLET |
+        EntityCategory.MELEE |
+        EntityCategory.SENSOR,
     });
 
     // Create player entity
     const entity = new Entity('Player', this.gameWorld, client);
+    entity.addComponent(new Experience());
     entity.addComponent(new Animation());
     entity.addComponent(new Team(100 + client.id));
-    entity.addComponent(new PositionAndRotation(body.getPosition(), body.getAngle()));
+    entity.addComponent(new PositionAndRotation(body.getPosition(), body.getLinearVelocity(), body.getAngle()));
+    entity.addComponent(new Rotation(body.getAngle()));
     <PhysicsBody>entity.addComponent(new PhysicsBody(body));
-    entity.addComponent(new Health(null));
+    entity.addComponent(new Health(100, 2, null));
     const controller = <CharacterController>entity.addComponent(new CharacterController());
     (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + client.id);
     entity.addComponent(new Observable());
@@ -304,7 +321,8 @@ export default class GameRoom extends Room {
     });
 
     // Add new entities
-    if (newEntities.length > 0) client.send(getBytes[Protocol.Entities](client, newEntities));
+    if (newEntities.length > 0)
+      client.send(getBytes[Protocol.Entities](client, newEntities, performance.now() - this.startTime));
 
     // Destroy out-of-view entities
     const noLongerObserving = cache.filter((e) => {

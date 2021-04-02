@@ -9,15 +9,6 @@ import { performance } from 'perf_hooks';
 import { AIController } from '../components/ai-controller';
 const debug = debugModule('Physics');
 
-// eslint-disable-next-line no-var
-const filterStrength = 20;
-
-let frameTime;
-let lastLoop;
-let thisLoop;
-frameTime = 0;
-lastLoop = performance.now();
-
 export class World extends System {
   public entities: Entity[] = [];
 
@@ -28,6 +19,7 @@ export class World extends System {
   private _bounds: Body;
   private simulation: { timeStep: number; velocityIterations: number; positionIterations: number };
   public room: Room;
+  private accumulator = 0;
 
   public constructor(
     room: Room,
@@ -139,6 +131,6 @@ export class World extends System {
   public step(deltaTime: number) {
     //const s = performance.now();
     this._world.step(this.simulation.timeStep, this.simulation.velocityIterations, this.simulation.positionIterations);
-    //console.log(performance.now() - s);
+    //console.log((performance.now() - s).toFixed(2));
   }
 }

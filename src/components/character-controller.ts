@@ -1,26 +1,19 @@
 import { Component } from './component';
 import { Entity } from '../entity';
 import { PhysicsBody } from './physics-body';
-import { Fixture, Vec2 } from 'planck-js';
+import { Body, Fixture, Vec2 } from 'planck-js';
 import { PositionAndRotation } from './position-and-rotation';
 import { Gold } from './gold';
 import { Inventory } from './inventory';
+import { Character } from './character';
+import { InputState } from '../client-data';
 
-export class CharacterController extends Component {
-  public entity: Entity;
-
-  private bodyComponent: PhysicsBody;
-  private syncComponent: PositionAndRotation;
-
-  private speed = 60;
-
+export class CharacterController extends Character {
   public init(): void {
-    this.syncComponent = <PositionAndRotation>this.entity.getComponent(PositionAndRotation);
-    this.bodyComponent = <PhysicsBody>this.entity.getComponent(PhysicsBody);
-    if (this.bodyComponent == null || this.syncComponent == null) {
-      console.error('CharacterController requires PhysicsBody and PositionAndRotation components.');
-    }
+    super.init();
+    this.speed = 40;
   }
+
   // todo stop dis
   public onTriggerEnter(me: Fixture, other: Fixture): void {
     (<Inventory>this.entity.getComponent(Inventory)).activeHand.onTriggerEnter(me, other);
@@ -30,32 +23,23 @@ export class CharacterController extends Component {
     (<Inventory>this.entity.getComponent(Inventory)).activeHand.onTriggerExit(me, other);
   }
 
-  public update(): void {
+  public update(deltaTime: number): void {
     const body = this.bodyComponent.getBody();
-    const targetVelocity = Vec2.zero();
 
-    if (this.entity.input.right) targetVelocity.x = 1;
-    else if (this.entity.input.left) targetVelocity.x = -1;
-    if (this.entity.input.up) targetVelocity.y = 1;
-    else if (this.entity.input.down) targetVelocity.y = -1;
+    const input = Vec2.zero();
 
-    const hasMoveInput = targetVelocity.lengthSquared() != 0;
+    if (this.entity.input.right) input.x = 1;
+    else if (this.entity.input.left) input.x = -1;
+    if (this.entity.input.up) input.y = 1;
+    else if (this.entity.input.down) input.y = -1;
 
-    if (hasMoveInput) {
-      targetVelocity.normalize();
-      targetVelocity.mul(this.speed);
-
-      const currentVelocity = body.getLinearVelocity();
-      const velocityChange = Vec2.sub(targetVelocity, currentVelocity);
-
-      body.applyLinearImpulse(velocityChange, body.getWorldCenter(), true);
+    if (input.lengthSquared() != 0) {
+      this.move(body, input, deltaTime);
     }
 
-    // Set angle
     if (this.entity.input.angle.toFixed(2) != body.getAngle().toFixed(2)) {
       body.setAngle(this.entity.input.angle);
-      body.setAwake(true);
-      this.syncComponent.angle = body.getAngle();
+      this._rotationComponent.angle = body.getAngle();
     }
   }
 }

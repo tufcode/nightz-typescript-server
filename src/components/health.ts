@@ -14,15 +14,25 @@ export class Health extends Component {
   private _isDead: boolean;
   private lastDamageSource: Entity;
   private _eventEmitter: EventEmitter;
+  private _regeneration = 0;
 
-  public constructor(deathCallback: () => void) {
+  private _lastDamage = Date.now();
+  private _regenTick = 0;
+
+  public constructor(maxHealth: number, regeneration: number, deathCallback: () => void) {
     super();
     this._eventEmitter = new EventEmitter();
+    this._maxHealth = maxHealth;
+    this._currentHealth = maxHealth;
+    this._regeneration = regeneration;
     this._deathCallback = deathCallback;
   }
 
   public on(event: 'damage' | 'heal', fn: (...args: any[]) => void): EventEmitter {
     return this._eventEmitter.on(event, fn);
+  }
+  public get isDead(): boolean {
+    return this._isDead;
   }
 
   public get maxHealth(): number {
@@ -38,22 +48,40 @@ export class Health extends Component {
   }
   public set currentHealth(value: number) {
     if (this._isDead) return;
+    let makeDirty = true;
+    if (Math.floor(value) == Math.floor(this._currentHealth)) makeDirty = false;
+
     this._currentHealth = value;
     if (this._currentHealth <= 0) {
       if (this._deathCallback != null && !this.isUnkillable) {
+        makeDirty = false;
         this._isDead = true;
         this._deathCallback();
       } else this._currentHealth = this._maxHealth;
     }
-    this.entity._isDirty = true;
-    this._isDirty = true;
+    if (makeDirty) {
+      this.entity._isDirty = true;
+      this._isDirty = true;
+    }
   }
 
   public damage(amount: number, source: Entity): void {
+    if (this._isDead) return;
     this.currentHealth -= amount;
     this.lastDamageSource = source;
+    this._lastDamage = Date.now();
 
     this._eventEmitter.emit('damage', amount, source);
+  }
+
+  public update(deltaTime: number) {
+    if (this._currentHealth < this._maxHealth && Date.now() - this._lastDamage > 3000) {
+      this._regenTick += deltaTime;
+      if (this._regenTick >= 1) {
+        this._regenTick = 0;
+        this.currentHealth = Math.min(this._maxHealth, this._currentHealth + this._regeneration);
+      }
+    } else this._regenTick = 0;
   }
 
   public serialize(client: Client, initialization?: boolean): Buffer {
@@ -64,14 +92,10 @@ export class Health extends Component {
     // Packet Id
     buf.writeUInt8(ComponentIds.Health, 0);
     // Max
-    buf.writeUInt32LE(this.maxHealth, 1);
+    buf.writeUInt32LE(Math.floor(this.maxHealth), 1);
     // Current
-    buf.writeUInt32LE(this.currentHealth, 5);
+    buf.writeUInt32LE(Math.floor(this.currentHealth), 5);
 
     return buf;
-  }
-
-  public isDead(): boolean {
-    return this._isDead;
   }
 }

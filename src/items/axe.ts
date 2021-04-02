@@ -10,6 +10,7 @@ import { Team } from '../components/team';
 import { Health } from '../components/health';
 import { Gold } from '../components/gold';
 import { randomRange } from '../utils';
+import { Experience } from '../components/experience';
 
 export class Axe extends Item {
   private fixture: Fixture;
@@ -29,13 +30,8 @@ export class Axe extends Item {
     const body = (<PhysicsBody>entity.getComponent(PhysicsBody)).getBody();
     this.fixture = body.createFixture({
       shape: Box(0.375, 0.5, Vec2(0.75, 0)),
-      filterCategoryBits: EntityCategory.BULLET,
-      filterMaskBits:
-        EntityCategory.PLAYER |
-        EntityCategory.BOUNDARY |
-        EntityCategory.BULLET |
-        EntityCategory.NPC |
-        EntityCategory.STRUCTURE,
+      filterCategoryBits: EntityCategory.MELEE,
+      filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.RESOURCE | EntityCategory.PLAYER | EntityCategory.NPC,
       isSensor: true,
     });
     this.fixture.setUserData(this.entity.objectId);
@@ -92,9 +88,6 @@ export class Axe extends Item {
       for (let i = 0; i < this._entitiesToDamage.length; i++) {
         const h = this._entitiesToDamage[i];
         h.damage(randomRange(5, 20), this.ownerEntity);
-        if (h.isDead()) {
-          this.inventory.gold += (<Inventory>h.entity.getComponent(Inventory)).gold;
-        }
       }
     }
   }

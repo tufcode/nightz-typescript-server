@@ -30,7 +30,7 @@ export class Entity {
     this._eventEmitter = new EventEmitter();
   }
 
-  public on(event: 'destroy', fn: () => void): EventEmitter {
+  public on(event: 'destroy', fn: (...args: any[]) => void): EventEmitter {
     return this._eventEmitter.on(event, fn);
   }
 
@@ -48,6 +48,9 @@ export class Entity {
 
   public addComponent(component: Component): Component {
     component.entity = this;
+    const parent = Object.getPrototypeOf(component.constructor).name;
+    if (parent != 'Component') this.componentCache[parent] = component;
+
     this.componentCache[component.constructor.name] = component;
     this.components.push(component);
     component.init();

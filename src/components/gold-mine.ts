@@ -2,6 +2,7 @@ import { Component } from './component';
 import { Health } from './health';
 import { Entity } from '../entity';
 import { Inventory } from './inventory';
+import { Experience } from './experience';
 
 export class GoldMine extends Component {
   public init(): void {
@@ -14,8 +15,12 @@ export class GoldMine extends Component {
 
   public OnDamage(amount: number, source: Entity): void {
     const sourceInventory = <Inventory>source.getComponent(Inventory);
+    const sourceExp = <Experience>source.getComponent(Experience);
     if (sourceInventory != null) {
-      sourceInventory.gold += amount * 5;
+      sourceInventory.gold += Math.ceil(amount / 2);
+    }
+    if (sourceExp != null) {
+      sourceExp.points += 4 + amount * 0.1;
     }
   }
 }

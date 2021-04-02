@@ -55,12 +55,12 @@ export class BuildingBlock extends Consumable {
       shape: this.constructionShape,
       density: 1.0,
       filterCategoryBits: EntityCategory.STRUCTURE,
-      filterMaskBits: EntityCategory.BOUNDARY | EntityCategory.STRUCTURE,
+      filterMaskBits: EntityCategory.BOUNDARY | EntityCategory.STRUCTURE | EntityCategory.RESOURCE,
     });
 
     // Create temporary entity
     const entity = new Entity('Placement', this.inventory.entity.world);
-    entity.addComponent(new PositionAndRotation(pos, body.getAngle()));
+    entity.addComponent(new PositionAndRotation(pos, body.getLinearVelocity(), body.getAngle()));
     entity.addComponent(new PhysicsBody(placedBody));
     entity.addComponent(new Construction(this.failureCallback, this.createCallback));
     entity.addComponent(new Observable());

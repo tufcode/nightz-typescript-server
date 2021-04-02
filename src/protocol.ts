@@ -18,6 +18,7 @@ export enum Protocol {
   SetPlayerEntity = 50,
   TierInfo = 60,
   GoldInfo = 61,
+  LevelInfo = 62,
   TemporaryMessage = 70,
 }
 
@@ -37,22 +38,28 @@ export enum ComponentIds {
   Scale = 6,
   Animation = 7,
   Tier = 8,
+  Experience = 9,
+  Level = 10,
+  Rotation = 11,
 }
 export enum EntityCategory {
   BOUNDARY = 0x0001,
-  PLAYER = 0x0002,
-  STRUCTURE = 0x0004,
-  BULLET = 0x0008,
-  NPC = 0x0010,
-  SENSOR = 0x11,
+  STRUCTURE = 0x0002,
+  RESOURCE = 0x0004,
+  PLAYER = 0x0008,
+  NPC = 0x0016,
+  BULLET = 0x0032,
+  MELEE = 0x0064,
+  SENSOR = 0x0128,
 }
 
 export const getBytes = {
-  [Protocol.Entities]: (client: Client, entities: Entity[]) => {
-    let buf = Buffer.allocUnsafe(3);
+  [Protocol.Entities]: (client: Client, entities: Entity[], time: number) => {
+    let buf = Buffer.allocUnsafe(7);
 
     buf.writeUInt8(Protocol.Entities, 0);
     buf.writeUInt16LE(entities.length, 1);
+    buf.writeUInt32LE(time, 3);
 
     for (let i = 0; i < entities.length; i++) {
       const entity = entities[i];
