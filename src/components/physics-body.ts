@@ -1,6 +1,6 @@
 import { Component } from './component';
 import { Entity } from '../entity';
-import { Body } from 'planck-js';
+import { Body, Vec2 } from 'planck-js';
 import { PositionAndRotation } from './position-and-rotation';
 import { Rotation } from './rotation';
 
@@ -9,6 +9,9 @@ export class PhysicsBody extends Component {
   private readonly body: Body;
   private _syncComponent: PositionAndRotation;
   private _rotationComponent: Rotation;
+  private _lastPos: Vec2;
+  private _lastVel: Vec2;
+  private _lastAngle = 0;
 
   public constructor(body: Body) {
     super();
@@ -17,8 +20,11 @@ export class PhysicsBody extends Component {
 
   public init(): void {
     this.body.setUserData(this.entity);
+    this._lastPos = Vec2.clone(this.body.getPosition());
+    this._lastVel = Vec2.clone(this.body.getLinearVelocity());
 
     this._syncComponent = <PositionAndRotation>this.entity.getComponent(PositionAndRotation);
+    this._rotationComponent = <Rotation>this.entity.getComponent(Rotation);
   }
 
   public onDestroy() {
@@ -26,9 +32,23 @@ export class PhysicsBody extends Component {
   }
 
   public update(deltaTime: number) {
-    if (this._syncComponent != null && this.body.isAwake()) {
-      this._syncComponent.position = this.body.getPosition();
-      this._syncComponent.velocity = this.body.getLinearVelocity();
+    const pos = this.body.getPosition();
+    const vel = this.body.getLinearVelocity();
+    const ang = this.body.getAngle();
+    // Move
+    if (
+      (this._syncComponent != null && Vec2.distance(this._lastPos, pos) >= 0.0001) ||
+      Vec2.distance(this._lastVel, vel) >= 0.0001
+    ) {
+      this._syncComponent.position = pos;
+      this._syncComponent.velocity = vel;
+      this._lastPos = Vec2.clone(pos);
+      this._lastVel = Vec2.clone(vel);
+    }
+
+    // Rotate
+    if (this._rotationComponent.angle.toFixed(2) != ang.toFixed(2)) {
+      this._rotationComponent.angle = ang;
     }
   }
 

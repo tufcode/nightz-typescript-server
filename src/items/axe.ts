@@ -52,6 +52,7 @@ export class Axe extends Item {
     const healthComponent = <Health>(<Entity>other.getBody().getUserData()).getComponent(Health);
 
     if (healthComponent != null) {
+      console.log('in axe radius');
       // There is a health component, we can damage this entity.
       this._entitiesToDamage.push(healthComponent);
     }
@@ -62,6 +63,7 @@ export class Axe extends Item {
     const healthComponent = <Health>(<Entity>other.getBody().getUserData()).getComponent(Health);
 
     if (healthComponent != null) {
+      console.log('no longer in axe radius ' + this.fixture.getBody().isAwake());
       this._entitiesToDamage.splice(this._entitiesToDamage.indexOf(healthComponent), 1);
     }
   }

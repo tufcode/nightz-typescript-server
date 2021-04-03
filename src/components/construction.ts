@@ -5,13 +5,16 @@ import { PositionAndRotation } from './position-and-rotation';
 import { PhysicsBody } from './physics-body';
 import { ItemSlot } from './inventory';
 import { World } from '../systems/world';
+import { Rotation } from './rotation';
 
 export class Construction extends Component {
   private bodyComponent: PhysicsBody;
-  private timeSpentWaiting: number = 0;
+  private timeSpentWaiting = 0;
   private failureCallback: () => void;
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;
   private _isDone: boolean;
+  private rotationComponent: Rotation;
+  private positionComponent: PositionAndRotation;
 
   public constructor(
     failureCallback: () => void,
@@ -29,19 +32,6 @@ export class Construction extends Component {
   public update(deltaTime: number): void {
     if (this._isDone) return;
     const body = this.bodyComponent.getBody();
-    /*let k = body.getContactList();
-    let i = 0;
-    for (; k != null; k = k.next) {
-      i++;
-      if (i >= 3) {
-        // Maximum contacts reached, destroy this.
-        this._isDone = true;
-        this.failureCallback();
-        this.entity.destroy();
-        console.log('maxContactsReached');
-        return;
-      }
-    }*/
     if (body.isAwake()) {
       this.timeSpentWaiting += deltaTime;
       if (this.timeSpentWaiting >= 5) {

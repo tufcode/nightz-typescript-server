@@ -2,12 +2,16 @@ import { Component } from './component';
 import { ComponentIds } from '../protocol';
 import { Client } from 'elsa';
 import { Vec2 } from 'planck-js';
+import { performance } from 'perf_hooks';
+import GameRoom from '../game-room';
+import { Visibility } from '../systems/visibility';
 
 export class PositionAndRotation extends Component {
   private _position: Vec2;
   private _angle: number;
   private _isDirty: boolean;
   private _velocity: Vec2;
+  private teleportTick: number;
 
   public constructor(position: Vec2, velocity: Vec2, angle: number) {
     super();
@@ -50,7 +54,7 @@ export class PositionAndRotation extends Component {
     if (!this._isDirty && !initialization) return null;
     this._isDirty = false;
 
-    const buf = Buffer.allocUnsafe(17);
+    const buf = Buffer.allocUnsafe(18);
     // Packet Id
     buf.writeUInt8(ComponentIds.PositionAndRotation, 0);
     // Position
@@ -59,6 +63,8 @@ export class PositionAndRotation extends Component {
     // Velocity
     buf.writeFloatLE(this._velocity.x, 9);
     buf.writeFloatLE(this._velocity.y, 13);
+    // Is teleportation?
+    buf.writeUInt8(this.teleportTick == (<GameRoom>this.entity.world.room).currentTick || initialization ? 1 : 0, 17);
 
     return buf;
   }

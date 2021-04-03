@@ -157,7 +157,6 @@ export class AIController extends Character {
       const targetAngle = Math.atan2(this.targetPoint.y - myPosition.y, this.targetPoint.x - myPosition.x);
       if (targetAngle.toFixed(2) != angle.toFixed(2)) {
         body.setAngle(targetAngle);
-        body.setAwake(true);
       }
     }
   }

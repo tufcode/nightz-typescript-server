@@ -12,6 +12,7 @@ import { Axe } from '../axe';
 import { Item } from '../item';
 import { BuildingBlock } from '../building-block';
 import { Observable } from '../../components/observable';
+import { Rotation } from '../../components/rotation';
 
 export const createBlock = (owner?: Client, team?: Team): ((world: World, position: Vec2, angle: number) => Entity) => {
   return (world: World, position: Vec2, angle: number) => {
@@ -39,8 +40,9 @@ export const createBlock = (owner?: Client, team?: Team): ((world: World, positi
     // Create entity
     const entity = new Entity('WoodenBlock', world, owner);
     const healthComponent = <Health>entity.addComponent(new Health(200, 20, () => entity.destroy()));
-    entity.addComponent(new PhysicsBody(body));
     entity.addComponent(new PositionAndRotation(position, Vec2.zero(), angle));
+    entity.addComponent(new Rotation(angle));
+    entity.addComponent(new PhysicsBody(body));
     entity.addComponent(new Observable());
 
     if (team != null) entity.addComponent(team);

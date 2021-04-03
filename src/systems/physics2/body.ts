@@ -14,15 +14,15 @@ export class Body {
   public radius: number;
   public isColliding: boolean;
   public mass: number;
-  public angle: number = 0;
+  public angle = 0;
   public fixedRotation: boolean;
-  public restitution: number = 0;
+  public restitution = 0;
   public linearDamping = 0.1;
 
   public type: BodyType = BodyType.Dynamic;
   public ignoredBodies: Body[] = [];
-  public collisionMask: number = 0x0001;
-  public collisionCategory: number = 0x0001;
+  public collisionMask = 0x0001;
+  public collisionCategory = 0x0001;
 
   public _bodyId: number;
   public _world: World;

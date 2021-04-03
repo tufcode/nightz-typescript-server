@@ -19,7 +19,6 @@ export class World extends System {
   private _bounds: Body;
   private simulation: { timeStep: number; velocityIterations: number; positionIterations: number };
   public room: Room;
-  private accumulator = 0;
 
   public constructor(
     room: Room,
@@ -67,11 +66,12 @@ export class World extends System {
     });
   }
 
-  public update(deltaTime: number) {
+  public tick(deltaTime: number) {
     // Update entities
     for (let i = 0; i < this.entities.length; i++) {
       this.entities[i].update(deltaTime);
     }
+    this._world.step(this.simulation.timeStep, this.simulation.velocityIterations, this.simulation.positionIterations);
   }
 
   public updateBounds(size: Vec2) {
@@ -126,11 +126,5 @@ export class World extends System {
 
   public getEntityId() {
     return this.lastEntityId++;
-  }
-
-  public step(deltaTime: number) {
-    //const s = performance.now();
-    this._world.step(this.simulation.timeStep, this.simulation.velocityIterations, this.simulation.positionIterations);
-    //console.log((performance.now() - s).toFixed(2));
   }
 }

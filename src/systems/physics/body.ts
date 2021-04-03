@@ -6,12 +6,12 @@ export enum BodyType {
 }
 
 export class Body {
-  public x: number = 0;
-  public y: number = 0;
-  public r: number = 0;
-  public vx: number = 0;
-  public vy: number = 0;
-  public linearDamping: number = 0;
+  public x = 0;
+  public y = 0;
+  public r = 0;
+  public vx = 0;
+  public vy = 0;
+  public linearDamping = 0;
   public type: BodyType;
 
   public constructor(x: number, y: number, radius: number, vx = 0, vy = 0) {

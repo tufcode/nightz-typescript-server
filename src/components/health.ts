@@ -32,7 +32,7 @@ export class Health extends Component {
     return this._eventEmitter.on(event, fn);
   }
   public get isDead(): boolean {
-    return this._isDead;
+    return this._currentHealth <= 0;
   }
 
   public get maxHealth(): number {
@@ -47,15 +47,14 @@ export class Health extends Component {
     return this._currentHealth;
   }
   public set currentHealth(value: number) {
-    if (this._isDead) return;
+    if (this.isDead) return;
     let makeDirty = true;
     if (Math.floor(value) == Math.floor(this._currentHealth)) makeDirty = false;
 
-    this._currentHealth = value;
+    this._currentHealth = Math.max(value, 0);
     if (this._currentHealth <= 0) {
       if (this._deathCallback != null && !this.isUnkillable) {
         makeDirty = false;
-        this._isDead = true;
         this._deathCallback();
       } else this._currentHealth = this._maxHealth;
     }
@@ -66,7 +65,7 @@ export class Health extends Component {
   }
 
   public damage(amount: number, source: Entity): void {
-    if (this._isDead) return;
+    if (this.isDead) return;
     this.currentHealth -= amount;
     this.lastDamageSource = source;
     this._lastDamage = Date.now();

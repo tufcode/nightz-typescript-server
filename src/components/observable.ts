@@ -4,12 +4,19 @@ import { PositionAndRotation } from './position-and-rotation';
 import { ClientData } from '../client-data';
 import { Item, ItemState } from '../items/item';
 import { Vec2 } from 'planck-js';
+import GameRoom from '../game-room';
+import { Visibility } from '../systems/visibility';
 
 export class Observable extends Component {
   private _syncComponent: PositionAndRotation;
 
   public init(): void {
+    (<GameRoom>this.entity.world.room).systems[Visibility.name].register(this);
     this._syncComponent = <PositionAndRotation>this.entity.getComponent(PositionAndRotation);
+  }
+
+  public onDestroy(): void {
+    (<GameRoom>this.entity.world.room).systems[Visibility.name].unregister(this);
   }
 
   public onCheckObserver(client: Client): boolean {

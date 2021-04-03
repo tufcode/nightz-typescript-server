@@ -11,7 +11,7 @@ import { InputState } from '../client-data';
 export class CharacterController extends Character {
   public init(): void {
     super.init();
-    this.speed = 40;
+    this.speed = 20;
   }
 
   // todo stop dis
@@ -39,7 +39,7 @@ export class CharacterController extends Character {
 
     if (this.entity.input.angle.toFixed(2) != body.getAngle().toFixed(2)) {
       body.setAngle(this.entity.input.angle);
-      this._rotationComponent.angle = body.getAngle();
+      body.setAwake(true);
     }
   }
 }

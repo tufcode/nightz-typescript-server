@@ -29,13 +29,20 @@ import { Experience } from './components/experience';
 import { KillRewards } from './components/kill-rewards';
 import { Rotation } from './components/rotation';
 import { performance } from 'perf_hooks';
+import { System } from './systems/system';
+import { Visibility } from './systems/visibility';
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
   public startTime: number;
+  public systems: { [key: string]: System } = {};
+
   private gameWorld: World;
   private observerUpdateTick = 0;
   private playableArea: Vec2 = Vec2(200, 200);
+  private systemsArray: System[] = [];
+  private _i = 0;
+  public currentTick = 0;
 
   public onCreate(options: any) {
     debug(
@@ -47,14 +54,18 @@ export default class GameRoom extends Room {
       {
         gravity: Vec2.zero(),
       },
-      { positionIterations: 2, timeStep: 1 / 30, velocityIterations: 4 },
+      { positionIterations: 8, timeStep: 1 / 30, velocityIterations: 10 },
     );
 
     // Create boundaries
     this.gameWorld.updateBounds(this.playableArea);
 
+    this.addSystem(new Visibility(this));
+    this.addSystem(this.gameWorld);
+
     // Create mines
-    const mineCount = 0; ///*average area*/ (this.playableArea.x + this.playableArea.y) / 2;
+    const mineCount = this.playableArea.length() / 4;
+    console.log(mineCount);
     for (let i = 0; i < mineCount; i++) {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'static',
@@ -78,9 +89,10 @@ export default class GameRoom extends Room {
       });
       // Create AI entity
       const entity = new Entity('GoldMine', this.gameWorld);
-      entity.addComponent(new PhysicsBody(body));
       entity.addComponent(new PositionAndRotation(body.getPosition(), body.getLinearVelocity(), body.getAngle()));
-      entity.addComponent(new Health(0, 0, null));
+      entity.addComponent(new Rotation(body.getAngle()));
+      entity.addComponent(new PhysicsBody(body));
+      entity.addComponent(new Health(1, 1, null));
       entity.addComponent(new Team(1));
       entity.addComponent(new GoldMine());
       entity.addComponent(new Observable());
@@ -88,12 +100,14 @@ export default class GameRoom extends Room {
       this.gameWorld.addEntity(entity);
     }
 
-    const zombieSpawner = new Spawner((this.playableArea.x + this.playableArea.y) / 2, 4, 1, 0.7, 0, () => {
+    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 0.7, 3, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
-          randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
+          /*randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
+          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),*/
+          randomRange(-50, 50),
+          randomRange(-50, 50),
         ),
         fixedRotation: true,
         linearDamping: 10,
@@ -117,6 +131,7 @@ export default class GameRoom extends Room {
       const entity = new Entity('Zombie', this.gameWorld);
       entity.addComponent(new Animation());
       entity.addComponent(new PositionAndRotation(body.getPosition(), body.getLinearVelocity(), body.getAngle()));
+      entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
       entity.addComponent(new Team(1));
       entity.addComponent(new Health(40, 5, () => entity.destroy()));
@@ -134,49 +149,17 @@ export default class GameRoom extends Room {
     });
     this.addSimulationInterval(zombieSpawner.update.bind(zombieSpawner), 1000 / 10);
     // Add timers
+    //this.addSimulationInterval(this.systems[World.name].tick.bind(this.systems[World.name]), 1000 / 30);
+    //this.addSimulationInterval(this.systems[Visibility.name].tick.bind(this.systems[Visibility.name]), 1000 / 10);
     this.addSimulationInterval(this.update.bind(this), 1000 / 30);
-    this.addSimulationInterval(this.observerUpdate.bind(this), 1000 / 20);
     //this.addSimulationInterval(this.gameWorld.step.bind(this.gameWorld), 1000 / 10);
   }
 
-  public observerUpdate(deltaTime: number): void {
-    const now = performance.now();
-    // Only update observers every 100ms
-    this.observerUpdateTick += deltaTime;
-    const isObserverUpdate = this.observerUpdateTick >= 0.1;
-    // Send positions and update observers if necessary
-    for (let i = 0; i < this.clients.length; i++) {
-      const client = this.clients[i];
-      const clientData = client.getUserData();
-      if (clientData == undefined) continue;
-
-      if (isObserverUpdate || clientData.observing == null) {
-        // Only send update for existing entities when we already had a observer
-        // update because observer updates send add/remove packets
-        const existing = this.updateObserverCache(client).filter((e) => {
-          if (e._isDirty) {
-            e._isDirty = false;
-            return e;
-          }
-        });
-        if (existing.length > 0) client.send(getBytes[Protocol.EntityUpdate](client, existing, now - this.startTime));
-      } else {
-        // Send update for dirty entities if there are any
-        const dirty = clientData.observing.filter((e) => {
-          if (e._isDirty) {
-            e._isDirty = false;
-            return e;
-          }
-        });
-        if (dirty.length > 0) client.send(getBytes[Protocol.EntityUpdate](client, dirty, now - this.startTime));
-      }
-    }
-    if (isObserverUpdate) this.observerUpdateTick = 0;
-  }
-
   public update(deltaTime: number): void {
-    this.gameWorld.update(deltaTime);
-    this.gameWorld.step(deltaTime);
+    this.currentTick++;
+    for (let i = 0; i < this.systemsArray.length; i++) {
+      this.systemsArray[i].tick(deltaTime);
+    }
   }
 
   public onMessage(client: Client, message: Buffer) {
@@ -246,7 +229,7 @@ export default class GameRoom extends Room {
     entity.addComponent(new Team(100 + client.id));
     entity.addComponent(new PositionAndRotation(body.getPosition(), body.getLinearVelocity(), body.getAngle()));
     entity.addComponent(new Rotation(body.getAngle()));
-    <PhysicsBody>entity.addComponent(new PhysicsBody(body));
+    entity.addComponent(new PhysicsBody(body));
     entity.addComponent(new Health(100, 2, null));
     const controller = <CharacterController>entity.addComponent(new CharacterController());
     (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + client.id);
@@ -281,7 +264,7 @@ export default class GameRoom extends Room {
       ),
     );
 
-    this.updateObserverCache(client);
+    (<Visibility>this.systems[Visibility.name]).updateObserverCache(client);
     client.send(getBytes[Protocol.SetPlayerEntity](entity.objectId));
     client.send(getBytes[Protocol.WorldSize](this.playableArea));
 
@@ -299,42 +282,8 @@ export default class GameRoom extends Room {
     console.log('dispose the room');
   }
 
-  private updateObserverCache(client: Client): Entity[] {
-    const clientData = client.getUserData();
-    const newEntities = [];
-    const existingEntities = [];
-    const cache = clientData.observing || [];
-    clientData.observing = this.gameWorld.entities.filter((e) => {
-      const observable = <Observable>e.getComponent(Observable);
-      if (observable == null) return false; // Can't show without observable component
-
-      // Check observer
-      if (observable.onCheckObserver(client)) {
-        if (!cache.includes(e)) {
-          e.observingClients.push(client);
-          newEntities.push(e);
-        } else existingEntities.push(e);
-        return true;
-      }
-      // Client can't see this entity.
-      return false;
-    });
-
-    // Add new entities
-    if (newEntities.length > 0)
-      client.send(getBytes[Protocol.Entities](client, newEntities, performance.now() - this.startTime));
-
-    // Destroy out-of-view entities
-    const noLongerObserving = cache.filter((e) => {
-      const isNoLongerObserving = !clientData.observing.includes(e);
-      // Remove client from observingClients
-      if (isNoLongerObserving) e.observingClients.slice(e.observingClients.indexOf(client), 1);
-      return isNoLongerObserving;
-    });
-    // Send remove packet
-    if (noLongerObserving.length > 0) client.send(getBytes[Protocol.RemoveEntities](noLongerObserving));
-
-    // Return existing entities
-    return existingEntities;
+  private addSystem(system: System) {
+    this.systems[system.constructor.name] = system;
+    this.systemsArray.push(system);
   }
 }

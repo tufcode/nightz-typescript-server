@@ -28,6 +28,6 @@ export class Character extends Component {
     const currentVelocity = body.getLinearVelocity();
     const velocityChange = Vec2.sub(input, currentVelocity);
 
-    body.applyLinearImpulse(velocityChange, body.getWorldCenter(), true);
+    body.applyLinearImpulse(input, body.getWorldCenter(), true);
   }
 }

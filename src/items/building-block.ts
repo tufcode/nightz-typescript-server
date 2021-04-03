@@ -12,6 +12,7 @@ import { ItemSlot } from '../components/inventory';
 import { World } from '../systems/world';
 import { Construction } from '../components/construction';
 import { Observable } from '../components/observable';
+import { Rotation } from '../components/rotation';
 
 export class BuildingBlock extends Consumable {
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;
@@ -60,7 +61,8 @@ export class BuildingBlock extends Consumable {
 
     // Create temporary entity
     const entity = new Entity('Placement', this.inventory.entity.world);
-    entity.addComponent(new PositionAndRotation(pos, body.getLinearVelocity(), body.getAngle()));
+    entity.addComponent(new PositionAndRotation(pos, placedBody.getLinearVelocity(), placedBody.getAngle()));
+    entity.addComponent(new Rotation(placedBody.getAngle()));
     entity.addComponent(new PhysicsBody(placedBody));
     entity.addComponent(new Construction(this.failureCallback, this.createCallback));
     entity.addComponent(new Observable());

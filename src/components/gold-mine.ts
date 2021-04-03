@@ -8,8 +8,6 @@ export class GoldMine extends Component {
   public init(): void {
     const healthComponent = <Health>this.entity.getComponent(Health);
     healthComponent.isUnkillable = true;
-    healthComponent.maxHealth = 4294967295;
-    healthComponent.currentHealth = 4294967295;
     healthComponent.on('damage', this.OnDamage.bind(this));
   }
 
