@@ -15,7 +15,7 @@ export enum Protocol {
   Leaderboard = 11,
 
   // Player-related (50-99)
-  SetPlayerEntity = 50,
+  CameraFollow = 50,
   TierInfo = 60,
   GoldInfo = 61,
   Experience = 62,
@@ -32,16 +32,12 @@ export enum ClientProtocol {
 export enum ComponentIds {
   NameTag = 0,
   PositionAndRotation = 1,
-  InventoryActiveOnly = 2,
-  InventoryFull = 3,
-  Gold = 4,
-  Health = 5,
-  Scale = 6,
-  Animation = 7,
-  Tier = 8,
-  Experience = 9,
-  Level = 10,
-  Rotation = 11,
+  Health = 2,
+  Tier = 3,
+  Experience = 4,
+  Level = 5,
+  Rotation = 6,
+  Equipment = 7,
 }
 export enum EntityCategory {
   BOUNDARY = 0x0001,
@@ -188,10 +184,10 @@ export const getBytes = {
 
     return buf;
   },
-  [Protocol.SetPlayerEntity]: (id: number) => {
+  [Protocol.CameraFollow]: (id: number) => {
     const buf = Buffer.allocUnsafe(1 + 4);
 
-    buf.writeUInt8(Protocol.SetPlayerEntity, 0);
+    buf.writeUInt8(Protocol.CameraFollow, 0);
     buf.writeUInt32LE(id, 1);
 
     return buf;

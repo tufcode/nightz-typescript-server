@@ -1,6 +1,5 @@
 import { Component } from './component';
 import { Team } from './team';
-import { Animation } from './animation';
 import { Entity } from '../entity';
 import { Circle, Fixture, Shape, Vec2 } from 'planck-js';
 import { Health } from './health';

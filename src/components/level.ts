@@ -55,6 +55,7 @@ export class Level extends Component {
   }
 
   public serialize(): Buffer {
+    this.isDirty = false;
     const buf = Buffer.allocUnsafe(2);
 
     let index = 0;

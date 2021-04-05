@@ -5,7 +5,6 @@ import { Box, Fixture, Vec2 } from 'planck-js';
 import { EntityCategory } from '../protocol';
 import { PhysicsBody } from '../components/physics-body';
 import { Inventory, ItemSlot } from '../components/inventory';
-import { Animation } from '../components/animation';
 import { Team } from '../components/team';
 import { Health } from '../components/health';
 import { Gold } from '../components/gold';
@@ -39,7 +38,7 @@ export class Axe extends Item {
   }
 
   public onUnequip() {
-    (<Animation>this.ownerEntity.getComponent(Animation)).setAnimation(0, 0);
+    //(<Animation>this.ownerEntity.getComponent(Animation)).setAnimation(0, 0);
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {
@@ -70,12 +69,12 @@ export class Axe extends Item {
 
   public primaryStart(entity: Entity): void {
     this._isAttacking = true;
-    (<Animation>entity.getComponent(Animation)).setAnimation(2, this.attackSpeed);
+    // (<Animation>entity.getComponent(Animation)).setAnimation(2, this.attackSpeed);
   }
 
   public primaryEnd(entity: Entity) {
     this._isAttacking = false;
-    (<Animation>entity.getComponent(Animation)).setAnimation(0, 0);
+    // (<Animation>entity.getComponent(Animation)).setAnimation(0, 0);
   }
 
   public update(deltaTime: number) {

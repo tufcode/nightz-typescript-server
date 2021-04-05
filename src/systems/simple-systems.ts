@@ -27,6 +27,13 @@ export class SimpleSystems extends System {
   }
 
   public tick(deltaTime: number): void {
+    // Player Input
+    const componentsPI = <PlayerInput[]>this.room.getComponentsOfType(PlayerInput.name);
+    for (let i = 0; i < componentsPI.length; i++) {
+      const c = componentsPI[i];
+      c.update(deltaTime);
+    }
+
     // NameTag
     const componentsNT = <NameTag[]>this.room.getComponentsOfType(NameTag.name);
     for (let i = 0; i < componentsNT.length; i++) {
@@ -82,13 +89,6 @@ export class SimpleSystems extends System {
         c.entity.isDirty = true;
         c.entity.componentBuffers[Equipment.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
-    }
-
-    // Player Input
-    const componentsPI = <PlayerInput[]>this.room.getComponentsOfType(PlayerInput.name);
-    for (let i = 0; i < componentsPI.length; i++) {
-      const c = componentsPI[i];
-      c.update(deltaTime);
     }
 
     // Construction

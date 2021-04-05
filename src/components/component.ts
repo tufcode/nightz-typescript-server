@@ -4,7 +4,7 @@ import { Fixture } from 'planck-js';
 
 export abstract class Component {
   public entity: Entity;
-  public isDirty: boolean;
+  public isDirty = true;
 
   public init(): void {}
   public update(deltaTime: number): void {}

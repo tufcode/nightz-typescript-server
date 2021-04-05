@@ -28,7 +28,7 @@ export class Equipment extends Component {
 
     const buf = Buffer.allocUnsafe(9);
     // Packet Id
-    buf.writeUInt8(ComponentIds.PositionAndRotation, 0);
+    buf.writeUInt8(ComponentIds.Equipment, 0);
     buf.writeUInt32LE(this._hand?.entity.objectId ?? 0, 1);
     buf.writeUInt32LE(this._hat?.entity.objectId ?? 0, 5);
 

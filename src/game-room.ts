@@ -17,7 +17,6 @@ import { createAxe, createBlock, createItem } from './items/util/create-object';
 import { Tiers } from './data/tiers';
 import { Axe } from './items/axe';
 import { requireGold } from './items/util/callbacks';
-import { Animation } from './components/animation';
 import { Spawner } from './systems/spawner';
 import { randomRange } from './utils';
 import { GoldMine } from './components/gold-mine';
@@ -38,6 +37,7 @@ import { MovementSystem } from './systems/movement-system';
 import { LevelSystem } from './systems/level-system';
 import { HealthSystem } from './systems/health-system';
 import { AISystem } from './systems/ai-system';
+import { PlayerInput } from './components/player-input';
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
@@ -53,6 +53,7 @@ export default class GameRoom extends Room {
   private _sendTick = 0;
   private sendRate = 1 / 15;
   public componentCache: { [key: string]: Component[] } = {};
+  private lastSend = 0;
 
   public onCreate(options: any) {
     debug(
@@ -70,16 +71,16 @@ export default class GameRoom extends Room {
     // Create boundaries
     this.gameWorld.updateBounds(this.playableArea);
 
-    this.addSystem(new AISystem(this));
     this.addSystem(new HealthSystem(this));
     this.addSystem(new LevelSystem(this));
     this.addSystem(new MovementSystem(this));
     this.addSystem(new SimpleSystems(this));
+    this.addSystem(new AISystem(this));
     this.addSystem(new VisibilitySystem(this));
     this.addSystem(this.gameWorld);
 
     // Create mines
-    const mineCount = this.playableArea.length() / 4;
+    /*const mineCount = this.playableArea.length() / 4;
     console.log(mineCount);
     for (let i = 0; i < mineCount; i++) {
       const body = this.gameWorld.getPhysicsWorld().createBody({
@@ -118,7 +119,7 @@ export default class GameRoom extends Room {
         type: 'dynamic',
         position: Vec2(
           /*randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),*/
+          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
           randomRange(-50, 50),
           randomRange(-50, 50),
         ),
@@ -157,7 +158,7 @@ export default class GameRoom extends Room {
 
       return entity;
     });
-    this.addSimulationInterval(zombieSpawner.update.bind(zombieSpawner), 1000 / 10);
+    this.addSimulationInterval(zombieSpawner.update.bind(zombieSpawner), 1000 / 10);*/
     // Add timers
     //this.addSimulationInterval(this.systems[World.name].tick.bind(this.systems[World.name]), 1000 / 30);
     //this.addSimulationInterval(this.systems[Visibility.name].tick.bind(this.systems[Visibility.name]), 1000 / 10);
@@ -181,7 +182,7 @@ export default class GameRoom extends Room {
       // Send updates to every client
       for (let i = 0; i < this.clients.length; i++) {
         const client = this.clients[i];
-        const clientData = client.getUserData();
+        const clientData = <ClientData>client.getUserData();
         if (clientData == undefined || clientData.observing == null) continue;
 
         // Send update for dirty entities if there are any
@@ -191,9 +192,11 @@ export default class GameRoom extends Room {
             return e;
           }
         });
-        if (dirty.length > 0)
-          client.send(getBytes[Protocol.EntityUpdate](client, dirty, now - this.startTime, this.currentTick));
+        if (dirty.length > 0) {
+          client.send(getBytes[Protocol.EntityUpdate](client, dirty, now - this.startTime, this.lastSend));
+        }
       }
+      this.lastSend = this.currentTick;
     }
   }
 
@@ -222,6 +225,9 @@ export default class GameRoom extends Room {
 
         inventory.selectItem(message.readUInt32LE(1));*/
 
+        break;
+      default:
+        console.log('unknown packet:', packetId);
         break;
     }
   }
@@ -261,13 +267,13 @@ export default class GameRoom extends Room {
     entity.addComponent(new Inventory());
     entity.addComponent(new Equipment());
     entity.addComponent(new Level());
-    entity.addComponent(new Animation());
     entity.addComponent(new Team(100 + client.id));
     entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
     entity.addComponent(new Rotation(body.getAngle()));
     entity.addComponent(new PhysicsBody(body));
     entity.addComponent(new Health(100, 2));
     entity.addComponent(new Movement(30));
+    entity.addComponent(new PlayerInput());
     (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + client.id);
     entity.addComponent(new Observable());
 
@@ -294,8 +300,8 @@ export default class GameRoom extends Room {
       ),
     );
 
-    client.send(getBytes[Protocol.SetPlayerEntity](entity.objectId)); // todo make CameraFollow
     client.send(getBytes[Protocol.WorldSize](this.playableArea));
+    client.send(getBytes[Protocol.CameraFollow](entity.objectId));
 
     client.getUserData().setTier(Tiers.Wood);
   }
