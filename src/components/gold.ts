@@ -11,6 +11,7 @@ export class Gold extends Component {
   }
 
   public set amount(value: number) {
+    // todo maybe make it so it only sends one packet per patch even if there are multiple updates?
     this._amount = value;
     (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
   }

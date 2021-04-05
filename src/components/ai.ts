@@ -23,28 +23,6 @@ export class AI extends Component {
     if (this.bodyComponent == null) {
       console.error('Movement requires PhysicsBody component.');
     }
-
-    const body = this.bodyComponent.getBody();
-    body.createFixture({
-      shape: this.detectionShape,
-      filterCategoryBits: EntityCategory.SENSOR,
-      filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.PLAYER,
-      isSensor: true,
-    });
-  }
-
-  public onTriggerEnter(me: Fixture, other: Fixture): void {
-    // Check entity team
-    const teamComponent = <Team>(<Entity>other.getBody().getUserData()).getComponent(Team);
-    if (teamComponent == null || !this.teamComponent.isHostileTowards(teamComponent)) return;
-    // Add as a potential target
-    const entity = <Entity>other.getBody().getUserData();
-    if (entity.getComponent(Health) != null) this.addTarget(<Entity>other.getBody().getUserData());
-  }
-
-  public onTriggerExit(me: Fixture, other: Fixture): void {
-    // Remove as a potential target
-    this.removeTarget(<Entity>other.getBody().getUserData());
   }
 
   public addTarget(entity: Entity): void {

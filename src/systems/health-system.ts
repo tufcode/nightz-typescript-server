@@ -27,14 +27,9 @@ export class HealthSystem extends System {
       const c = components[i];
 
       if (c.currentHealth == 0) {
-        if (c.isUnkillable) {
-          console.log('restore it');
-          c.currentHealth = c.maxHealth;
-        } else {
-          console.log('destroy it');
-          c.entity.destroy();
-          continue;
-        }
+        console.log('kill it ', c.entity.id);
+        c.entity.destroy();
+        continue;
       }
 
       if (c.isDirty) {

@@ -210,6 +210,16 @@ export const getBytes = {
 
     return buf;
   },
+  [Protocol.Experience]: (level: number, points: number, neededPoints: number) => {
+    const buf = Buffer.allocUnsafe(10);
+
+    buf.writeUInt8(Protocol.Experience, 0);
+    buf.writeUInt8(level, 1);
+    buf.writeUInt32LE(points, 2);
+    buf.writeUInt32LE(neededPoints, 6);
+
+    return buf;
+  },
   [Protocol.TemporaryMessage]: (m: string, duration: number) => {
     const buf = Buffer.allocUnsafe(3 + 2 * m.length);
     let index = 0;

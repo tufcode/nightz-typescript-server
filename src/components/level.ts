@@ -6,6 +6,9 @@ import { clamp } from '../utils';
 import * as EventEmitter from 'eventemitter3';
 
 export class Level extends Component {
+  public get neededPoints(): number {
+    return this._neededPoints;
+  }
   public isDirty: boolean;
   private _neededPoints = 200;
   private _points = 0;
@@ -18,8 +21,12 @@ export class Level extends Component {
     this._eventEmitter = new EventEmitter();
   }
 
-  public on(event: 'beforeUpdatePoints' | 'afterUpdatePoints' | 'levelUp', fn: (...args: any[]) => void): EventEmitter {
+  public on(event: 'beforePointsUpdate' | 'afterPointsUpdate' | 'levelUp', fn: (...args: any[]) => void): EventEmitter {
     return this._eventEmitter.on(event, fn);
+  }
+
+  public off(event: 'beforePointsUpdate' | 'afterPointsUpdate' | 'levelUp'): EventEmitter {
+    return this._eventEmitter.off(event);
   }
 
   public get points(): number {
@@ -27,10 +34,10 @@ export class Level extends Component {
   }
 
   public set points(value: number) {
-    this._eventEmitter.emit('beforeUpdatePoints', value, this);
+    this._eventEmitter.emit('beforePointsUpdate', this._points, value);
     this._points = value;
-    this._eventEmitter.emit('afterUpdatePoints', this);
     this.calculateLevel();
+    this._eventEmitter.emit('afterPointsUpdate');
   }
   public get totalPoints(): number {
     return this._previousPoints + this._points;
@@ -50,8 +57,8 @@ export class Level extends Component {
       this._previousPoints += this._neededPoints;
       this._points = clamp(this._points - this._neededPoints, 0, Number.MAX_SAFE_INTEGER);
       this._neededPoints = Math.round((this._neededPoints + 200) * 1.05);
-      this._eventEmitter.emit('levelUp');
     }
+    if (this.isDirty) this._eventEmitter.emit('levelUp');
   }
 
   public serialize(): Buffer {

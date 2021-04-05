@@ -8,21 +8,39 @@ import { Movement } from './movement';
 import { GameClient } from '../game-client';
 import { MovementSystem } from '../systems/movement-system';
 import { Equipment } from './equipment';
+import { Level } from './level';
+import { getBytes, Protocol } from '../protocol';
+import { Health } from './health';
 
 export class PlayerInput extends Component {
   private movementComponent: Movement;
   private bodyComponent: PhysicsBody;
   private ownerClientData: GameClient;
   private equipmentComponent: Equipment;
+  private levelComponent: Level;
 
   public init(): void {
     this.ownerClientData = this.entity.owner.getUserData();
+    const h = <Health>this.entity.getComponent(Health);
+    h.on('damage', (amount) => {
+      if (h.currentHealth <= h.maxHealth / 2) h.currentHealth = h.maxHealth;
+    });
     this.equipmentComponent = <Equipment>this.entity.getComponent(Equipment);
     this.movementComponent = <Movement>this.entity.getComponent(Movement);
     this.bodyComponent = <PhysicsBody>this.entity.getComponent(PhysicsBody);
     if (this.movementComponent == null || this.bodyComponent == null) {
       console.error('PlayerInput requires Movement and PhysicsBody components.');
     }
+
+    // Send owner EXP and Level updates when experience points change
+    this.levelComponent = <Level>this.entity.getComponent(Level);
+    this.levelComponent.on('afterPointsUpdate', () => this.sendExperienceToOwner());
+    // Also send it immediately so that it is never 0,0,0
+    this.sendExperienceToOwner();
+  }
+
+  public onDestroy(): void {
+    this.levelComponent.off('afterPointsUpdate'); // todo add "off" everywhere:)
   }
 
   public update(deltaTime: number): void {
@@ -44,5 +62,15 @@ export class PlayerInput extends Component {
     }
 
     body.setAngle(this.ownerClientData.input.angle);
+  }
+
+  private sendExperienceToOwner() {
+    (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(
+      getBytes[Protocol.Experience](
+        this.levelComponent.level,
+        this.levelComponent.points,
+        this.levelComponent.neededPoints,
+      ),
+    );
   }
 }

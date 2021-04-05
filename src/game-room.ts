@@ -115,12 +115,12 @@ export default class GameRoom extends Room {
       entity.addComponent(new Observable());
     }
 
-    /*const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 30, () => {
+    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 30, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
           /*randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
+          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),*/
           randomRange(-50, 50),
           randomRange(-50, 50),
         ),
@@ -159,7 +159,7 @@ export default class GameRoom extends Room {
 
       return entity;
     });
-    this.addSimulationInterval(zombieSpawner.update.bind(zombieSpawner), 1000 / 10);*/
+    this.addSimulationInterval(zombieSpawner.update.bind(zombieSpawner), 1000 / 10);
     // Add timers
     //this.addSimulationInterval(this.systems[World.name].tick.bind(this.systems[World.name]), 1000 / 30);
     //this.addSimulationInterval(this.systems[Visibility.name].tick.bind(this.systems[Visibility.name]), 1000 / 10);

@@ -7,6 +7,7 @@ import { clamp, randomRange } from '../utils';
 import { AI } from './ai';
 import { Movement } from './movement';
 import { Rotation } from './rotation';
+import { EntityCategory } from '../protocol';
 
 export class ZombieAI extends AI {
   private _entitiesToDamage: Health[] = [];
@@ -24,6 +25,14 @@ export class ZombieAI extends AI {
 
   public init() {
     super.init();
+    const body = this.bodyComponent.getBody();
+    body.createFixture({
+      shape: this.detectionShape,
+      filterCategoryBits: EntityCategory.SENSOR,
+      filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.PLAYER,
+      isSensor: true,
+    });
+
     this.movementComponent = <Movement>this.entity.getComponent(Movement);
   }
 
@@ -48,11 +57,27 @@ export class ZombieAI extends AI {
     }
   }
 
+  public onTriggerEnter(me: Fixture, other: Fixture): void {
+    // Check entity team
+    const teamComponent = <Team>(<Entity>other.getBody().getUserData()).getComponent(Team);
+    if (teamComponent == null || !this.teamComponent.isHostileTowards(teamComponent)) return;
+
+    // Add as a potential target
+    const entity = <Entity>other.getBody().getUserData();
+    if (entity.getComponent(Health) != null) this.addTarget(<Entity>other.getBody().getUserData());
+    console.log('added target', (<Entity>other.getBody().getUserData()).id, this.targets.length);
+  }
+
+  public onTriggerExit(me: Fixture, other: Fixture): void {
+    // Remove as a potential target
+    this.removeTarget(<Entity>other.getBody().getUserData());
+  }
+
   public updateTargets(deltaTime: number): void {
     const body = this.bodyComponent.getBody();
     const myPosition = body.getPosition();
 
-    this.hasTarget = this.targets.length == 0;
+    this.hasTarget = this.targets.length != 0;
     if (!this.hasTarget) {
       // Patrol
       this.patrolTick += deltaTime;
