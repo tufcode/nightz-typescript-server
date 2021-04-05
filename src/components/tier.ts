@@ -2,7 +2,7 @@ import { Component } from './component';
 import { ComponentIds } from '../protocol';
 import { Client } from 'elsa';
 import { Vec2 } from 'planck-js';
-import { ITier } from '../client-data';
+import { ITier } from '../game-client';
 
 export class Tier extends Component {
   private _tier: ITier;

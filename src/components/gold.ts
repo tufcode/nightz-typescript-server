@@ -1,6 +1,6 @@
 import { Component } from './component';
 import { ComponentIds } from '../protocol';
-import { Item } from '../items/item';
+import { Item } from './items/item';
 
 export class Gold extends Component {
   private _amount = 0;

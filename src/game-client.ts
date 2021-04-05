@@ -16,13 +16,15 @@ export interface InputState {
   left: boolean;
   right: boolean;
 }
-export class ClientData {
+export class GameClient {
   public client: Client;
   public cameraFollowing: Entity;
   public observing: Entity[] = null;
   public tier: ITier = Tiers.Wood;
   public input: InputState = { down: false, left: false, right: false, up: false, angle: 0, primary: false };
   public ownedEntities: Entity[] = [];
+
+  public queuedMessages: Buffer[] = [];
 
   public constructor(client: Client) {
     this.client = client;

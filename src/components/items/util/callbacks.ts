@@ -1,5 +1,5 @@
-import { Gold } from '../../components/gold';
-import { Inventory } from '../../components/inventory';
+import { Gold } from '../../gold';
+import { Inventory } from '../../inventory';
 
 export const requireGold = (goldComponent: Gold, amount: number): boolean => {
   if (goldComponent.amount >= amount) {

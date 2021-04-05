@@ -5,16 +5,19 @@ import GameRoom from '../game-room';
 import { VisibilitySystem } from '../systems/visibility-system';
 import { Body, Vec2 } from 'planck-js';
 import { Movement } from './movement';
-import { ClientData } from '../client-data';
+import { GameClient } from '../game-client';
 import { MovementSystem } from '../systems/movement-system';
+import { Equipment } from './equipment';
 
 export class PlayerInput extends Component {
   private movementComponent: Movement;
   private bodyComponent: PhysicsBody;
-  private ownerClientData: ClientData;
+  private ownerClientData: GameClient;
+  private equipmentComponent: Equipment;
 
   public init(): void {
     this.ownerClientData = this.entity.owner.getUserData();
+    this.equipmentComponent = <Equipment>this.entity.getComponent(Equipment);
     this.movementComponent = <Movement>this.entity.getComponent(Movement);
     this.bodyComponent = <PhysicsBody>this.entity.getComponent(PhysicsBody);
     if (this.movementComponent == null || this.bodyComponent == null) {
@@ -33,6 +36,11 @@ export class PlayerInput extends Component {
 
     if (input.lengthSquared() != 0) {
       this.movementComponent.move(input);
+    }
+
+    if (this.equipmentComponent != null) {
+      this.equipmentComponent.hand?.setPrimary(this.ownerClientData.input.primary);
+      this.equipmentComponent.hat?.setPrimary(this.ownerClientData.input.primary);
     }
 
     body.setAngle(this.ownerClientData.input.angle);

@@ -1,7 +1,7 @@
 import { Client } from 'elsa';
 import { Entity } from './entity';
 import { Component } from './components/component';
-import { ITier } from './client-data';
+import { ITier } from './game-client';
 import { Vec2 } from 'planck-js';
 
 export enum Protocol {

@@ -1,17 +1,17 @@
 import * as planck from 'planck-js';
-import { EntityCategory } from '../../protocol';
-import { Entity } from '../../entity';
-import { Health } from '../../components/health';
-import { Team } from '../../components/team';
-import { PhysicsBody } from '../../components/physics-body';
-import { Position } from '../../components/position';
+import { EntityCategory } from '../../../protocol';
+import { Entity } from '../../../entity';
+import { Health } from '../../health';
+import { Team } from '../../team';
+import { PhysicsBody } from '../../physics-body';
+import { Position } from '../../position';
 import { Vec2 } from 'planck-js';
-import { World } from '../../systems/world';
+import { World } from '../../../systems/world';
 import { Client } from 'elsa';
 import { Axe } from '../axe';
 import { Item } from '../item';
-import { Observable } from '../../components/observable';
-import { Rotation } from '../../components/rotation';
+import { Observable } from '../../observable';
+import { Rotation } from '../../rotation';
 
 export const createBlock = (owner?: Client, team?: Team): ((world: World, position: Vec2, angle: number) => Entity) => {
   return (world: World, position: Vec2, angle: number) => {

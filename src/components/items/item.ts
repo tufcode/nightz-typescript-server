@@ -1,8 +1,8 @@
-import { Component } from '../components/component';
-import { Inventory, ItemSlot } from '../components/inventory';
+import { Component } from '../component';
+import { Inventory, ItemSlot } from '../inventory';
 import { Shape, Vec2 } from 'planck-js';
-import { World } from '../systems/world';
-import { Entity } from '../entity';
+import { World } from '../../systems/world';
+import { Entity } from '../../entity';
 
 export enum ItemState {
   IN_INVENTORY,
@@ -16,6 +16,7 @@ export class Item extends Component {
   public inventory: Inventory;
   public used = 0;
   public max = 0;
+  protected _primary: boolean;
 
   public constructor(id: string, type: ItemSlot) {
     super();
@@ -23,7 +24,7 @@ export class Item extends Component {
     this.type = type;
   }
 
-  public primaryStart(entity: Entity): void {}
+  public update(deltaTime: number) {}
   public onEquip(entity: Entity): void {
     this.state = ItemState.EQUIPPED;
   }
@@ -32,7 +33,9 @@ export class Item extends Component {
   }
   public onDestroy(): void {}
 
-  public primaryEnd(entity: Entity): void {}
+  public setPrimary(b: boolean) {
+    this._primary = b;
+  }
 }
 
 // HOWTO: You can create "status components" to send item updates to clients such as cooldowns

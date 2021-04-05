@@ -5,7 +5,7 @@ import GameRoom from '../game-room';
 import { Entity } from '../entity';
 import { Observable } from '../components/observable';
 import { Client } from 'elsa';
-import { ClientData } from '../client-data';
+import { GameClient } from '../game-client';
 import { Component } from '../components/component';
 import { Level } from '../components/level';
 import { AI } from '../components/ai';
@@ -17,6 +17,7 @@ import { Tier } from '../components/tier';
 import { Equipment } from '../components/equipment';
 import { PlayerInput } from '../components/player-input';
 import { Construction } from '../components/construction';
+import { Item } from '../components/items/item';
 
 export class SimpleSystems extends System {
   private room: GameRoom;
@@ -31,6 +32,12 @@ export class SimpleSystems extends System {
     const componentsPI = <PlayerInput[]>this.room.getComponentsOfType(PlayerInput.name);
     for (let i = 0; i < componentsPI.length; i++) {
       const c = componentsPI[i];
+      c.update(deltaTime);
+    }
+    // Items
+    const componentsI = <Item[]>this.room.getComponentsOfType(Item.name);
+    for (let i = 0; i < componentsI.length; i++) {
+      const c = componentsI[i];
       c.update(deltaTime);
     }
 

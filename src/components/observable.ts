@@ -1,8 +1,8 @@
 import { Client } from 'elsa';
 import { Component } from './component';
 import { Position } from './position';
-import { ClientData } from '../client-data';
-import { Item, ItemState } from '../items/item';
+import { GameClient } from '../game-client';
+import { Item, ItemState } from './items/item';
 import { Vec2 } from 'planck-js';
 import GameRoom from '../game-room';
 import { VisibilitySystem } from '../systems/visibility-system';
@@ -18,7 +18,7 @@ export class Observable extends Component {
     if (this.entity.owner != null) {
       if (this.entity.owner.id == client.id) return true;
     } else {
-      const clientOwner = <ClientData>client.getUserData();
+      const clientOwner = <GameClient>client.getUserData();
 
       // Don't be visible to players with no objects
       if (clientOwner.cameraFollowing == null) return false;
@@ -36,8 +36,8 @@ export class Observable extends Component {
       return false;
     }
 
-    const myOwner = <ClientData>this.entity.owner.getUserData();
-    const clientOwner = <ClientData>client.getUserData();
+    const myOwner = <GameClient>this.entity.owner.getUserData();
+    const clientOwner = <GameClient>client.getUserData();
 
     // Don't be visible to players with no objects
     if (clientOwner.cameraFollowing == null) return false;

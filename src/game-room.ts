@@ -3,20 +3,20 @@ import * as debugModule from 'debug';
 import * as http from 'http';
 import { Entity } from './entity';
 import { ClientProtocol, EntityCategory, getBytes, Protocol } from './protocol';
-import { ClientData } from './client-data';
+import { GameClient } from './game-client';
 import { PhysicsBody } from './components/physics-body';
 import { NameTag } from './components/name-tag';
 import { Inventory, ItemSlot } from './components/inventory';
 import { World } from './systems/world';
-import { BuildingBlock } from './items/building-block';
+import { BuildingBlock } from './components/items/building-block';
 import { Position } from './components/position';
 import { Health } from './components/health';
 import { Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
-import { createAxe, createBlock, createItem } from './items/util/create-object';
+import { createAxe, createBlock, createItem } from './components/items/util/create-object';
 import { Tiers } from './data/tiers';
-import { Axe } from './items/axe';
-import { requireGold } from './items/util/callbacks';
+import { Axe } from './components/items/axe';
+import { requireGold } from './components/items/util/callbacks';
 import { Spawner } from './systems/spawner';
 import { randomRange } from './utils';
 import { GoldMine } from './components/gold-mine';
@@ -80,7 +80,7 @@ export default class GameRoom extends Room {
     this.addSystem(this.gameWorld);
 
     // Create mines
-    /*const mineCount = this.playableArea.length() / 4;
+    const mineCount = this.playableArea.length() / 0.5;
     console.log(mineCount);
     for (let i = 0; i < mineCount; i++) {
       const body = this.gameWorld.getPhysicsWorld().createBody({
@@ -114,7 +114,7 @@ export default class GameRoom extends Room {
       entity.addComponent(new Observable());
     }
 
-    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 30, () => {
+    /*const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 30, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
@@ -182,7 +182,7 @@ export default class GameRoom extends Room {
       // Send updates to every client
       for (let i = 0; i < this.clients.length; i++) {
         const client = this.clients[i];
-        const clientData = <ClientData>client.getUserData();
+        const clientData = <GameClient>client.getUserData();
         if (clientData == undefined || clientData.observing == null) continue;
 
         // Send update for dirty entities if there are any
@@ -195,13 +195,20 @@ export default class GameRoom extends Room {
         if (dirty.length > 0) {
           client.send(getBytes[Protocol.EntityUpdate](client, dirty, now - this.startTime, this.lastSend));
         }
+
+        // Send queued messages like inventory and gold updates
+        for (let j = 0; j < clientData.queuedMessages.length; j++) {
+          client.send(clientData.queuedMessages[j]);
+        }
+        clientData.queuedMessages = [];
+        //client.flush(); // Send all queued messages
       }
       this.lastSend = this.currentTick;
     }
   }
 
   public onMessage(client: Client, message: Buffer) {
-    const clientData = <ClientData>client.getUserData();
+    const clientData = <GameClient>client.getUserData();
     if (!clientData) {
       debug('WARNING: Client ' + client.id + ' has no clientData but sent a message!');
       return;
@@ -239,7 +246,7 @@ export default class GameRoom extends Room {
 
   public onJoin(client: Client, auth: any): void {
     // Create a ClientData object for this client
-    client.setUserData(new ClientData(client));
+    client.setUserData(new GameClient(client));
 
     const body = this.gameWorld.getPhysicsWorld().createBody({
       type: 'dynamic',
@@ -264,8 +271,8 @@ export default class GameRoom extends Room {
     // Create player entity
     const entity = new Entity('Player', this.gameWorld, client);
     const goldComponent = <Gold>entity.addComponent(new Gold());
+    const equipment = <Equipment>entity.addComponent(new Equipment());
     entity.addComponent(new Inventory());
-    entity.addComponent(new Equipment());
     entity.addComponent(new Level());
     entity.addComponent(new Team(100 + client.id));
     entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
@@ -280,9 +287,12 @@ export default class GameRoom extends Room {
     // Add items and inventory
     const inventory = <Inventory>entity.addComponent(new Inventory());
 
-    (<ClientData>client.getUserData()).addOwnedEntity(entity);
+    (<GameClient>client.getUserData()).addOwnedEntity(entity);
+    (<GameClient>client.getUserData()).cameraFollowing = entity;
 
-    inventory.addItem(createAxe(this.gameWorld, client));
+    const axe = createAxe(this.gameWorld, client);
+
+    inventory.addItem(axe);
     inventory.addItem(
       createItem(
         new BuildingBlock(
@@ -300,6 +310,8 @@ export default class GameRoom extends Room {
       ),
     );
 
+    equipment.hand = axe;
+
     client.send(getBytes[Protocol.WorldSize](this.playableArea));
     client.send(getBytes[Protocol.CameraFollow](entity.objectId));
 
@@ -307,7 +319,7 @@ export default class GameRoom extends Room {
   }
 
   public onLeave(client: Client, closeReason: WSCloseCode): void {
-    const c = <ClientData>client.getUserData();
+    const c = <GameClient>client.getUserData();
     for (let i = 0; i < c.ownedEntities.length; i++) {
       c.ownedEntities[i].destroy();
     }

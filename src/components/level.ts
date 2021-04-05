@@ -1,5 +1,5 @@
 import { Component } from './component';
-import { Item, ItemState } from '../items/item';
+import { Item, ItemState } from './items/item';
 import { ComponentIds, getBytes, Protocol } from '../protocol';
 import { Client } from 'elsa';
 import { clamp } from '../utils';

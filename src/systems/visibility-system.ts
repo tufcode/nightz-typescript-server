@@ -5,7 +5,7 @@ import GameRoom from '../game-room';
 import { Entity } from '../entity';
 import { Observable } from '../components/observable';
 import { Client } from 'elsa';
-import { ClientData } from '../client-data';
+import { GameClient } from '../game-client';
 import { Component } from '../components/component';
 
 export class VisibilitySystem extends System {
@@ -33,7 +33,7 @@ export class VisibilitySystem extends System {
   }
 
   public updateObserverCache(client, components: Observable[]): Entity[] {
-    const clientData = <ClientData>client.getUserData();
+    const clientData = <GameClient>client.getUserData();
     if (!clientData) return;
 
     const newEntities = [];
@@ -51,7 +51,7 @@ export class VisibilitySystem extends System {
           return observable.entity;
         }
       })
-      .filter((e) => !!e);
+      .filter((e) => e != undefined);
 
     // Add new entities
     if (newEntities.length > 0)

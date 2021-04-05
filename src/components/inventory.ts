@@ -1,6 +1,7 @@
 import { Component } from './component';
-import { Item } from '../items/item';
+import { Item } from './items/item';
 import { getBytes, Protocol } from '../protocol';
+import { GameClient } from '../game-client';
 
 export enum ItemSlot {
   Slot1 = 0,
@@ -29,12 +30,12 @@ export class Inventory extends Component {
     item.inventory = this;
     this.items.push(item);
 
-    this.entity.owner.send(this.serialize());
+    (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
   }
 
   public removeItem(item: Item): void {
     this.items.splice(this.items.indexOf(item), 1);
-    this.entity.owner.send(this.serialize());
+    (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
   }
 
   public serialize(): Buffer {

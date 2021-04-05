@@ -1,11 +1,11 @@
 import { Consumable } from './consumable';
 import { Vec2 } from 'planck-js';
-import { Entity } from '../entity';
-import { PhysicsBody } from '../components/physics-body';
-import { EntityCategory } from '../protocol';
-import { ItemSlot } from '../components/inventory';
-import { World } from '../systems/world';
-import { Construction } from '../components/construction';
+import { Entity } from '../../entity';
+import { PhysicsBody } from '../physics-body';
+import { EntityCategory } from '../../protocol';
+import { ItemSlot } from '../inventory';
+import { World } from '../../systems/world';
+import { Construction } from '../construction';
 
 export class BuildingBlock extends Consumable {
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;

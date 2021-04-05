@@ -1,6 +1,6 @@
 import { Client } from 'elsa';
 import * as planck from 'planck-js';
-import { ClientData, InputState } from './client-data';
+import { GameClient, InputState } from './game-client';
 import { Component } from './components/component';
 import { Type } from './types';
 import GameRoom from './game-room';
@@ -49,12 +49,20 @@ export class Entity {
 
   public addComponent(component: Component): Component {
     component.entity = this;
-    const parent = Object.getPrototypeOf(component.constructor).name;
-    if (parent != 'Component') this.componentCache[parent] = component;
-
-    this.componentCache[component.constructor.name] = component;
-    this.components.push(component);
     const room = <GameRoom>this.world.room;
+
+    const parent = Object.getPrototypeOf(component.constructor).name;
+    if (parent != 'Component') {
+      // todo make this a while loop or it wont work with multiple inheritances
+      if (room.componentCache[parent]) room.componentCache[parent].push(component);
+      else {
+        room.componentCache[parent] = [component];
+      }
+      this.componentCache[parent] = component;
+    }
+
+    this.components.push(component);
+    this.componentCache[component.constructor.name] = component;
     if (room.componentCache[component.constructor.name])
       room.componentCache[component.constructor.name].push(component);
     else {

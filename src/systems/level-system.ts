@@ -5,7 +5,7 @@ import GameRoom from '../game-room';
 import { Entity } from '../entity';
 import { Observable } from '../components/observable';
 import { Client } from 'elsa';
-import { ClientData } from '../client-data';
+import { GameClient } from '../game-client';
 import { Component } from '../components/component';
 import { Level } from '../components/level';
 import { AI } from '../components/ai';

@@ -1,15 +1,15 @@
 import { Item } from './item';
-import { Entity } from '../entity';
-import { Position } from '../components/position';
+import { Entity } from '../../entity';
+import { Position } from '../position';
 import { Box, Fixture, Vec2 } from 'planck-js';
-import { EntityCategory } from '../protocol';
-import { PhysicsBody } from '../components/physics-body';
-import { Inventory, ItemSlot } from '../components/inventory';
-import { Team } from '../components/team';
-import { Health } from '../components/health';
-import { Gold } from '../components/gold';
-import { randomRange } from '../utils';
-import { Level } from '../components/level';
+import { EntityCategory } from '../../protocol';
+import { PhysicsBody } from '../physics-body';
+import { Inventory, ItemSlot } from '../inventory';
+import { Team } from '../team';
+import { Health } from '../health';
+import { Gold } from '../gold';
+import { randomRange } from '../../utils';
+import { Level } from '../level';
 
 export class Axe extends Item {
   private fixture: Fixture;
@@ -67,22 +67,13 @@ export class Axe extends Item {
     }
   }
 
-  public primaryStart(entity: Entity): void {
-    this._isAttacking = true;
-    // (<Animation>entity.getComponent(Animation)).setAnimation(2, this.attackSpeed);
-  }
-
-  public primaryEnd(entity: Entity) {
-    this._isAttacking = false;
-    // (<Animation>entity.getComponent(Animation)).setAnimation(0, 0);
-  }
-
   public update(deltaTime: number) {
     // Damage colliding entities every 0.5 second
-    if (!this._isAttacking) {
+    if (!this._primary) {
       this._damageTick = 0;
       return;
     }
+    console.log('attacc', this._primary);
     this._damageTick += deltaTime;
     if (this._damageTick >= 1 / this.attackSpeed) {
       this._damageTick = 0;
