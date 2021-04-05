@@ -5,15 +5,12 @@ import { Entity } from './entity';
 import { ClientProtocol, EntityCategory, getBytes, Protocol } from './protocol';
 import { ClientData } from './client-data';
 import { PhysicsBody } from './components/physics-body';
-import { CharacterController } from './components/character-controller';
 import { NameTag } from './components/name-tag';
 import { Inventory, ItemSlot } from './components/inventory';
 import { World } from './systems/world';
 import { BuildingBlock } from './items/building-block';
-import { Gold } from './components/gold';
-import { PositionAndRotation } from './components/position-and-rotation';
+import { Position } from './components/position';
 import { Health } from './components/health';
-import { AIController } from './components/ai-controller';
 import { Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
 import { createAxe, createBlock, createItem } from './items/util/create-object';
@@ -25,12 +22,22 @@ import { Spawner } from './systems/spawner';
 import { randomRange } from './utils';
 import { GoldMine } from './components/gold-mine';
 import { Observable } from './components/observable';
-import { Experience } from './components/experience';
+import { Level } from './components/level';
 import { KillRewards } from './components/kill-rewards';
 import { Rotation } from './components/rotation';
 import { performance } from 'perf_hooks';
 import { System } from './systems/system';
-import { Visibility } from './systems/visibility';
+import { VisibilitySystem } from './systems/visibility-system';
+import { Component } from './components/component';
+import { ZombieAI } from './components/zombie-ai';
+import { Movement } from './components/movement';
+import { Equipment } from './components/equipment';
+import { Gold } from './components/gold';
+import { SimpleSystems } from './systems/simple-systems';
+import { MovementSystem } from './systems/movement-system';
+import { LevelSystem } from './systems/level-system';
+import { HealthSystem } from './systems/health-system';
+import { AISystem } from './systems/ai-system';
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
@@ -43,6 +50,9 @@ export default class GameRoom extends Room {
   private systemsArray: System[] = [];
   private _i = 0;
   public currentTick = 0;
+  private _sendTick = 0;
+  private sendRate = 1 / 15;
+  public componentCache: { [key: string]: Component[] } = {};
 
   public onCreate(options: any) {
     debug(
@@ -60,7 +70,12 @@ export default class GameRoom extends Room {
     // Create boundaries
     this.gameWorld.updateBounds(this.playableArea);
 
-    this.addSystem(new Visibility(this));
+    this.addSystem(new AISystem(this));
+    this.addSystem(new HealthSystem(this));
+    this.addSystem(new LevelSystem(this));
+    this.addSystem(new MovementSystem(this));
+    this.addSystem(new SimpleSystems(this));
+    this.addSystem(new VisibilitySystem(this));
     this.addSystem(this.gameWorld);
 
     // Create mines
@@ -89,18 +104,16 @@ export default class GameRoom extends Room {
       });
       // Create AI entity
       const entity = new Entity('GoldMine', this.gameWorld);
-      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getLinearVelocity(), body.getAngle()));
+      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Health(1, 1, null));
+      entity.addComponent(new Health(1, 1));
       entity.addComponent(new Team(1));
       entity.addComponent(new GoldMine());
       entity.addComponent(new Observable());
-
-      this.gameWorld.addEntity(entity);
     }
 
-    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 0.7, 3, () => {
+    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 30, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
@@ -130,20 +143,17 @@ export default class GameRoom extends Room {
       // Create AI entity
       const entity = new Entity('Zombie', this.gameWorld);
       entity.addComponent(new Animation());
-      entity.addComponent(new PositionAndRotation(body.getPosition(), body.getLinearVelocity(), body.getAngle()));
+      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
       entity.addComponent(new Team(1));
-      entity.addComponent(new Health(40, 5, () => entity.destroy()));
-      entity.addComponent(new Observable());
+      entity.addComponent(new Health(40, 5));
       entity.addComponent(new KillRewards(20, 10));
-
-      const controller = <AIController>entity.addComponent(new AIController());
-      controller.speed = 20;
+      entity.addComponent(new Movement(20));
+      entity.addComponent(new ZombieAI());
+      entity.addComponent(new Observable());
 
       (<NameTag>entity.addComponent(new NameTag())).setName('Young Zombie');
-
-      this.gameWorld.addEntity(entity);
 
       return entity;
     });
@@ -157,8 +167,33 @@ export default class GameRoom extends Room {
 
   public update(deltaTime: number): void {
     this.currentTick++;
+    this._sendTick += deltaTime;
+    // Tick systems
     for (let i = 0; i < this.systemsArray.length; i++) {
       this.systemsArray[i].tick(deltaTime);
+    }
+    // Send updates if necessary
+    if (this._sendTick >= this.sendRate) {
+      this._sendTick = 0;
+
+      const now = performance.now();
+
+      // Send updates to every client
+      for (let i = 0; i < this.clients.length; i++) {
+        const client = this.clients[i];
+        const clientData = client.getUserData();
+        if (clientData == undefined || clientData.observing == null) continue;
+
+        // Send update for dirty entities if there are any
+        const dirty = clientData.observing.filter((e: Entity) => {
+          if (e.isDirty) {
+            e.isDirty = false;
+            return e;
+          }
+        });
+        if (dirty.length > 0)
+          client.send(getBytes[Protocol.EntityUpdate](client, dirty, now - this.startTime, this.currentTick));
+      }
     }
   }
 
@@ -172,7 +207,6 @@ export default class GameRoom extends Room {
     switch (packetId) {
       case ClientProtocol.InputAngle:
         clientData.input.angle = message.readFloatLE(1);
-        clientData.controlling.entity.input = clientData.input;
         break;
       case ClientProtocol.InputPrimary:
         clientData.input.primary = message.readUInt8(1) == 1;
@@ -180,14 +214,13 @@ export default class GameRoom extends Room {
         clientData.input.down = message.readUInt8(3) == 1;
         clientData.input.left = message.readUInt8(4) == 1;
         clientData.input.right = message.readUInt8(5) == 1;
-        clientData.controlling.entity.input = clientData.input;
         break;
       case ClientProtocol.SelectItem:
-        if (!clientData.controlling) break;
+        /*if (!clientData.controlling) break;
         const inventory = <Inventory>clientData.controlling.entity.getComponent(Inventory);
         if (!inventory) break;
 
-        inventory.selectItem(message.readUInt32LE(1));
+        inventory.selectItem(message.readUInt32LE(1));*/
 
         break;
     }
@@ -224,23 +257,22 @@ export default class GameRoom extends Room {
 
     // Create player entity
     const entity = new Entity('Player', this.gameWorld, client);
-    entity.addComponent(new Experience());
+    const goldComponent = <Gold>entity.addComponent(new Gold());
+    entity.addComponent(new Inventory());
+    entity.addComponent(new Equipment());
+    entity.addComponent(new Level());
     entity.addComponent(new Animation());
     entity.addComponent(new Team(100 + client.id));
-    entity.addComponent(new PositionAndRotation(body.getPosition(), body.getLinearVelocity(), body.getAngle()));
+    entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
     entity.addComponent(new Rotation(body.getAngle()));
     entity.addComponent(new PhysicsBody(body));
-    entity.addComponent(new Health(100, 2, null));
-    const controller = <CharacterController>entity.addComponent(new CharacterController());
+    entity.addComponent(new Health(100, 2));
+    entity.addComponent(new Movement(30));
     (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + client.id);
     entity.addComponent(new Observable());
 
     // Add items and inventory
     const inventory = <Inventory>entity.addComponent(new Inventory());
-
-    // Update observing entities and set player entity for client
-    client.getUserData().controlling = controller;
-    this.gameWorld.addEntity(entity);
 
     (<ClientData>client.getUserData()).addOwnedEntity(entity);
 
@@ -250,11 +282,9 @@ export default class GameRoom extends Room {
         new BuildingBlock(
           'WoodenBlock',
           ItemSlot.Slot2,
-          Vec2(1, 1),
-          Circle(0.5),
-          () => requireGold(inventory, 20),
+          () => requireGold(goldComponent, 20),
           () => {
-            inventory.gold += 20;
+            goldComponent.amount += 20;
             client.send(getBytes[Protocol.TemporaryMessage]('NoRest,' + entity.objectId, 2));
           },
           createBlock(client, new Team(100 + client.id)),
@@ -264,8 +294,7 @@ export default class GameRoom extends Room {
       ),
     );
 
-    (<Visibility>this.systems[Visibility.name]).updateObserverCache(client);
-    client.send(getBytes[Protocol.SetPlayerEntity](entity.objectId));
+    client.send(getBytes[Protocol.SetPlayerEntity](entity.objectId)); // todo make CameraFollow
     client.send(getBytes[Protocol.WorldSize](this.playableArea));
 
     client.getUserData().setTier(Tiers.Wood);
@@ -285,5 +314,9 @@ export default class GameRoom extends Room {
   private addSystem(system: System) {
     this.systems[system.constructor.name] = system;
     this.systemsArray.push(system);
+  }
+
+  public getComponentsOfType(c: string): Component[] {
+    return this.componentCache[c] || [];
   }
 }

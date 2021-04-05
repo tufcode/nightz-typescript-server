@@ -4,19 +4,16 @@ import { Client } from 'elsa';
 import { Vec2 } from 'planck-js';
 import { performance } from 'perf_hooks';
 import GameRoom from '../game-room';
-import { Visibility } from '../systems/visibility';
+import { VisibilitySystem } from '../systems/visibility-system';
 
-export class PositionAndRotation extends Component {
+export class Position extends Component {
   private _position: Vec2;
-  private _angle: number;
-  private _isDirty: boolean;
   private _velocity: Vec2;
   private teleportTick: number;
 
-  public constructor(position: Vec2, velocity: Vec2, angle: number) {
+  public constructor(position: Vec2, velocity: Vec2) {
     super();
     this._position = position;
-    this._angle = angle;
     this._velocity = velocity;
   }
 
@@ -26,18 +23,7 @@ export class PositionAndRotation extends Component {
 
   public set velocity(value: Vec2) {
     this._velocity = value;
-    this._isDirty = true;
-    this.entity._isDirty = true;
-  }
-
-  public get angle(): number {
-    return this._angle;
-  }
-
-  public set angle(value: number) {
-    this._angle = value;
-    this._isDirty = true;
-    this.entity._isDirty = true;
+    this.isDirty = true;
   }
 
   public get position(): Vec2 {
@@ -46,13 +32,11 @@ export class PositionAndRotation extends Component {
 
   public set position(value: Vec2) {
     this._position = value;
-    this._isDirty = true;
-    this.entity._isDirty = true;
+    this.isDirty = true;
   }
 
-  public serialize(client: Client, initialization?: boolean): Buffer {
-    if (!this._isDirty && !initialization) return null;
-    this._isDirty = false;
+  public serialize(): Buffer {
+    this.isDirty = false;
 
     const buf = Buffer.allocUnsafe(18);
     // Packet Id
@@ -64,7 +48,7 @@ export class PositionAndRotation extends Component {
     buf.writeFloatLE(this._velocity.x, 9);
     buf.writeFloatLE(this._velocity.y, 13);
     // Is teleportation?
-    buf.writeUInt8(this.teleportTick == (<GameRoom>this.entity.world.room).currentTick || initialization ? 1 : 0, 17);
+    buf.writeUInt8(this.teleportTick == (<GameRoom>this.entity.world.room).currentTick ? 1 : 0, 17);
 
     return buf;
   }

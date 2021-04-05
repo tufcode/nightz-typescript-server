@@ -5,7 +5,6 @@ import { Vec2 } from 'planck-js';
 
 export class Rotation extends Component {
   private _angle: number;
-  private _isDirty: boolean;
 
   public constructor(angle: number) {
     super();
@@ -17,13 +16,11 @@ export class Rotation extends Component {
 
   public set angle(value: number) {
     this._angle = value;
-    this._isDirty = true;
-    this.entity._isDirty = true;
+    this.isDirty = true;
   }
 
-  public serialize(client: Client, initialization?: boolean): Buffer {
-    if (!this._isDirty && !initialization) return null;
-    this._isDirty = false;
+  public serialize(): Buffer {
+    this.isDirty = false;
 
     const buf = Buffer.allocUnsafe(5);
     // Packet Id

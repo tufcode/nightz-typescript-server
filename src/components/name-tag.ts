@@ -4,33 +4,33 @@ import { ComponentIds } from '../protocol';
 import { Client } from 'elsa';
 
 export class NameTag extends Component {
-  public buffer: Buffer;
-  public name: any;
-  private _isDirty: boolean;
+  public get name(): string {
+    return this._name;
+  }
+
+  public set name(value: string) {
+    this._name = value;
+    this.isDirty = true;
+  }
+  private _name: string;
+  public isDirty: boolean;
 
   public setName(name: string) {
-    this.name = name;
-    this.updateBuffer();
+    this._name = name;
   }
 
-  public updateBuffer(): void {
-    this.buffer = Buffer.allocUnsafe(3 + 2 * this.name.length);
+  public serialize(): Buffer {
+    this.isDirty = false;
+    const buf = Buffer.allocUnsafe(3 + 2 * this._name.length);
     let index = 0;
-    this.buffer.writeUInt8(ComponentIds.NameTag, index);
+    buf.writeUInt8(ComponentIds.NameTag, index);
     index += 1;
-    this.buffer.writeUInt16LE(this.name.length, index);
+    buf.writeUInt16LE(this._name.length, index);
     index += 2;
-    for (let j = 0; j < this.name.length; j++) {
-      this.buffer.writeUInt16LE(this.name.charCodeAt(j), index);
+    for (let j = 0; j < this._name.length; j++) {
+      buf.writeUInt16LE(this._name.charCodeAt(j), index);
       index += 2;
     }
-    this._isDirty = true;
-    this.entity._isDirty = true;
-  }
-
-  public serialize(client: Client, initialization = false): Buffer {
-    if (!this._isDirty && !initialization) return null;
-    this._isDirty = false;
-    return this.buffer;
+    return buf;
   }
 }

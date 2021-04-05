@@ -1,22 +1,17 @@
 import { Client } from 'elsa';
 import { Component } from './component';
-import { PositionAndRotation } from './position-and-rotation';
+import { Position } from './position';
 import { ClientData } from '../client-data';
 import { Item, ItemState } from '../items/item';
 import { Vec2 } from 'planck-js';
 import GameRoom from '../game-room';
-import { Visibility } from '../systems/visibility';
+import { VisibilitySystem } from '../systems/visibility-system';
 
 export class Observable extends Component {
-  private _syncComponent: PositionAndRotation;
+  private _syncComponent: Position;
 
   public init(): void {
-    (<GameRoom>this.entity.world.room).systems[Visibility.name].register(this);
-    this._syncComponent = <PositionAndRotation>this.entity.getComponent(PositionAndRotation);
-  }
-
-  public onDestroy(): void {
-    (<GameRoom>this.entity.world.room).systems[Visibility.name].unregister(this);
+    this._syncComponent = <Position>this.entity.getComponent(Position);
   }
 
   public onCheckObserver(client: Client): boolean {
@@ -25,8 +20,11 @@ export class Observable extends Component {
     } else {
       const clientOwner = <ClientData>client.getUserData();
 
+      // Don't be visible to players with no objects
+      if (clientOwner.cameraFollowing == null) return false;
+
       // Get client sync component
-      const clientSyncComponent = <PositionAndRotation>clientOwner.controlling.entity.getComponent(PositionAndRotation);
+      const clientSyncComponent = <Position>clientOwner.cameraFollowing.getComponent(Position);
       // Don't be visible to players with no position, if such thing is possible
       if (clientSyncComponent == null) return false;
 
@@ -42,10 +40,10 @@ export class Observable extends Component {
     const clientOwner = <ClientData>client.getUserData();
 
     // Don't be visible to players with no objects
-    if (clientOwner.controlling == null) return false;
+    if (clientOwner.cameraFollowing == null) return false;
 
     // Get client sync component
-    const clientSyncComponent = <PositionAndRotation>clientOwner.controlling.entity.getComponent(PositionAndRotation);
+    const clientSyncComponent = <Position>clientOwner.cameraFollowing.getComponent(Position);
     // Don't be visible to players with no position, if such thing is possible
     if (clientSyncComponent == null) return false;
 
@@ -54,7 +52,7 @@ export class Observable extends Component {
       return this.checkDistance(this._syncComponent.position, clientSyncComponent.position);
 
     // I can't verify anything if my owner has no controlling entity. I'm invisible.
-    if (myOwner.controlling == null) return false;
+    if (myOwner.cameraFollowing == null) return false;
 
     // I don't have a sync component. Check if I'm an item
     const item = <Item>this.entity.getComponent(Item);
@@ -62,7 +60,7 @@ export class Observable extends Component {
       // Do a distance check with my owner's entity if I'm equipped
       if (item.state == ItemState.EQUIPPED) {
         // Check if my owner's controlling entity has a sync component and return false if it doesn't
-        const controllingEntitySync = <PositionAndRotation>myOwner.controlling.entity.getComponent(PositionAndRotation);
+        const controllingEntitySync = <Position>myOwner.cameraFollowing.getComponent(Position);
         if (controllingEntitySync == null) {
           return false;
         }

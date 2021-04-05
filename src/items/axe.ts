@@ -1,6 +1,6 @@
 import { Item } from './item';
 import { Entity } from '../entity';
-import { PositionAndRotation } from '../components/position-and-rotation';
+import { Position } from '../components/position';
 import { Box, Fixture, Vec2 } from 'planck-js';
 import { EntityCategory } from '../protocol';
 import { PhysicsBody } from '../components/physics-body';
@@ -10,7 +10,7 @@ import { Team } from '../components/team';
 import { Health } from '../components/health';
 import { Gold } from '../components/gold';
 import { randomRange } from '../utils';
-import { Experience } from '../components/experience';
+import { Level } from '../components/level';
 
 export class Axe extends Item {
   private fixture: Fixture;
@@ -18,7 +18,7 @@ export class Axe extends Item {
   private _isAttacking: boolean;
   private _damageTick = 0;
   private myTeam: Team;
-  private attackSpeed = 2; // todo cant be more than 10
+  private attackSpeed = 20; // todo cant be more than 10
   private ownerEntity: Entity;
 
   public constructor() {
@@ -29,7 +29,7 @@ export class Axe extends Item {
     this.ownerEntity = entity;
     const body = (<PhysicsBody>entity.getComponent(PhysicsBody)).getBody();
     this.fixture = body.createFixture({
-      shape: Box(0.375, 0.5, Vec2(0.75, 0)),
+      shape: Box(0.4, 0.5, Vec2(0.75, 0)),
       filterCategoryBits: EntityCategory.MELEE,
       filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.RESOURCE | EntityCategory.PLAYER | EntityCategory.NPC,
       isSensor: true,
@@ -47,7 +47,7 @@ export class Axe extends Item {
     // Get teams
     const teamComponent = <Team>(<Entity>other.getBody().getUserData()).getComponent(Team);
     // Compare teams
-    if (teamComponent == null || teamComponent.team == this.myTeam.team) return;
+    if (teamComponent == null || teamComponent.id == this.myTeam.id) return;
     // Get entity health component
     const healthComponent = <Health>(<Entity>other.getBody().getUserData()).getComponent(Health);
 

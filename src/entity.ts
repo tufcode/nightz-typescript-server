@@ -14,12 +14,12 @@ export class Entity {
   public world: World;
   public objectId: number;
   public input: InputState = { down: false, left: false, right: false, up: false, angle: 0, primary: false };
-  public observingClients: Client[] = [];
   public components: Component[] = [];
 
   private componentCache: { [key: string]: Component } = {};
-  public _isDirty: boolean;
+  public isDirty: boolean;
   private _eventEmitter: EventEmitter;
+  public componentBuffers: { [key: string]: { t: number; buffer: Buffer } } = {};
 
   public constructor(id = 'Entity', world: World, owner?: Client) {
     this.id = id;
@@ -36,8 +36,9 @@ export class Entity {
 
   public destroy() {
     this._eventEmitter.emit('destroy');
-    this.world.removeEntity(this);
+    const room = <GameRoom>this.world.room;
     for (let i = 0; i < this.components.length; i++) {
+      delete room.componentCache[this.components[i].constructor.name];
       this.components[i].onDestroy();
     }
   }
@@ -53,6 +54,12 @@ export class Entity {
 
     this.componentCache[component.constructor.name] = component;
     this.components.push(component);
+    const room = <GameRoom>this.world.room;
+    if (room.componentCache[component.constructor.name])
+      room.componentCache[component.constructor.name].push(component);
+    else {
+      room.componentCache[component.constructor.name] = [component];
+    }
     component.init();
 
     return component;
@@ -82,27 +89,5 @@ export class Entity {
     for (let i = 0; i < this.components.length; i++) {
       this.components[i].onTriggerExit(me, other);
     }
-  }
-
-  public onCheckObserver(candidate: ClientData) {
-    return true;
-  }
-
-  public update(deltaTime: number) {
-    // Components
-    for (let i = 0; i < this.components.length; i++) {
-      this.components[i].update(deltaTime);
-    }
-  }
-
-  public serialize(client: Client, initialization = false) {
-    // Components
-    const buffers = [];
-    for (let i = 0; i < this.components.length; i++) {
-      const componentBuf = this.components[i].serialize(client, initialization);
-      if (componentBuf != null) buffers.push(componentBuf);
-    }
-
-    return buffers;
   }
 }

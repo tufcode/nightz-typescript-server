@@ -1,6 +1,5 @@
 import { Client } from 'elsa';
 import { Entity } from './entity';
-import { CharacterController } from './components/character-controller';
 
 import { getBytes, Protocol } from './protocol';
 import { Tiers } from './data/tiers';
@@ -19,8 +18,8 @@ export interface InputState {
 }
 export class ClientData {
   public client: Client;
+  public cameraFollowing: Entity;
   public observing: Entity[] = null;
-  public controlling: CharacterController;
   public tier: ITier = Tiers.Wood;
   public input: InputState = { down: false, left: false, right: false, up: false, angle: 0, primary: false };
   public ownedEntities: Entity[] = [];

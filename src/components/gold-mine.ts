@@ -1,8 +1,8 @@
 import { Component } from './component';
 import { Health } from './health';
 import { Entity } from '../entity';
-import { Inventory } from './inventory';
-import { Experience } from './experience';
+import { Level } from './level';
+import { Gold } from './gold';
 
 export class GoldMine extends Component {
   public init(): void {
@@ -12,10 +12,11 @@ export class GoldMine extends Component {
   }
 
   public OnDamage(amount: number, source: Entity): void {
-    const sourceInventory = <Inventory>source.getComponent(Inventory);
-    const sourceExp = <Experience>source.getComponent(Experience);
-    if (sourceInventory != null) {
-      sourceInventory.gold += Math.ceil(amount / 2);
+    const sourceGold = <Gold>source.getComponent(Gold);
+    const sourceExp = <Level>source.getComponent(Level);
+
+    if (sourceGold != null) {
+      sourceGold.amount += Math.ceil(amount / 2);
     }
     if (sourceExp != null) {
       sourceExp.points += 4 + amount * 0.1;

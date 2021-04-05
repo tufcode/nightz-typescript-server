@@ -1,13 +1,13 @@
 import { Component } from './component';
 import { Entity } from '../entity';
 import { Body, Vec2 } from 'planck-js';
-import { PositionAndRotation } from './position-and-rotation';
+import { Position } from './position';
 import { Rotation } from './rotation';
 
 export class PhysicsBody extends Component {
   public entity: Entity;
   private readonly body: Body;
-  private _syncComponent: PositionAndRotation;
+  private _syncComponent: Position;
   private _rotationComponent: Rotation;
   private _lastPos: Vec2;
   private _lastVel: Vec2;
@@ -23,15 +23,15 @@ export class PhysicsBody extends Component {
     this._lastPos = Vec2.clone(this.body.getPosition());
     this._lastVel = Vec2.clone(this.body.getLinearVelocity());
 
-    this._syncComponent = <PositionAndRotation>this.entity.getComponent(PositionAndRotation);
+    this._syncComponent = <Position>this.entity.getComponent(Position);
     this._rotationComponent = <Rotation>this.entity.getComponent(Rotation);
   }
 
-  public onDestroy() {
+  public onDestroy(): void {
     this.entity.world.getPhysicsWorld().destroyBody(this.body);
   }
 
-  public update(deltaTime: number) {
+  public update(deltaTime: number): void {
     const pos = this.body.getPosition();
     const vel = this.body.getLinearVelocity();
     const ang = this.body.getAngle();

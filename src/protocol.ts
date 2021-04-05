@@ -18,7 +18,8 @@ export enum Protocol {
   SetPlayerEntity = 50,
   TierInfo = 60,
   GoldInfo = 61,
-  LevelInfo = 62,
+  Experience = 62,
+  Inventory = 63,
   TemporaryMessage = 70,
 }
 
@@ -63,8 +64,8 @@ export const getBytes = {
 
     for (let i = 0; i < entities.length; i++) {
       const entity = entities[i];
-      const serialized = entity.serialize(client, true);
       const entityBuf = Buffer.allocUnsafe(7 + entity.id.length * 2);
+      const componentBufferKeys = Object.keys(entity.componentBuffers);
 
       let index = 0;
       // Object id
@@ -78,29 +79,43 @@ export const getBytes = {
         index += 2;
       }
       // Serialized component count
-      entityBuf.writeUInt8(serialized.length, index);
+      entityBuf.writeUInt8(componentBufferKeys.length, index);
       index += 1;
 
       // Merge buffers
+      const buffers = [];
       let serializedByteLength = 0;
-      for (let j = 0; j < serialized.length; j++) {
-        serializedByteLength += serialized[j].length;
+      for (let j = 0; j < componentBufferKeys.length; j++) {
+        const b = entity.componentBuffers[componentBufferKeys[j]].buffer;
+        buffers.push(b);
+        serializedByteLength += b.length;
       }
-      buf = Buffer.concat([buf, entityBuf, ...serialized], buf.length + entityBuf.length + serializedByteLength);
+
+      buf = Buffer.concat([buf, entityBuf, ...buffers], buf.length + entityBuf.length + serializedByteLength);
     }
 
     return buf;
   },
-  [Protocol.EntityUpdate]: (client: Client, entities: Entity[], time: number) => {
-    const buffers = [];
+  [Protocol.EntityUpdate]: (client: Client, entities: Entity[], time: number, ticks: number) => {
+    const finalBuffers = [];
     let totalLength = 7;
     let totalEntities = 0;
     for (let i = 0; i < entities.length; i++) {
       const entity = entities[i];
-      const serialized = entity.serialize(client);
+      const componentBufferKeys = Object.keys(entity.componentBuffers);
+
+      const buffers = [];
+      let serializedByteLength = 0;
+      for (let j = 0; j < componentBufferKeys.length; j++) {
+        const cb = entity.componentBuffers[componentBufferKeys[j]];
+        if (cb.t < ticks) continue;
+
+        buffers.push(cb.buffer);
+        serializedByteLength += cb.buffer.length;
+      }
 
       // Check if this entity actually had any updates to save some traffic
-      if (serialized.length == 0) continue;
+      if (buffers.length == 0) continue;
 
       const entityBuf = Buffer.allocUnsafe(5);
       let index = 0;
@@ -108,17 +123,13 @@ export const getBytes = {
       entityBuf.writeUInt32LE(entity.objectId, index);
       index += 4;
       // Serialized component count
-      entityBuf.writeUInt8(serialized.length, index);
+      entityBuf.writeUInt8(buffers.length, index);
       index += 1;
       // Merge buffers
-      let serializedByteLength = 0;
-      for (let j = 0; j < serialized.length; j++) {
-        serializedByteLength += serialized[j].length;
-      }
       totalLength += entityBuf.length + serializedByteLength;
       totalEntities++;
 
-      buffers.push(entityBuf, ...serialized);
+      finalBuffers.push(entityBuf, ...buffers);
     }
     // Check if this patch actually had any updates to save some more traffic
     if (totalEntities == 0) return null;
@@ -128,7 +139,7 @@ export const getBytes = {
     buf.writeUInt16LE(totalEntities, 1);
     buf.writeUInt32LE(time, 3);
 
-    return Buffer.concat([buf, ...buffers], totalLength);
+    return Buffer.concat([buf, ...finalBuffers], totalLength);
   },
   [Protocol.RemoveEntities]: (entities: Entity[]) => {
     const buf = Buffer.allocUnsafe(3 + 4 * entities.length);
@@ -148,7 +159,7 @@ export const getBytes = {
     let buf = Buffer.allocUnsafe(5);
     buf.writeUInt8(Protocol.AddComponent, 0);
 
-    const serialized = component.serialize(client, true);
+    const serialized = component.serialize();
     // Object id
     buf.writeUInt32LE(entity.objectId, 1);
 

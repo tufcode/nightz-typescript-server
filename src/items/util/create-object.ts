@@ -4,13 +4,12 @@ import { Entity } from '../../entity';
 import { Health } from '../../components/health';
 import { Team } from '../../components/team';
 import { PhysicsBody } from '../../components/physics-body';
-import { PositionAndRotation } from '../../components/position-and-rotation';
+import { Position } from '../../components/position';
 import { Vec2 } from 'planck-js';
 import { World } from '../../systems/world';
 import { Client } from 'elsa';
 import { Axe } from '../axe';
 import { Item } from '../item';
-import { BuildingBlock } from '../building-block';
 import { Observable } from '../../components/observable';
 import { Rotation } from '../../components/rotation';
 
@@ -39,8 +38,8 @@ export const createBlock = (owner?: Client, team?: Team): ((world: World, positi
 
     // Create entity
     const entity = new Entity('WoodenBlock', world, owner);
-    const healthComponent = <Health>entity.addComponent(new Health(200, 20, () => entity.destroy()));
-    entity.addComponent(new PositionAndRotation(position, Vec2.zero(), angle));
+    entity.addComponent(new Health(200, 20));
+    entity.addComponent(new Position(position, Vec2.zero()));
     entity.addComponent(new Rotation(angle));
     entity.addComponent(new PhysicsBody(body));
     entity.addComponent(new Observable());
@@ -55,16 +54,12 @@ export const createAxe = (world: World, owner?: Client): Item => {
   // Create entity
   const entity = new Entity('WoodenAxe', world, owner);
   entity.addComponent(new Observable());
-  const i = <Item>entity.addComponent(new Axe());
-  world.addEntity(entity);
-  return i; // todo take axe as a parameter
+  return <Item>entity.addComponent(new Axe());
+  // todo take axe as a parameter
 };
 
 export const createItem = (item: Item, world: World, owner?: Client): Item => {
   const entity = new Entity(item.id, world, owner);
   entity.addComponent(new Observable());
-  //entity.addComponent(new PhysicsBody(body));
-  const i = <Item>entity.addComponent(item);
-  world.addEntity(entity);
-  return i;
+  return <Item>entity.addComponent(item);
 };

@@ -5,9 +5,7 @@ import { Vec2 } from 'planck-js';
 import { ITier } from '../client-data';
 
 export class Tier extends Component {
-  public linkedTo: Tier;
   private _tier: ITier;
-  private _isDirty: boolean;
 
   public get tier(): ITier {
     return this._tier;
@@ -15,13 +13,11 @@ export class Tier extends Component {
 
   public set tier(value: ITier) {
     this._tier = value;
-    this._isDirty = true;
-    this.entity._isDirty = true;
+    this.isDirty = true;
   }
 
-  public serialize(client: Client, initialization?: boolean): Buffer {
-    if (!this._isDirty && !initialization) return null;
-    this._isDirty = false;
+  public serialize(): Buffer {
+    this.isDirty = false;
 
     const buf = Buffer.allocUnsafe(2);
     // Packet Id

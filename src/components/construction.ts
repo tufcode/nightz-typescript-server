@@ -1,7 +1,7 @@
 import { Component } from './component';
 import { Entity } from '../entity';
 import { Body, Shape, Vec2 } from 'planck-js';
-import { PositionAndRotation } from './position-and-rotation';
+import { Position } from './position';
 import { PhysicsBody } from './physics-body';
 import { ItemSlot } from './inventory';
 import { World } from '../systems/world';
@@ -13,8 +13,6 @@ export class Construction extends Component {
   private failureCallback: () => void;
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;
   private _isDone: boolean;
-  private rotationComponent: Rotation;
-  private positionComponent: PositionAndRotation;
 
   public constructor(
     failureCallback: () => void,
@@ -43,6 +41,6 @@ export class Construction extends Component {
     }
     this._isDone = true;
     this.entity.destroy();
-    this.entity.world.addEntity(this.createCallback(this.entity.world, body.getPosition(), body.getAngle()));
+    this.createCallback(this.entity.world, body.getPosition(), body.getAngle());
   }
 }

@@ -1,10 +1,11 @@
 import { Component } from './component';
 import { Entity } from '../entity';
 import { Body } from 'planck-js';
-import { PositionAndRotation } from './position-and-rotation';
+import { Position } from './position';
 import { Health } from './health';
 import { Inventory } from './inventory';
-import { Experience } from './experience';
+import { Level } from './level';
+import { Gold } from './gold';
 
 export class KillRewards extends Component {
   public exp = 0;
@@ -21,10 +22,10 @@ export class KillRewards extends Component {
     health.on('damage', (amount: number, source: Entity) => {
       if (health.isDead) {
         // Give gold and exp to the killer
-        const enemyInventory = <Inventory>source.getComponent(Inventory);
-        if (enemyInventory != null) enemyInventory.gold += this.gold;
+        const enemyGold = <Gold>source.getComponent(Gold);
+        if (enemyGold != null) enemyGold.amount += this.gold;
 
-        const enemyExperience = <Experience>source.getComponent(Experience);
+        const enemyExperience = <Level>source.getComponent(Level);
         if (enemyExperience != null) enemyExperience.points += this.exp;
       }
     });

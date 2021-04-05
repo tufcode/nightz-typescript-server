@@ -1,10 +1,6 @@
 import { Component } from './component';
-import { Item, ItemState } from '../items/item';
-import { ComponentIds, getBytes, Protocol } from '../protocol';
-import { Client } from 'elsa';
-import * as EventEmitter from 'eventemitter3';
-import { Health } from './health';
-import { Entity } from '../entity';
+import { Item } from '../items/item';
+import { getBytes, Protocol } from '../protocol';
 
 export enum ItemSlot {
   Slot1 = 0,
@@ -20,127 +16,50 @@ export enum ItemSlot {
 }
 
 export class Inventory extends Component {
-  public activeHand: Item;
-  public activeHat: Item;
-
   private items: Item[] = [];
-  private _isDirty: boolean;
-  private _lastPrimary: boolean;
-  private _gold = 0;
-  private _eventEmitter: EventEmitter;
 
   public constructor() {
     super();
-    this._eventEmitter = new EventEmitter();
-  }
-
-  public on(event: 'beforeUpdateGold' | 'afterUpdateGold', fn: (...args: any[]) => void): EventEmitter {
-    return this._eventEmitter.on(event, fn);
-  }
-
-  public set gold(value: number) {
-    this._eventEmitter.emit('beforeUpdateGold', value, this);
-    this._gold = value;
-    this._eventEmitter.emit('afterUpdateGold', this);
-
-    if (this.entity.owner != null) {
-      this.entity.owner.send(getBytes[Protocol.GoldInfo](this.gold));
-    }
-  }
-  public get gold(): number {
-    return this._gold;
-  }
-
-  public update(deltaTime: number): void {
-    if (this.entity.input.primary) {
-      if (!this._lastPrimary) {
-        this._lastPrimary = true;
-        if (this.activeHand != null) this.activeHand.primaryStart(this.entity);
-        if (this.activeHat != null) this.activeHat.primaryStart(this.entity);
-      }
-    } else if (this._lastPrimary) {
-      if (this.activeHand != null) this.activeHand.primaryEnd(this.entity);
-      if (this.activeHat != null) this.activeHat.primaryEnd(this.entity);
-      this._lastPrimary = false;
-    }
-  }
-
-  public selectItem(id: number): void {
-    for (let i = 0; i < this.items.length; i++) {
-      const item = this.items[i];
-      if (item.entity.objectId == id) {
-        if (this.activeHand != null) this.activeHand.onUnequip();
-
-        this.activeHand = item;
-        this._isDirty = true;
-        this.entity._isDirty = true;
-        break;
-      }
-    }
+    // Set isDirty to false because it is true when a Component is instantiated and we don't want inventory to be
+    // sent to anyone but owner.
+    this.isDirty = false;
   }
 
   public addItem(item: Item): void {
     item.inventory = this;
     this.items.push(item);
 
-    if (item.type == ItemSlot.Slot1 && this.activeHand == null) {
-      this.activeHand = item;
-      item.onEquip(this.entity);
-    }
-
-    this._isDirty = true;
-    this.entity._isDirty = true;
+    this.entity.owner.send(this.serialize());
   }
 
   public removeItem(item: Item): void {
     this.items.splice(this.items.indexOf(item), 1);
-    this._isDirty = true;
-    this.entity._isDirty = true;
+    this.entity.owner.send(this.serialize());
   }
 
-  public serialize(client: Client, initialization?: boolean): Buffer {
-    if (this._isDirty || initialization) {
-      this._isDirty = false;
-      if (this.entity.owner != null && this.entity.owner.id == client.id) {
-        let totalItemIdLength = 0;
-        for (let i = 0; i < this.items.length; i++) {
-          totalItemIdLength += this.items[i].id.length * 2;
-        }
-
-        const buf = Buffer.allocUnsafe(2 + 6 * this.items.length + 4);
-
-        let index = 0;
-        buf.writeUInt8(ComponentIds.InventoryFull, index);
-        index += 1;
-        buf.writeUInt8(this.items.length, index);
-        index += 1;
-
-        for (let i = 0; i < this.items.length; i++) {
-          buf.writeUInt8(this.items[i].used, index);
-          index += 1;
-          buf.writeUInt8(this.items[i].max, index);
-          index += 1;
-          buf.writeUInt32LE(this.items[i].entity.objectId, index);
-          index += 4;
-        }
-
-        // Item ids
-        buf.writeUInt32LE(this.activeHand?.entity.objectId ?? 0, index);
-        index += 4;
-
-        return buf;
-      } else {
-        const buf = Buffer.allocUnsafe(5);
-
-        let index = 0;
-        buf.writeUInt8(ComponentIds.InventoryActiveOnly, index);
-        index += 1;
-
-        // Item ids
-        buf.writeUInt32LE(this.activeHand?.entity.objectId ?? 0, index);
-        index += 4;
-      }
+  public serialize(): Buffer {
+    let totalItemIdLength = 0;
+    for (let i = 0; i < this.items.length; i++) {
+      totalItemIdLength += this.items[i].id.length * 2;
     }
-    return null;
+
+    const buf = Buffer.allocUnsafe(2 + 6 * this.items.length + 4);
+
+    let index = 0;
+    buf.writeUInt8(Protocol.Inventory, index);
+    index += 1;
+    buf.writeUInt8(this.items.length, index);
+    index += 1;
+
+    for (let i = 0; i < this.items.length; i++) {
+      buf.writeUInt8(this.items[i].used, index);
+      index += 1;
+      buf.writeUInt8(this.items[i].max, index);
+      index += 1;
+      buf.writeUInt32LE(this.items[i].entity.objectId, index);
+      index += 4;
+    }
+
+    return buf;
   }
 }

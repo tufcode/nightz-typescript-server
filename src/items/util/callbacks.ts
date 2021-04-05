@@ -1,9 +1,9 @@
 import { Gold } from '../../components/gold';
 import { Inventory } from '../../components/inventory';
 
-export const requireGold = (inventory: Inventory, amount: number): boolean => {
-  if (inventory.gold >= amount) {
-    inventory.gold -= amount;
+export const requireGold = (goldComponent: Gold, amount: number): boolean => {
+  if (goldComponent.amount >= amount) {
+    goldComponent.amount -= amount;
     return true;
   }
   return false;

@@ -5,13 +5,9 @@ import { Entity } from '../entity';
 import { EntityCategory, getBytes, Protocol } from '../protocol';
 import { Room } from 'elsa';
 import * as debugModule from 'debug';
-import { performance } from 'perf_hooks';
-import { AIController } from '../components/ai-controller';
 const debug = debugModule('Physics');
 
 export class World extends System {
-  public entities: Entity[] = [];
-
   public bounds: Vec2;
 
   private readonly _world: planck.World;
@@ -67,10 +63,6 @@ export class World extends System {
   }
 
   public tick(deltaTime: number) {
-    // Update entities
-    for (let i = 0; i < this.entities.length; i++) {
-      this.entities[i].update(deltaTime);
-    }
     this._world.step(this.simulation.timeStep, this.simulation.velocityIterations, this.simulation.positionIterations);
   }
 
@@ -113,15 +105,6 @@ export class World extends System {
 
   public getPhysicsWorld() {
     return this._world;
-  }
-
-  public addEntity(entity: Entity) {
-    this.entities.push(entity);
-  }
-
-  public removeEntity(entity: Entity) {
-    this.entities.splice(this.entities.indexOf(entity), 1);
-    this.room.broadcast(getBytes[Protocol.RemoveEntities]([entity]));
   }
 
   public getEntityId() {

@@ -4,10 +4,11 @@ import { Fixture } from 'planck-js';
 
 export abstract class Component {
   public entity: Entity;
+  public isDirty: boolean;
 
   public init(): void {}
   public update(deltaTime: number): void {}
-  public serialize(client: Client, initialization?: boolean): Buffer {
+  public serialize(): Buffer {
     return null;
   }
   public onDestroy(): void {}
