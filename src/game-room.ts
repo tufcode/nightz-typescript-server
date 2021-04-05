@@ -38,6 +38,7 @@ import { LevelSystem } from './systems/level-system';
 import { HealthSystem } from './systems/health-system';
 import { AISystem } from './systems/ai-system';
 import { PlayerInput } from './components/player-input';
+import { Animation } from './components/animation';
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
@@ -272,6 +273,7 @@ export default class GameRoom extends Room {
     const entity = new Entity('Player', this.gameWorld, client);
     const goldComponent = <Gold>entity.addComponent(new Gold());
     const equipment = <Equipment>entity.addComponent(new Equipment());
+    entity.addComponent(new Animation());
     entity.addComponent(new Inventory());
     entity.addComponent(new Level());
     entity.addComponent(new Team(100 + client.id));

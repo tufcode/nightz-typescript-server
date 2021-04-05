@@ -10,6 +10,7 @@ import { Health } from '../health';
 import { Gold } from '../gold';
 import { randomRange } from '../../utils';
 import { Level } from '../level';
+import { Animation } from '../animation';
 
 export class Axe extends Item {
   private fixture: Fixture;
@@ -19,6 +20,7 @@ export class Axe extends Item {
   private myTeam: Team;
   private attackSpeed = 20; // todo cant be more than 10
   private ownerEntity: Entity;
+  private animationComponent: Animation;
 
   public constructor() {
     super('WoodenAxe', ItemSlot.Slot1);
@@ -35,10 +37,11 @@ export class Axe extends Item {
     });
     this.fixture.setUserData(this.entity.objectId);
     this.myTeam = <Team>entity.getComponent(Team);
+    this.animationComponent = <Animation>entity.getComponent(Animation);
   }
 
   public onUnequip() {
-    //(<Animation>this.ownerEntity.getComponent(Animation)).setAnimation(0, 0);
+    this.animationComponent.setAnimation(0, 0);
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {
@@ -67,13 +70,21 @@ export class Axe extends Item {
     }
   }
 
+  public setPrimary(b: boolean) {
+    if (!this._primary && b) {
+      this.animationComponent.setAnimation(2, this.attackSpeed);
+    } else if (this._primary && !b) {
+      this.animationComponent.setAnimation(0, 0);
+    }
+    super.setPrimary(b);
+  }
+
   public update(deltaTime: number) {
     // Damage colliding entities every 0.5 second
     if (!this._primary) {
       this._damageTick = 0;
       return;
     }
-    console.log('attacc', this._primary);
     this._damageTick += deltaTime;
     if (this._damageTick >= 1 / this.attackSpeed) {
       this._damageTick = 0;

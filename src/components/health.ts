@@ -52,10 +52,12 @@ export class Health extends Component {
 
   public damage(amount: number, source: Entity): void {
     if (this.isDead) return;
-    this.currentHealth -= amount;
-    this.lastDamageSource = source;
-    this.lastDamageTime = Date.now();
-    this.lastDamageAmount = amount;
+    if (!this.isUnkillable) {
+      this.currentHealth -= amount;
+      this.lastDamageSource = source;
+      this.lastDamageTime = Date.now();
+      this.lastDamageAmount = amount;
+    }
 
     this._eventEmitter.emit('damage', amount, source);
   }

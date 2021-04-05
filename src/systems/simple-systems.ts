@@ -18,6 +18,7 @@ import { Equipment } from '../components/equipment';
 import { PlayerInput } from '../components/player-input';
 import { Construction } from '../components/construction';
 import { Item } from '../components/items/item';
+import { Animation } from '../components/animation';
 
 export class SimpleSystems extends System {
   private room: GameRoom;
@@ -34,11 +35,22 @@ export class SimpleSystems extends System {
       const c = componentsPI[i];
       c.update(deltaTime);
     }
+
     // Items
     const componentsI = <Item[]>this.room.getComponentsOfType(Item.name);
     for (let i = 0; i < componentsI.length; i++) {
       const c = componentsI[i];
       c.update(deltaTime);
+    }
+
+    // Animations
+    const componentsA = <Animation[]>this.room.getComponentsOfType(Animation.name);
+    for (let i = 0; i < componentsA.length; i++) {
+      const c = componentsA[i];
+      if (c.isDirty) {
+        c.entity.isDirty = true;
+        c.entity.componentBuffers[Animation.name] = { t: this.room.currentTick, buffer: c.serialize() };
+      }
     }
 
     // NameTag

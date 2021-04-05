@@ -38,6 +38,7 @@ export enum ComponentIds {
   Level = 5,
   Rotation = 6,
   Equipment = 7,
+  Animation = 8,
 }
 export enum EntityCategory {
   BOUNDARY = 0x0001,

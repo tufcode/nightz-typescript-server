@@ -1,6 +1,7 @@
 import { Component } from './component';
 import { ComponentIds } from '../protocol';
 import { Item } from './items/item';
+import { Fixture } from 'planck-js';
 
 export class Equipment extends Component {
   private _hand: Item;
@@ -19,8 +20,17 @@ export class Equipment extends Component {
   }
 
   public set hand(value: Item) {
+    value.onEquip(this.entity);
     this._hand = value;
     this.isDirty = true;
+  }
+
+  public onTriggerEnter(me: Fixture, other: Fixture): void {
+    if (this._hand != null) this._hand.onTriggerEnter(me, other);
+  }
+
+  public onTriggerExit(me: Fixture, other: Fixture): void {
+    if (this._hand != null) this._hand.onTriggerExit(me, other);
   }
 
   public serialize(): Buffer {

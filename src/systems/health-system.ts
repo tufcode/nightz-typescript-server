@@ -28,8 +28,10 @@ export class HealthSystem extends System {
 
       if (c.currentHealth == 0) {
         if (c.isUnkillable) {
+          console.log('restore it');
           c.currentHealth = c.maxHealth;
         } else {
+          console.log('destroy it');
           c.entity.destroy();
           continue;
         }

@@ -1,6 +1,7 @@
 import { Component } from './component';
-import { ComponentIds } from '../protocol';
+import { ComponentIds, Protocol } from '../protocol';
 import { Item } from './items/item';
+import { GameClient } from '../game-client';
 
 export class Gold extends Component {
   private _amount = 0;
@@ -11,7 +12,7 @@ export class Gold extends Component {
 
   public set amount(value: number) {
     this._amount = value;
-    this.entity.owner.send(this.serialize());
+    (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
   }
 
   public constructor() {
@@ -24,7 +25,7 @@ export class Gold extends Component {
   public serialize(): Buffer {
     const buf = Buffer.allocUnsafe(5);
     // Packet Id
-    buf.writeUInt8(ComponentIds.PositionAndRotation, 0);
+    buf.writeUInt8(Protocol.GoldInfo, 0);
     buf.writeUInt32LE(this._amount, 1);
 
     return buf;
