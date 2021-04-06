@@ -1,6 +1,6 @@
 import { Team } from './team';
 import { Entity } from '../entity';
-import { Circle, Fixture, Vec2 } from 'planck-js';
+import { Box, Circle, Fixture, Vec2 } from 'planck-js';
 import { Health } from './health';
 import { Position } from './position';
 import { clamp, randomRange } from '../utils';
@@ -8,15 +8,21 @@ import { AI } from './ai';
 import { Movement } from './movement';
 import { Rotation } from './rotation';
 import { EntityCategory } from '../protocol';
+import { Equipment } from './equipment';
+import { Hand } from './items/hand';
+import { Animation } from './animation';
+import { EntityId } from '../data/entity-id';
 
 export class ZombieAI extends AI {
   private _entitiesToDamage: Health[] = [];
-  private idleMode: boolean;
   private _damageTick = 0;
   private targetPoint: Vec2;
   private patrolTick = 0;
   private hasTarget: boolean;
   private movementComponent: Movement;
+  private attackFixture: Fixture;
+  private attackSpeed = 2;
+  private animationComponent: Animation;
 
   public constructor() {
     super();
@@ -34,43 +40,54 @@ export class ZombieAI extends AI {
     });
 
     this.movementComponent = <Movement>this.entity.getComponent(Movement);
-  }
+    this.animationComponent = <Animation>this.entity.getComponent(Animation);
 
-  public onCollisionEnter(me: Fixture, other: Fixture): void {
-    // Check entity team
-    const teamComponent = <Team>(<Entity>other.getBody().getUserData()).getComponent(Team);
-    if (teamComponent == null || teamComponent.id == this.teamComponent.id) return;
-    // Get entity health component
-    const healthComponent = <Health>(<Entity>other.getBody().getUserData()).getComponent(Health);
-
-    if (healthComponent != null) {
-      // There is a health component, we can damage this entity.
-      this._entitiesToDamage.push(healthComponent);
-    }
-  }
-
-  public onCollisionExit(me: Fixture, other: Fixture): void {
-    const healthComponent = <Health>(<Entity>other.getBody().getUserData()).getComponent(Health);
-
-    if (healthComponent != null) {
-      this._entitiesToDamage.splice(this._entitiesToDamage.indexOf(healthComponent), 1);
-    }
+    this.attackFixture = body.createFixture({
+      shape: Box(0.1, 0.4, Vec2(0.375 + 0.1, 0)),
+      filterCategoryBits: EntityCategory.MELEE,
+      filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.RESOURCE | EntityCategory.PLAYER | EntityCategory.NPC,
+      isSensor: true,
+    });
+    this.attackFixture.setUserData(true);
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {
-    // Check entity team
-    const teamComponent = <Team>(<Entity>other.getBody().getUserData()).getComponent(Team);
-    if (teamComponent == null || !this.teamComponent.isHostileTowards(teamComponent)) return;
-
-    // Add as a potential target
+    const isAttackFixture = me.getUserData() === true;
     const entity = <Entity>other.getBody().getUserData();
-    if (entity.getComponent(Health) != null) this.addTarget(<Entity>other.getBody().getUserData());
-    console.log('added target', (<Entity>other.getBody().getUserData()).id, this.targets.length);
+    // Check entity team
+    const teamComponent = <Team>entity.getComponent(Team);
+    if (teamComponent == null || !this.teamComponent.isHostileTowards(teamComponent)) return;
+    // Get health component
+    const entityHealthComponent = <Health>entity.getComponent(Health);
+
+    if (isAttackFixture) {
+      this._entitiesToDamage.push(entityHealthComponent);
+    } else {
+      // Add as a potential target
+      if (entityHealthComponent != null) this.addTarget(<Entity>other.getBody().getUserData());
+    }
   }
 
   public onTriggerExit(me: Fixture, other: Fixture): void {
-    // Remove as a potential target
-    this.removeTarget(<Entity>other.getBody().getUserData());
+    const isAttackFixture = me.getUserData() === true;
+    const entity = <Entity>other.getBody().getUserData();
+
+    // Check entity team
+    const teamComponent = <Team>entity.getComponent(Team);
+    if (teamComponent == null || !this.teamComponent.isHostileTowards(teamComponent)) return;
+
+    // Get health component
+    const entityHealthComponent = <Health>entity.getComponent(Health);
+
+    // Don't waste CPU if health component is null
+    if (entityHealthComponent == null) return;
+
+    if (isAttackFixture) {
+      this._entitiesToDamage.splice(this._entitiesToDamage.indexOf(entityHealthComponent), 1);
+    } else {
+      // Remove as a potential target
+      this.removeTarget(<Entity>other.getBody().getUserData());
+    }
   }
 
   public updateTargets(deltaTime: number): void {
@@ -123,19 +140,25 @@ export class ZombieAI extends AI {
   public executeActions(deltaTime: number): void {
     const body = this.bodyComponent.getBody();
     const myPosition = body.getPosition();
-    // Damage colliding entities every 0.5 second
-    this._damageTick += deltaTime;
-    if (this._damageTick >= 0.5) {
-      let didAttack = false;
-      this._damageTick = 0;
-      for (let i = 0; i < this.targets.length; i++) {
-        const targetPos = (<Position>this.targets[i].getComponent(Position)).position;
-        const distance = Vec2.distance(myPosition, targetPos);
-        if (distance <= 1.1) {
-          didAttack = true;
-          (<Health>this.targets[i].getComponent(Health)).damage(8, this.entity);
+
+    if (this._entitiesToDamage.length > 0) {
+      this._damageTick += deltaTime;
+      if (this._damageTick >= 1 / this.attackSpeed) {
+        this._damageTick = 0;
+        for (let i = 0; i < this._entitiesToDamage.length; i++) {
+          const h = this._entitiesToDamage[i];
+          h.damage(randomRange(3, 6), this.entity);
         }
       }
+
+      if (this.animationComponent.getAnimationId() == 0) {
+        this.animationComponent.setAnimation(1, this.attackSpeed);
+      }
+    } else {
+      if (this.animationComponent.getAnimationId() != 0) {
+        this.animationComponent.setAnimation(0, 0);
+      }
+      this._damageTick = 0;
     }
 
     // Move and rotate as needed

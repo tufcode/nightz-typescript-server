@@ -7,9 +7,10 @@ import GameRoom from './game-room';
 import { World } from './systems/world';
 import { Fixture } from 'planck-js';
 import * as EventEmitter from 'eventemitter3';
+import { EntityId } from './data/entity-id';
 
 export class Entity {
-  public id: string;
+  public id: EntityId;
   public owner: Client;
   public world: World;
   public objectId: number;
@@ -21,7 +22,7 @@ export class Entity {
   private _eventEmitter: EventEmitter;
   public componentBuffers: { [key: string]: { t: number; buffer: Buffer } } = {};
 
-  public constructor(id = 'Entity', world: World, owner?: Client) {
+  public constructor(id = EntityId.None, world: World, owner?: Client) {
     this.id = id;
     this.world = world;
     this.owner = owner;

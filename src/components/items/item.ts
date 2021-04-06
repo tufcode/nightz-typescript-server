@@ -10,26 +10,27 @@ export enum ItemState {
 }
 
 export class Item extends Component {
-  public id: string;
   public state: ItemState;
   public type: ItemSlot;
   public inventory: Inventory;
   public used = 0;
   public max = 0;
   protected _primary: boolean;
+  public parent: Entity;
 
-  public constructor(id: string, type: ItemSlot) {
+  public constructor(type: ItemSlot) {
     super();
-    this.id = id;
     this.type = type;
   }
 
   public update(deltaTime: number) {}
   public onEquip(entity: Entity): void {
     this.state = ItemState.EQUIPPED;
+    this.parent = entity;
   }
   public onUnequip(): void {
     this.state = ItemState.IN_INVENTORY;
+    this.parent = null;
   }
   public onDestroy(): void {}
 

@@ -39,11 +39,6 @@ export class Inventory extends Component {
   }
 
   public serialize(): Buffer {
-    let totalItemIdLength = 0;
-    for (let i = 0; i < this.items.length; i++) {
-      totalItemIdLength += this.items[i].id.length * 2;
-    }
-
     const buf = Buffer.allocUnsafe(2 + 6 * this.items.length + 4);
 
     let index = 0;

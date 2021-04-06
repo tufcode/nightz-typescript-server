@@ -61,7 +61,7 @@ export const getBytes = {
 
     for (let i = 0; i < entities.length; i++) {
       const entity = entities[i];
-      const entityBuf = Buffer.allocUnsafe(7 + entity.id.length * 2);
+      const entityBuf = Buffer.allocUnsafe(7);
       const componentBufferKeys = Object.keys(entity.componentBuffers);
 
       let index = 0;
@@ -69,12 +69,8 @@ export const getBytes = {
       entityBuf.writeUInt32LE(entity.objectId, index);
       index += 4;
       // Entity id
-      entityBuf.writeUInt16LE(entity.id.length, index);
+      entityBuf.writeUInt16LE(entity.id, index);
       index += 2;
-      for (let j = 0; j < entity.id.length; j++) {
-        entityBuf.writeUInt16LE(entity.id.charCodeAt(j), index);
-        index += 2;
-      }
       // Serialized component count
       entityBuf.writeUInt8(componentBufferKeys.length, index);
       index += 1;

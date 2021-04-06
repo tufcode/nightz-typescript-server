@@ -1,17 +1,18 @@
 import * as planck from 'planck-js';
+import { Vec2 } from 'planck-js';
 import { EntityCategory } from '../../../protocol';
 import { Entity } from '../../../entity';
 import { Health } from '../../health';
 import { Team } from '../../team';
 import { PhysicsBody } from '../../physics-body';
 import { Position } from '../../position';
-import { Vec2 } from 'planck-js';
 import { World } from '../../../systems/world';
 import { Client } from 'elsa';
 import { Axe } from '../axe';
 import { Item } from '../item';
 import { Observable } from '../../observable';
 import { Rotation } from '../../rotation';
+import { EntityId } from '../../../data/entity-id';
 
 export const createBlock = (owner?: Client, team?: Team): ((world: World, position: Vec2, angle: number) => Entity) => {
   return (world: World, position: Vec2, angle: number) => {
@@ -37,7 +38,7 @@ export const createBlock = (owner?: Client, team?: Team): ((world: World, positi
     });
 
     // Create entity
-    const entity = new Entity('WoodenBlock', world, owner);
+    const entity = new Entity(EntityId.WoodenBlock, world, owner);
     entity.addComponent(new Health(200, 20));
     entity.addComponent(new Position(position, Vec2.zero()));
     entity.addComponent(new Rotation(angle));
@@ -52,14 +53,15 @@ export const createBlock = (owner?: Client, team?: Team): ((world: World, positi
 
 export const createAxe = (world: World, owner?: Client): Item => {
   // Create entity
-  const entity = new Entity('WoodenAxe', world, owner);
+  const entity = new Entity(EntityId.WoodenAxe, world, owner);
   entity.addComponent(new Observable());
   return <Item>entity.addComponent(new Axe());
   // todo take axe as a parameter
 };
 
-export const createItem = (item: Item, world: World, owner?: Client): Item => {
-  const entity = new Entity(item.id, world, owner);
+export const createItem = (id: EntityId, item: Item, world: World, owner?: Client): Item => {
+  const entity = new Entity(id, world, owner);
+  const i = <Item>entity.addComponent(item);
   entity.addComponent(new Observable());
-  return <Item>entity.addComponent(item);
+  return i;
 };

@@ -9,9 +9,11 @@ import { VisibilitySystem } from '../systems/visibility-system';
 
 export class Observable extends Component {
   private _syncComponent: Position;
+  private _itemComponent: Item;
 
   public init(): void {
     this._syncComponent = <Position>this.entity.getComponent(Position);
+    this._itemComponent = <Item>this.entity.getComponent(Item);
   }
 
   public onCheckObserver(client: Client): boolean {
@@ -31,6 +33,14 @@ export class Observable extends Component {
       // Do a distance check if I have sync component
       if (this._syncComponent != null)
         return this.checkDistance(this._syncComponent.position, clientSyncComponent.position);
+
+      // Do a distance check with my parent entity if I'm an item TODO improve this
+      if (this._itemComponent != null && this._itemComponent.parent != null) {
+        const parentPosition = <Position>this._itemComponent.parent.getComponent(Position);
+        if (parentPosition != null) {
+          return this.checkDistance(parentPosition.position, clientSyncComponent.position);
+        }
+      }
 
       // We can't be observed if I don't have sync component.
       return false;

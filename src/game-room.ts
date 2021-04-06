@@ -13,9 +13,8 @@ import { Position } from './components/position';
 import { Health } from './components/health';
 import { Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
-import { createAxe, createBlock, createItem } from './components/items/util/create-object';
+import { createBlock, createItem } from './components/items/util/create-object';
 import { Tiers } from './data/tiers';
-import { Axe } from './components/items/axe';
 import { requireGold } from './components/items/util/callbacks';
 import { Spawner } from './systems/spawner';
 import { randomRange } from './utils';
@@ -39,6 +38,10 @@ import { HealthSystem } from './systems/health-system';
 import { AISystem } from './systems/ai-system';
 import { PlayerInput } from './components/player-input';
 import { Animation } from './components/animation';
+import { EntityId } from './data/entity-id';
+import { Axe } from './components/items/axe';
+import { Hand } from './components/items/hand';
+
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
@@ -105,7 +108,7 @@ export default class GameRoom extends Room {
           EntityCategory.MELEE,
       });
       // Create AI entity
-      const entity = new Entity('GoldMine', this.gameWorld);
+      const entity = new Entity(EntityId.GoldMine, this.gameWorld);
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
@@ -143,7 +146,7 @@ export default class GameRoom extends Room {
           EntityCategory.SENSOR,
       });
       // Create AI entity
-      const entity = new Entity('Zombie', this.gameWorld);
+      const entity = new Entity(EntityId.YoungZombie, this.gameWorld);
       entity.addComponent(new Animation());
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
@@ -152,6 +155,7 @@ export default class GameRoom extends Room {
       entity.addComponent(new Health(40, 5));
       entity.addComponent(new KillRewards(20, 10));
       entity.addComponent(new Movement(20));
+
       entity.addComponent(new ZombieAI());
       entity.addComponent(new Observable());
 
@@ -270,7 +274,7 @@ export default class GameRoom extends Room {
     });
 
     // Create player entity
-    const entity = new Entity('Player', this.gameWorld, client);
+    const entity = new Entity(EntityId.Player, this.gameWorld, client);
     const goldComponent = <Gold>entity.addComponent(new Gold());
     const equipment = <Equipment>entity.addComponent(new Equipment());
     entity.addComponent(new Animation());
@@ -292,13 +296,12 @@ export default class GameRoom extends Room {
     (<GameClient>client.getUserData()).addOwnedEntity(entity);
     (<GameClient>client.getUserData()).cameraFollowing = entity;
 
-    const axe = createAxe(this.gameWorld, client);
-
+    const axe = createItem(EntityId.WoodenAxe, new Axe(), this.gameWorld, client);
     inventory.addItem(axe);
     inventory.addItem(
       createItem(
+        EntityId.WoodenBlock,
         new BuildingBlock(
-          'WoodenBlock',
           ItemSlot.Slot2,
           () => requireGold(goldComponent, 20),
           () => {

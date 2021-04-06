@@ -8,14 +8,13 @@ import { Team } from '../team';
 import { Health } from '../health';
 import { randomRange } from '../../utils';
 import { Animation } from '../animation';
-import { EntityId } from '../../data/entity-id';
 
-export class Axe extends Item {
+export class Hand extends Item {
   private fixture: Fixture;
   private _entitiesToDamage: Health[] = [];
   private _damageTick = 0;
   private myTeam: Team;
-  private attackSpeed = 20; // todo cant be more than 10
+  private attackSpeed = 2; // todo cant be more than 10
   private ownerEntity: Entity;
   private animationComponent: Animation;
 
@@ -23,16 +22,16 @@ export class Axe extends Item {
     super(ItemSlot.Slot1);
   }
 
-  public init() {
-    super.init();
-    this.entity.id = EntityId.WoodenAxe;
+  public hasTargetsInRadius(): boolean {
+    return this._entitiesToDamage.length != 0;
   }
 
   public onEquip(entity: Entity): void {
+    super.onEquip(entity);
     this.ownerEntity = entity;
     const body = (<PhysicsBody>entity.getComponent(PhysicsBody)).getBody();
     this.fixture = body.createFixture({
-      shape: Box(0.3, 0.5, Vec2(0.8, 0)),
+      shape: Box(0.25, 0.25, Vec2(0.65, 0)),
       filterCategoryBits: EntityCategory.MELEE,
       filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.RESOURCE | EntityCategory.PLAYER | EntityCategory.NPC,
       isSensor: true,
@@ -43,6 +42,7 @@ export class Axe extends Item {
   }
 
   public onUnequip() {
+    super.onUnequip();
     this.animationComponent.setAnimation(0, 0);
   }
 
@@ -72,7 +72,7 @@ export class Axe extends Item {
 
   public setPrimary(b: boolean) {
     if (!this._primary && b) {
-      this.animationComponent.setAnimation(2, this.attackSpeed);
+      this.animationComponent.setAnimation(1, this.attackSpeed);
     } else if (this._primary && !b) {
       this.animationComponent.setAnimation(0, 0);
     }

@@ -27,7 +27,6 @@ export class HealthSystem extends System {
       const c = components[i];
 
       if (c.currentHealth == 0) {
-        console.log('kill it ', c.entity.id);
         c.entity.destroy();
         continue;
       }

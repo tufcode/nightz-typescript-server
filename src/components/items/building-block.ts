@@ -6,19 +6,19 @@ import { EntityCategory } from '../../protocol';
 import { ItemSlot } from '../inventory';
 import { World } from '../../systems/world';
 import { Construction } from '../construction';
+import { EntityId } from '../../data/entity-id';
 
 export class BuildingBlock extends Consumable {
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;
   private permissionCallback: (position: Vec2, angle: number) => boolean;
   private failureCallback: () => void;
   public constructor(
-    id: string,
     type: ItemSlot,
     permissionCallback: (position: Vec2, angle: number) => boolean,
     failureCallback: () => void,
     createCallback: (world: World, position: Vec2, angle: number) => Entity,
   ) {
-    super(id, type);
+    super(type);
     this.permissionCallback = permissionCallback;
     this.failureCallback = failureCallback;
     this.createCallback = createCallback;
