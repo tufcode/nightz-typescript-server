@@ -115,6 +115,10 @@ export class SimpleSystems extends System {
     for (let i = 0; i < componentsC.length; i++) {
       const c = componentsC[i];
       c.update(deltaTime);
+      if (c.isDirty) {
+        c.entity.isDirty = true;
+        c.entity.componentBuffers[Construction.name] = { t: this.room.currentTick, buffer: c.serialize() };
+      }
     }
   }
 }

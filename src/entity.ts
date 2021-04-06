@@ -85,6 +85,29 @@ export class Entity {
     return component;
   }
 
+  public removeAllComponents(): void {
+    const room = <GameRoom>this.world.room;
+    for (let i = 0; i < this.components.length; i++) {
+      const c = this.components[i];
+
+      // Remove component with parent id
+      const parent = Object.getPrototypeOf(this.components[i].constructor).name;
+      if (parent != 'Component') {
+        // todo make this a while loop or it wont work with multiple inheritances
+        room.componentCache[parent].splice(room.componentCache[parent].indexOf(c), 1);
+      }
+
+      // Remove component
+      const n = this.components[i].constructor.name;
+      room.componentCache[n].splice(room.componentCache[n].indexOf(c), 1);
+      this.components[i].onDestroy();
+    }
+
+    this.componentCache = {};
+    this.componentBuffers = {};
+    this.components = [];
+  }
+
   public onCollisionEnter(me: Fixture, other: Fixture): void {
     // Components
     for (let i = 0; i < this.components.length; i++) {

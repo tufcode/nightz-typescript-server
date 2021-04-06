@@ -4,7 +4,7 @@ import { Item } from './items/item';
 import { GameClient } from '../game-client';
 
 export class Gold extends Component {
-  private _amount = 0;
+  private _amount = 10000;
 
   public get amount(): number {
     return this._amount;
@@ -27,7 +27,7 @@ export class Gold extends Component {
     const buf = Buffer.allocUnsafe(5);
     // Packet Id
     buf.writeUInt8(Protocol.GoldInfo, 0);
-    buf.writeUInt32LE(this._amount, 1);
+    buf.writeUInt32LE(Math.floor(this._amount), 1);
 
     return buf;
   }

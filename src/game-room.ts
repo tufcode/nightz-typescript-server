@@ -118,7 +118,7 @@ export default class GameRoom extends Room {
       entity.addComponent(new Observable());
     }
 
-    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 30, () => {
+    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 0, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
@@ -231,11 +231,15 @@ export default class GameRoom extends Room {
         clientData.input.right = message.readUInt8(5) == 1;
         break;
       case ClientProtocol.SelectItem:
-        /*if (!clientData.controlling) break;
-        const inventory = <Inventory>clientData.controlling.entity.getComponent(Inventory);
-        if (!inventory) break;
+        if (!clientData.cameraFollowing) break;
+        const equipment = <Equipment>clientData.cameraFollowing.getComponent(Equipment);
+        const inventory = <Inventory>clientData.cameraFollowing.getComponent(Inventory);
+        if (!inventory || !equipment) break;
 
-        inventory.selectItem(message.readUInt32LE(1));*/
+        const item = inventory.getItem(message.readUInt32LE(1));
+        if (!item) break;
+
+        equipment.hand = item; // todo what if it is hat
 
         break;
       default:
@@ -266,6 +270,7 @@ export default class GameRoom extends Room {
       filterMaskBits:
         EntityCategory.BOUNDARY |
         EntityCategory.STRUCTURE |
+        EntityCategory.RESOURCE |
         EntityCategory.PLAYER |
         EntityCategory.NPC |
         EntityCategory.BULLET |
@@ -303,10 +308,11 @@ export default class GameRoom extends Room {
         EntityId.WoodenBlock,
         new BuildingBlock(
           ItemSlot.Slot2,
+          0.25,
           () => requireGold(goldComponent, 20),
           () => {
-            goldComponent.amount += 20;
-            client.send(getBytes[Protocol.TemporaryMessage]('NoRest,' + entity.objectId, 2));
+            goldComponent.amount += 20; // todo gold exploit
+            client.send(getBytes[Protocol.TemporaryMessage]('NoRest,0', 2));
           },
           createBlock(client, new Team(100 + client.id)),
         ),
@@ -324,6 +330,7 @@ export default class GameRoom extends Room {
   }
 
   public onLeave(client: Client, closeReason: WSCloseCode): void {
+    // TODO (elsa?) kick disconnectevent
     const c = <GameClient>client.getUserData();
     for (let i = 0; i < c.ownedEntities.length; i++) {
       c.ownedEntities[i].destroy();

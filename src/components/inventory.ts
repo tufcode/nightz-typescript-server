@@ -18,6 +18,7 @@ export enum ItemSlot {
 
 export class Inventory extends Component {
   private items: Item[] = [];
+  private itemsWithId: { [key: number]: Item } = {};
 
   public constructor() {
     super();
@@ -28,12 +29,14 @@ export class Inventory extends Component {
 
   public addItem(item: Item): void {
     item.inventory = this;
+    this.itemsWithId[item.entity.objectId] = item;
     this.items.push(item);
 
     (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
   }
 
   public removeItem(item: Item): void {
+    delete this.itemsWithId[item.entity.objectId];
     this.items.splice(this.items.indexOf(item), 1);
     (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
   }
@@ -57,5 +60,9 @@ export class Inventory extends Component {
     }
 
     return buf;
+  }
+
+  public getItem(id: number): Item {
+    return this.itemsWithId[id];
   }
 }

@@ -6,6 +6,7 @@ import { PhysicsBody } from './physics-body';
 import { ItemSlot } from './inventory';
 import { World } from '../systems/world';
 import { Rotation } from './rotation';
+import { ComponentIds, Protocol } from '../protocol';
 
 export class Construction extends Component {
   private bodyComponent: PhysicsBody;
@@ -42,5 +43,13 @@ export class Construction extends Component {
     this._isDone = true;
     this.entity.destroy();
     this.createCallback(this.entity.world, body.getPosition(), body.getAngle());
+  }
+
+  public serialize(): Buffer {
+    const buf = Buffer.allocUnsafe(1);
+
+    buf.writeUInt8(ComponentIds.Construction, 0);
+
+    return buf;
   }
 }
