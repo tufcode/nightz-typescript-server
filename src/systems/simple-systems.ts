@@ -19,6 +19,7 @@ import { PlayerInput } from '../components/player-input';
 import { Construction } from '../components/construction';
 import { Item } from '../components/items/item';
 import { Animation } from '../components/animation';
+import { Spike } from '../components/items/spike';
 
 export class SimpleSystems extends System {
   private room: GameRoom;
@@ -40,6 +41,13 @@ export class SimpleSystems extends System {
     const componentsI = <Item[]>this.room.getComponentsOfType(Item.name);
     for (let i = 0; i < componentsI.length; i++) {
       const c = componentsI[i];
+      c.update(deltaTime);
+    }
+
+    // Spikes
+    const componentsS = <Spike[]>this.room.getComponentsOfType(Spike.name);
+    for (let i = 0; i < componentsS.length; i++) {
+      const c = componentsS[i];
       c.update(deltaTime);
     }
 

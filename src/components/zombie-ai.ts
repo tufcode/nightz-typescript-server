@@ -1,6 +1,6 @@
 import { Team } from './team';
 import { Entity } from '../entity';
-import { Box, Circle, Fixture, Vec2 } from 'planck-js';
+import { AABB, Box, Circle, Fixture, Vec2 } from 'planck-js';
 import { Health } from './health';
 import { Position } from './position';
 import { clamp, randomRange } from '../utils';
@@ -23,6 +23,9 @@ export class ZombieAI extends AI {
   private attackFixture: Fixture;
   private attackSpeed = 2;
   private animationComponent: Animation;
+  private nextPatrolTick = randomRange(60, 600);
+  private detectionRadius = 10;
+  private targetTick = 0;
 
   public constructor() {
     super();
@@ -32,12 +35,12 @@ export class ZombieAI extends AI {
   public init() {
     super.init();
     const body = this.bodyComponent.getBody();
-    body.createFixture({
+    /*body.createFixture({
       shape: this.detectionShape,
       filterCategoryBits: EntityCategory.SENSOR,
       filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.PLAYER,
       isSensor: true,
-    });
+    });*/
 
     this.movementComponent = <Movement>this.entity.getComponent(Movement);
     this.animationComponent = <Animation>this.entity.getComponent(Animation);
@@ -48,11 +51,10 @@ export class ZombieAI extends AI {
       filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.RESOURCE | EntityCategory.PLAYER | EntityCategory.NPC,
       isSensor: true,
     });
-    this.attackFixture.setUserData(true);
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {
-    const isAttackFixture = me.getUserData() === true;
+    if (other.isSensor()) return;
     const entity = <Entity>other.getBody().getUserData();
     // Check entity team
     const teamComponent = <Team>entity.getComponent(Team);
@@ -60,21 +62,12 @@ export class ZombieAI extends AI {
     // Get health component
     const entityHealthComponent = <Health>entity.getComponent(Health);
 
-    if (isAttackFixture) {
-      this._entitiesToDamage.push(entityHealthComponent);
-    } else {
-      // Add as a potential target
-      if (entityHealthComponent != null) this.addTarget(<Entity>other.getBody().getUserData());
-    }
+    this._entitiesToDamage.push(entityHealthComponent);
   }
 
   public onTriggerExit(me: Fixture, other: Fixture): void {
-    const isAttackFixture = me.getUserData() === true;
+    if (other.isSensor()) return;
     const entity = <Entity>other.getBody().getUserData();
-
-    // Check entity team
-    const teamComponent = <Team>entity.getComponent(Team);
-    if (teamComponent == null || !this.teamComponent.isHostileTowards(teamComponent)) return;
 
     // Get health component
     const entityHealthComponent = <Health>entity.getComponent(Health);
@@ -82,23 +75,73 @@ export class ZombieAI extends AI {
     // Don't waste CPU if health component is null
     if (entityHealthComponent == null) return;
 
-    if (isAttackFixture) {
-      this._entitiesToDamage.splice(this._entitiesToDamage.indexOf(entityHealthComponent), 1);
-    } else {
-      // Remove as a potential target
-      this.removeTarget(<Entity>other.getBody().getUserData());
-    }
+    this._entitiesToDamage.splice(this._entitiesToDamage.indexOf(entityHealthComponent), 1);
+  }
+
+  public checkTargets(): void {
+    // Clear targets first
+    this.targets = [];
+    this.activeTarget = null;
+
+    let bestDistance = Number.MAX_VALUE;
+
+    const pos = this.bodyComponent.getBody().getWorldCenter();
+    const aabbLower = pos.clone().sub(Vec2(this.detectionRadius, this.detectionRadius));
+    const aabbUpper = pos.clone().add(Vec2(this.detectionRadius, this.detectionRadius));
+    const aabb = new AABB(aabbLower, aabbUpper);
+    this.entity.world.getPhysicsWorld().queryAABB(aabb, (f) => {
+      // Skip if it is a sensor
+      if (f.isSensor()) return true;
+      // Don't detect those outside the circle (we are casting a box, so...)
+      const targetCenter = f.getBody().getWorldCenter();
+      if (targetCenter.clone().sub(pos).length() >= this.detectionRadius) return true;
+      // Check if it is a valid target
+      const isInRightCategory =
+        (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
+        (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE;
+      if (!isInRightCategory) return true;
+
+      const entity = <Entity>f.getBody().getUserData();
+      if (entity == null) return true; // World bounds has no entity
+      // Check entity team
+      const teamComponent = <Team>entity.getComponent(Team);
+      if (teamComponent == null || !this.teamComponent.isHostileTowards(teamComponent)) return;
+
+      // Get health component
+      const entityHealthComponent = <Health>entity.getComponent(Health);
+      if (entityHealthComponent == null) return true;
+
+      // Add as a target
+      this.addTarget(entity);
+
+      // Check distance
+      const distance = Vec2.distance(pos, targetCenter);
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        this.activeTarget = entity;
+      }
+
+      return true;
+    });
   }
 
   public updateTargets(deltaTime: number): void {
     const body = this.bodyComponent.getBody();
     const myPosition = body.getPosition();
 
+    this.targetTick += deltaTime;
+    if (this.targetTick >= 2) {
+      this.targetTick = 0;
+      this.checkTargets();
+    }
+
     this.hasTarget = this.targets.length != 0;
     if (!this.hasTarget) {
       // Patrol
       this.patrolTick += deltaTime;
-      if (this.patrolTick >= 5) {
+      if (this.patrolTick >= this.nextPatrolTick) {
+        this.nextPatrolTick = randomRange(60, 600);
         this.patrolTick = 0;
         this.targetPoint = Vec2(
           clamp(
@@ -112,27 +155,6 @@ export class ZombieAI extends AI {
             this.entity.world.bounds.y / 2,
           ),
         );
-      }
-    } else {
-      // Update active target
-      let bestDistance = Number.MAX_VALUE;
-      for (let i = 0; i < this.targets.length; i++) {
-        const target = this.targets[i];
-        const targetHealthComponent = <Health>target.getComponent(Health);
-        if (targetHealthComponent.isDead) {
-          this.removeTarget(target);
-          continue;
-        }
-
-        const targetPositionComponent = <Position>target.getComponent(Position);
-        const targetPos = targetPositionComponent.position;
-
-        const distance = Vec2.distance(myPosition, targetPos);
-
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          this.activeTarget = target;
-        }
       }
     }
   }

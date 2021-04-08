@@ -13,7 +13,7 @@ import { Position } from './components/position';
 import { Health } from './components/health';
 import { Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
-import { createBlock, createItem } from './components/items/util/create-object';
+import { createWoodenBlock, createItem, createWoodenSpike } from './components/items/util/create-object';
 import { Tiers } from './data/tiers';
 import { requireGold } from './components/items/util/callbacks';
 import { Spawner } from './systems/spawner';
@@ -69,7 +69,7 @@ export default class GameRoom extends Room {
       {
         gravity: Vec2.zero(),
       },
-      { positionIterations: 8, timeStep: 1 / 30, velocityIterations: 10 },
+      { positionIterations: 2, timeStep: 1 / 30, velocityIterations: 4 },
     );
 
     // Create boundaries
@@ -84,7 +84,7 @@ export default class GameRoom extends Room {
     this.addSystem(this.gameWorld);
 
     // Create mines
-    const mineCount = this.playableArea.length() / 0.5;
+    const mineCount = Math.round(this.playableArea.length() / 2);
     console.log(mineCount);
     for (let i = 0; i < mineCount; i++) {
       const body = this.gameWorld.getPhysicsWorld().createBody({
@@ -118,7 +118,7 @@ export default class GameRoom extends Room {
       entity.addComponent(new Observable());
     }
 
-    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 0, () => {
+    const zombieSpawner = new Spawner(80 * 6, 4, 1, 1, 100, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
@@ -172,6 +172,7 @@ export default class GameRoom extends Room {
   }
 
   public update(deltaTime: number): void {
+    const t = performance.now();
     this.currentTick++;
     this._sendTick += deltaTime;
     // Tick systems
@@ -210,6 +211,18 @@ export default class GameRoom extends Room {
       }
       this.lastSend = this.currentTick;
     }
+
+    console.log(
+      'tick took',
+      (performance.now() - t).toFixed(2),
+      'ms',
+      ' | ',
+      'zombies on map',
+      this.getComponentsOfType(ZombieAI.name).length,
+      ' | ',
+      'bodies on world',
+      this.gameWorld.getPhysicsWorld().getBodyCount(),
+    );
   }
 
   public onMessage(client: Client, message: Buffer) {
@@ -306,16 +319,15 @@ export default class GameRoom extends Room {
     inventory.addItem(
       createItem(
         EntityId.WoodenBlock,
-        new BuildingBlock(
-          ItemSlot.Slot2,
-          0.25,
-          () => requireGold(goldComponent, 20),
-          () => {
-            goldComponent.amount += 20; // todo gold exploit
-            client.send(getBytes[Protocol.TemporaryMessage]('NoRest,0', 2));
-          },
-          createBlock(client, new Team(100 + client.id)),
-        ),
+        new BuildingBlock(ItemSlot.Slot2, 0.25, 20, createWoodenBlock(client, new Team(100 + client.id))),
+        this.gameWorld,
+        client,
+      ),
+    );
+    inventory.addItem(
+      createItem(
+        EntityId.WoodenSpike,
+        new BuildingBlock(ItemSlot.Slot2, 0.25, 20, createWoodenSpike(client, new Team(100 + client.id))),
         this.gameWorld,
         client,
       ),

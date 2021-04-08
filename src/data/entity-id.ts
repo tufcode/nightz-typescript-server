@@ -6,6 +6,7 @@ export enum EntityId {
   // Resources and Structures (1000-2000)
   GoldMine = 1000,
   WoodenBlock = 1001,
+  WoodenSpike = 1002,
 
   // Items (2001-3001)
   WoodenAxe = 2001,

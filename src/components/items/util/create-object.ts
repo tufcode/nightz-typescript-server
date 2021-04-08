@@ -13,8 +13,12 @@ import { Item } from '../item';
 import { Observable } from '../../observable';
 import { Rotation } from '../../rotation';
 import { EntityId } from '../../../data/entity-id';
+import { Spike } from '../spike';
 
-export const createBlock = (owner?: Client, team?: Team): ((world: World, position: Vec2, angle: number) => Entity) => {
+export const createWoodenBlock = (
+  owner?: Client,
+  team?: Team,
+): ((world: World, position: Vec2, angle: number) => Entity) => {
   return (world: World, position: Vec2, angle: number) => {
     const body = world.getPhysicsWorld().createBody({
       type: 'static',
@@ -46,6 +50,45 @@ export const createBlock = (owner?: Client, team?: Team): ((world: World, positi
     entity.addComponent(new Observable());
 
     if (team != null) entity.addComponent(team);
+
+    return entity;
+  };
+};
+export const createWoodenSpike = (
+  owner?: Client,
+  team?: Team,
+): ((world: World, position: Vec2, angle: number) => Entity) => {
+  return (world: World, position: Vec2, angle: number) => {
+    const body = world.getPhysicsWorld().createBody({
+      type: 'static',
+      position: position,
+      fixedRotation: true,
+      angle: angle,
+    });
+    body.createFixture({
+      shape: planck.Circle(0.5),
+      density: 0.0,
+      filterCategoryBits: EntityCategory.STRUCTURE,
+      filterMaskBits:
+        EntityCategory.BOUNDARY |
+        EntityCategory.STRUCTURE |
+        EntityCategory.RESOURCE |
+        EntityCategory.PLAYER |
+        EntityCategory.NPC |
+        EntityCategory.BULLET |
+        EntityCategory.MELEE,
+      isSensor: true,
+    });
+
+    // Create entity
+    const entity = new Entity(EntityId.WoodenSpike, world, owner);
+    if (team != null) entity.addComponent(team);
+    entity.addComponent(new Health(200, 20));
+    entity.addComponent(new Position(position, Vec2.zero()));
+    entity.addComponent(new Rotation(angle));
+    entity.addComponent(new PhysicsBody(body));
+    entity.addComponent(new Spike());
+    entity.addComponent(new Observable());
 
     return entity;
   };

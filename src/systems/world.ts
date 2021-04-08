@@ -78,25 +78,25 @@ export class World extends System {
       position: Vec2.zero(),
     });
     this._bounds.createFixture({
-      shape: Box(0.5, size.y, Vec2(size.x, 0), 0),
+      shape: Box(0.5, size.y / 2, Vec2(size.x / 2, 0), 0),
       density: 50.0,
       filterCategoryBits: EntityCategory.BOUNDARY,
       filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
     });
     this._bounds.createFixture({
-      shape: Box(0.5, size.y, Vec2(-size.x, 0), 0),
+      shape: Box(0.5, size.y / 2, Vec2(-(size.x / 2), 0), 0),
       density: 50.0,
       filterCategoryBits: EntityCategory.BOUNDARY,
       filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
     });
     this._bounds.createFixture({
-      shape: Box(size.x, 0.5, Vec2(0, size.y), 0),
+      shape: Box(size.x / 2, 0.5, Vec2(0, size.y / 2), 0),
       density: 50.0,
       filterCategoryBits: EntityCategory.BOUNDARY,
       filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
     });
     this._bounds.createFixture({
-      shape: Box(size.x, 0.5, Vec2(0, -size.y), 0),
+      shape: Box(size.x / 2, 0.5, Vec2(0, -(size.y / 2)), 0),
       density: 50.0,
       filterCategoryBits: EntityCategory.BOUNDARY,
       filterMaskBits: EntityCategory.PLAYER | EntityCategory.NPC | EntityCategory.STRUCTURE,
