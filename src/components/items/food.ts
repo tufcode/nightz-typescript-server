@@ -9,7 +9,6 @@ import { ItemSlot } from '../inventory';
 
 export class Food extends Item {
   public set isEating(value: boolean) {
-    console.log(value == true, 'foodVal, current', this.current);
     this._isEating = value;
     if (value) this.animationComponent.setAnimation(3, 3);
     else this.animationComponent.setAnimation(0, 0);
