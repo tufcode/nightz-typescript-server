@@ -4,7 +4,7 @@ import { Item } from './items/item';
 import { GameClient } from '../game-client';
 
 export class Gold extends Component {
-  private _amount = 10000;
+  private _amount = 0;
 
   public get amount(): number {
     return this._amount;
@@ -21,6 +21,10 @@ export class Gold extends Component {
     // Set isDirty to false because it is true when a Component is instantiated and we don't want inventory to be
     // sent to anyone but owner.
     this.isDirty = false;
+  }
+
+  public init() {
+    this.amount = 10000;
   }
 
   public serialize(): Buffer {

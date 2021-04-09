@@ -6,6 +6,7 @@ import { Health } from './health';
 import { Inventory } from './inventory';
 import { Level } from './level';
 import { Gold } from './gold';
+import { GameClient } from '../game-client';
 
 export class KillRewards extends Component {
   public exp = 0;
@@ -21,11 +22,18 @@ export class KillRewards extends Component {
     const health = <Health>this.entity.getComponent(Health);
     health.on('damage', (amount: number, source: Entity) => {
       if (health.isDead) {
+        let actualSource = source;
+        if (source.owner != null) {
+          const client = <GameClient>source.owner.getUserData();
+          if (client != null && client.cameraFollowing) {
+            actualSource = client.cameraFollowing;
+          }
+        }
         // Give gold and exp to the killer
-        const enemyGold = <Gold>source.getComponent(Gold);
+        const enemyGold = <Gold>actualSource.getComponent(Gold);
         if (enemyGold != null) enemyGold.amount += this.gold;
 
-        const enemyExperience = <Level>source.getComponent(Level);
+        const enemyExperience = <Level>actualSource.getComponent(Level);
         if (enemyExperience != null) enemyExperience.points += this.exp;
       }
     });

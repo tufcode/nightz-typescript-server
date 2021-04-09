@@ -15,7 +15,7 @@ export class Axe extends Item {
   private _entitiesToDamage: Health[] = [];
   private _damageTick = 0;
   private myTeam: Team;
-  private attackSpeed = 20; // todo cant be more than 10
+  private attackSpeed = 2; // todo cant be more than 10
   private ownerEntity: Entity;
   private animationComponent: Animation;
 
@@ -90,7 +90,9 @@ export class Axe extends Item {
       this._damageTick = 0;
       for (let i = 0; i < this._entitiesToDamage.length; i++) {
         const h = this._entitiesToDamage[i];
-        h.damage(randomRange(5, 20), this.ownerEntity);
+        let dmg = randomRange(5, 20);
+        if (h.entity.id == EntityId.YoungZombie) dmg += 30;
+        h.damage(dmg, this.ownerEntity);
       }
     }
   }

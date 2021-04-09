@@ -2,6 +2,7 @@ import { Component } from './component';
 import { Item } from './items/item';
 import { getBytes, Protocol } from '../protocol';
 import { GameClient } from '../game-client';
+import { Type } from '../types';
 
 export enum ItemSlot {
   Slot1 = 0,
@@ -17,8 +18,10 @@ export enum ItemSlot {
 }
 
 export class Inventory extends Component {
+  // sent to anyone but owner.
   private items: Item[] = [];
   private itemsWithId: { [key: number]: Item } = {};
+  private itemsWithClass: { [key: string]: Item } = {};
 
   public constructor() {
     super();
@@ -30,6 +33,7 @@ export class Inventory extends Component {
   public addItem(item: Item): void {
     item.inventory = this;
     this.itemsWithId[item.entity.objectId] = item;
+    this.itemsWithClass[item.constructor.name] = item;
     this.items.push(item);
 
     (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
@@ -37,6 +41,7 @@ export class Inventory extends Component {
 
   public removeItem(item: Item): void {
     delete this.itemsWithId[item.entity.objectId];
+    delete this.itemsWithClass[item.constructor.name];
     this.items.splice(this.items.indexOf(item), 1);
     (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
   }
@@ -62,7 +67,11 @@ export class Inventory extends Component {
     return buf;
   }
 
-  public getItem(id: number): Item {
+  public getItemById(id: number): Item {
     return this.itemsWithId[id];
+  }
+
+  public getItem(item: Type<Item>): Item {
+    return this.itemsWithClass[item.name];
   }
 }

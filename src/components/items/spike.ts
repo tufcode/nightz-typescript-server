@@ -44,6 +44,7 @@ export class Spike extends Component {
   }
 
   public onTriggerExit(me: Fixture, other: Fixture): void {
+    if (other.isSensor()) return;
     const healthComponent = <Health>(<Entity>other.getBody().getUserData()).getComponent(Health);
 
     if (healthComponent != null) {
@@ -52,7 +53,6 @@ export class Spike extends Component {
   }
 
   public update(deltaTime: number) {
-    // Damage colliding entities every 0.5 second
     this._damageTick += deltaTime;
     if (this._damageTick >= 1 / this.attackSpeed) {
       this._damageTick = 0;

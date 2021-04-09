@@ -20,6 +20,7 @@ export enum Protocol {
   GoldInfo = 61,
   Experience = 62,
   Inventory = 63,
+  FoodInfo = 64,
   TemporaryMessage = 70,
 }
 

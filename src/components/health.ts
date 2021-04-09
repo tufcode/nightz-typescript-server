@@ -46,7 +46,7 @@ export class Health extends Component {
   public set currentHealth(value: number) {
     if (this.isDead) return;
 
-    this._currentHealth = Math.max(value, 0);
+    this._currentHealth = Math.max(Math.min(value, this._maxHealth), 0);
     this.isDirty = true;
   }
 

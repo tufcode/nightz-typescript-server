@@ -13,9 +13,8 @@ import { Position } from './components/position';
 import { Health } from './components/health';
 import { Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
-import { createWoodenBlock, createItem, createWoodenSpike } from './components/items/util/create-object';
+import { createItem, createWoodenBlock, createWoodenSpike } from './components/items/util/create-object';
 import { Tiers } from './data/tiers';
-import { requireGold } from './components/items/util/callbacks';
 import { Spawner } from './systems/spawner';
 import { randomRange } from './utils';
 import { GoldMine } from './components/gold-mine';
@@ -40,7 +39,8 @@ import { PlayerInput } from './components/player-input';
 import { Animation } from './components/animation';
 import { EntityId } from './data/entity-id';
 import { Axe } from './components/items/axe';
-import { Hand } from './components/items/hand';
+import { Food } from './components/items/food';
+import { FoodMine } from './components/food-mine';
 
 const debug = debugModule('GameRoom');
 
@@ -69,7 +69,7 @@ export default class GameRoom extends Room {
       {
         gravity: Vec2.zero(),
       },
-      { positionIterations: 2, timeStep: 1 / 30, velocityIterations: 4 },
+      { positionIterations: 4, timeStep: 1 / 30, velocityIterations: 6 },
     );
 
     // Create boundaries
@@ -118,13 +118,45 @@ export default class GameRoom extends Room {
       entity.addComponent(new Observable());
     }
 
+    for (let i = 0; i < mineCount; i++) {
+      const body = this.gameWorld.getPhysicsWorld().createBody({
+        type: 'static',
+        position: Vec2(
+          randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
+          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
+        ),
+      });
+      body.createFixture({
+        shape: Circle(0.75),
+        friction: 0,
+        filterCategoryBits: EntityCategory.RESOURCE,
+        filterMaskBits:
+          EntityCategory.BOUNDARY |
+          EntityCategory.STRUCTURE |
+          EntityCategory.RESOURCE |
+          EntityCategory.PLAYER |
+          EntityCategory.NPC |
+          EntityCategory.BULLET |
+          EntityCategory.MELEE,
+      });
+      // Create AI entity
+      const entity = new Entity(EntityId.FoodBush, this.gameWorld);
+      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
+      entity.addComponent(new Rotation(body.getAngle()));
+      entity.addComponent(new PhysicsBody(body));
+      entity.addComponent(new Health(1, 1));
+      entity.addComponent(new Team(1));
+      entity.addComponent(new FoodMine());
+      entity.addComponent(new Observable());
+    }
+
     const zombieSpawner = new Spawner(80 * 6, 4, 1, 1, 100, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
           /*randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
           randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),*/
-          randomRange(-50, 50),
+          randomRange(-50, 30),
           randomRange(-50, 50),
         ),
         fixedRotation: true,
@@ -212,7 +244,7 @@ export default class GameRoom extends Room {
       this.lastSend = this.currentTick;
     }
 
-    console.log(
+    /*console.log(
       'tick took',
       (performance.now() - t).toFixed(2),
       'ms',
@@ -222,7 +254,7 @@ export default class GameRoom extends Room {
       ' | ',
       'bodies on world',
       this.gameWorld.getPhysicsWorld().getBodyCount(),
-    );
+    );*/
   }
 
   public onMessage(client: Client, message: Buffer) {
@@ -249,7 +281,7 @@ export default class GameRoom extends Room {
         const inventory = <Inventory>clientData.cameraFollowing.getComponent(Inventory);
         if (!inventory || !equipment) break;
 
-        const item = inventory.getItem(message.readUInt32LE(1));
+        const item = inventory.getItemById(message.readUInt32LE(1));
         if (!item) break;
 
         equipment.hand = item; // todo what if it is hat
@@ -316,10 +348,11 @@ export default class GameRoom extends Room {
 
     const axe = createItem(EntityId.WoodenAxe, new Axe(), this.gameWorld, client);
     inventory.addItem(axe);
+    inventory.addItem(createItem(EntityId.Food, new Food(ItemSlot.Slot2), this.gameWorld, client));
     inventory.addItem(
       createItem(
         EntityId.WoodenBlock,
-        new BuildingBlock(ItemSlot.Slot2, 0.25, 20, createWoodenBlock(client, new Team(100 + client.id))),
+        new BuildingBlock(ItemSlot.Slot3, 0.25, 20, createWoodenBlock(client, new Team(100 + client.id))),
         this.gameWorld,
         client,
       ),

@@ -18,6 +18,7 @@ export class PlayerInput extends Component {
   private ownerClientData: GameClient;
   private equipmentComponent: Equipment;
   private levelComponent: Level;
+  private lastPrimary: boolean;
 
   public init(): void {
     this.ownerClientData = this.entity.owner.getUserData();
@@ -56,7 +57,8 @@ export class PlayerInput extends Component {
       this.movementComponent.move(input);
     }
 
-    if (this.equipmentComponent != null) {
+    if (this.equipmentComponent != null && this.lastPrimary != this.ownerClientData.input.primary) {
+      this.lastPrimary = this.ownerClientData.input.primary;
       this.equipmentComponent.hand?.setPrimary(this.ownerClientData.input.primary);
       this.equipmentComponent.hat?.setPrimary(this.ownerClientData.input.primary);
     }
