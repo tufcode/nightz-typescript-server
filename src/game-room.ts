@@ -41,6 +41,7 @@ import { EntityId } from './data/entity-id';
 import { Axe } from './components/items/axe';
 import { Food } from './components/items/food';
 import { FoodMine } from './components/food-mine';
+import { ItemUpgrade } from './components/item-upgrade';
 
 const debug = debugModule('GameRoom');
 
@@ -287,6 +288,11 @@ export default class GameRoom extends Room {
         equipment.hand = item; // todo what if it is hat
 
         break;
+      case ClientProtocol.SelectUpgrade:
+        if (!clientData.cameraFollowing) break;
+        const upgrade = <ItemUpgrade>clientData.cameraFollowing.getComponent(ItemUpgrade); // TODO EXPLOIT: CAMERAFOLLOWING MIGHT NOT BE OWNED BY CLIENT!
+        upgrade.upgrade(message.readUInt16LE(1));
+        break;
       default:
         console.log('unknown packet:', packetId);
         break;
@@ -365,6 +371,10 @@ export default class GameRoom extends Room {
         client,
       ),
     );
+
+    const upgradeComponent = <ItemUpgrade>entity.addComponent(new ItemUpgrade());
+    upgradeComponent.addPointsWhen('weapon', [2]);
+    upgradeComponent.addUpgrade('weapon', 'weapon', EntityId.WoodenAxe, new Axe(), 2);
 
     equipment.hand = axe;
 

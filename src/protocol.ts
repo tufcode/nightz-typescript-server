@@ -21,6 +21,7 @@ export enum Protocol {
   Experience = 62,
   Inventory = 63,
   FoodInfo = 64,
+  Upgrade = 65,
   TemporaryMessage = 70,
 }
 
@@ -28,6 +29,7 @@ export enum ClientProtocol {
   InputAngle = 0,
   InputPrimary = 1,
   SelectItem = 2,
+  SelectUpgrade = 3,
 }
 
 export enum ComponentIds {
