@@ -10,8 +10,11 @@ export enum EntityId {
   WoodenSpike = 1502,
 
   // Items (2001-3001)
-  Food = 2000,
-  WoodenAxe = 2001,
+  Food = 2001,
+  WoodenTool = 2002,
+  WoodenSmallAxe = 2010,
+  WoodenAxe = 2011,
+  WoodenGreatAxe = 2012,
 
   // Other
   None = 8000,

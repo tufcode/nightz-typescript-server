@@ -22,6 +22,7 @@ export class Inventory extends Component {
   private items: Item[] = [];
   private itemsWithId: { [key: number]: Item } = {};
   private itemsWithClass: { [key: string]: Item } = {};
+  private queuedMessageIndex = -1;
 
   public constructor() {
     super();
@@ -36,14 +37,27 @@ export class Inventory extends Component {
     this.itemsWithClass[item.constructor.name] = item;
     this.items.push(item);
 
-    (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
+    const cli = <GameClient>this.entity.owner.getUserData();
+    if (this.queuedMessageIndex != -1 && cli.queuedMessages.length > this.queuedMessageIndex) {
+      cli.queuedMessages.splice(this.queuedMessageIndex, 1);
+    }
+
+    this.queuedMessageIndex = cli.queuedMessages.push(this.serialize()) - 1;
   }
 
   public removeItem(item: Item): void {
     delete this.itemsWithId[item.entity.objectId];
     delete this.itemsWithClass[item.constructor.name];
     this.items.splice(this.items.indexOf(item), 1);
-    (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
+
+    const cli = <GameClient>this.entity.owner.getUserData();
+    if (this.queuedMessageIndex != -1 && cli.queuedMessages.length > this.queuedMessageIndex) {
+      cli.queuedMessages.splice(this.queuedMessageIndex, 1);
+    }
+
+    this.queuedMessageIndex = cli.queuedMessages.push(this.serialize()) - 1;
+
+    item.entity.destroy();
   }
 
   public serialize(): Buffer {

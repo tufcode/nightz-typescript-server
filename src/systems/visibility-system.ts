@@ -67,4 +67,8 @@ export class VisibilitySystem extends System {
     // Return existing entities
     return existingEntities;
   }
+
+  public forceUpdateNext(): void {
+    this.observerUpdateTick = Number.MAX_VALUE;
+  }
 }

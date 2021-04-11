@@ -9,26 +9,47 @@ import { Health } from '../health';
 import { randomRange } from '../../utils';
 import { Animation } from '../animation';
 import { EntityId } from '../../data/entity-id';
-import { Component } from '../component';
-import { Movement } from '../movement';
 
-export class Spike extends Component {
+export class Tool extends Item {
   private fixture: Fixture;
   private _entitiesToDamage: Health[] = [];
   private _damageTick = 0;
   private myTeam: Team;
-  private attackSpeed = 2;
+  private attackSpeed = 2; // todo cant be more than 10
   private ownerEntity: Entity;
   private animationComponent: Animation;
-  private bodyComponent: PhysicsBody;
+
+  public constructor() {
+    super(ItemSlot.Slot1);
+  }
 
   public init() {
     super.init();
-    this.entity.id = EntityId.WoodenSpike;
-    this.myTeam = <Team>this.entity.getComponent(Team);
+    this.entity.id = EntityId.WoodenTool;
   }
 
-  public onCollisionEnter(me: Fixture, other: Fixture): void {
+  public onEquip(entity: Entity): void {
+    this.ownerEntity = entity;
+    const body = (<PhysicsBody>entity.getComponent(PhysicsBody)).getBody();
+    this.fixture = body.createFixture({
+      shape: Box(0.3, 0.5, Vec2(0.8, 0)),
+      filterCategoryBits: EntityCategory.MELEE,
+      filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.RESOURCE | EntityCategory.PLAYER | EntityCategory.NPC,
+      isSensor: true,
+    });
+    this.fixture.setUserData(this.entity.objectId);
+    body.setAwake(true);
+    this.myTeam = <Team>entity.getComponent(Team);
+    this.animationComponent = <Animation>entity.getComponent(Animation);
+  }
+
+  public onUnequip() {
+    this.fixture.getBody().destroyFixture(this.fixture);
+    this.animationComponent.setAnimation(0, 0);
+  }
+
+  public onTriggerEnter(me: Fixture, other: Fixture): void {
+    if (me.getUserData() != this.entity.objectId) return;
     // Get teams
     const teamComponent = <Team>(<Entity>other.getBody().getUserData()).getComponent(Team);
     // Compare teams
@@ -42,7 +63,8 @@ export class Spike extends Component {
     }
   }
 
-  public onCollisionExit(me: Fixture, other: Fixture): void {
+  public onTriggerExit(me: Fixture, other: Fixture): void {
+    if (me.getUserData() != this.entity.objectId) return;
     const healthComponent = <Health>(<Entity>other.getBody().getUserData()).getComponent(Health);
 
     if (healthComponent != null) {
@@ -50,13 +72,29 @@ export class Spike extends Component {
     }
   }
 
+  public setPrimary(b: boolean) {
+    if (!this._primary && b) {
+      this.animationComponent.setAnimation(2, this.attackSpeed);
+    } else if (this._primary && !b) {
+      this.animationComponent.setAnimation(0, 0);
+    }
+    super.setPrimary(b);
+  }
+
   public update(deltaTime: number) {
+    // Damage colliding entities every 0.5 second
+    if (!this._primary) {
+      this._damageTick = 0;
+      return;
+    }
     this._damageTick += deltaTime;
     if (this._damageTick >= 1 / this.attackSpeed) {
       this._damageTick = 0;
       for (let i = 0; i < this._entitiesToDamage.length; i++) {
         const h = this._entitiesToDamage[i];
-        h.damage(randomRange(10, 25), this.entity);
+        let dmg = randomRange(5, 10);
+        if (h.entity.id == EntityId.YoungZombie) dmg += 30;
+        h.damage(dmg, this.ownerEntity);
       }
     }
   }

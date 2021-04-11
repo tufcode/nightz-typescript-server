@@ -24,7 +24,7 @@ export class Gold extends Component {
   }
 
   public init() {
-    this.amount = 10000;
+    this.amount = 0;
   }
 
   public serialize(): Buffer {

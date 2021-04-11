@@ -16,7 +16,7 @@ import { Team } from './components/team';
 import { createItem, createWoodenBlock, createWoodenSpike } from './components/items/util/create-object';
 import { Tiers } from './data/tiers';
 import { Spawner } from './systems/spawner';
-import { randomRange } from './utils';
+import { randomRange, randomRangeFloat } from './utils';
 import { GoldMine } from './components/gold-mine';
 import { Observable } from './components/observable';
 import { Level } from './components/level';
@@ -42,6 +42,7 @@ import { Axe } from './components/items/axe';
 import { Food } from './components/items/food';
 import { FoodMine } from './components/food-mine';
 import { ItemUpgrade } from './components/item-upgrade';
+import { Tool } from './components/items/tool';
 
 const debug = debugModule('GameRoom');
 
@@ -88,12 +89,14 @@ export default class GameRoom extends Room {
     const mineCount = Math.round(this.playableArea.length() / 2);
     console.log(mineCount);
     for (let i = 0; i < mineCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'static',
         position: Vec2(
-          randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
+          randomRangeFloat(-(this.playableArea.x / 2), this.playableArea.x / 2),
+          randomRangeFloat(-(this.playableArea.y / 2), this.playableArea.y / 2),
         ),
+        angle,
       });
       body.createFixture({
         shape: Circle(1),
@@ -120,12 +123,14 @@ export default class GameRoom extends Room {
     }
 
     for (let i = 0; i < mineCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'static',
         position: Vec2(
-          randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
+          randomRangeFloat(-(this.playableArea.x / 2), this.playableArea.x / 2),
+          randomRangeFloat(-(this.playableArea.y / 2), this.playableArea.y / 2),
         ),
+        angle,
       });
       body.createFixture({
         shape: Circle(0.75),
@@ -151,14 +156,14 @@ export default class GameRoom extends Room {
       entity.addComponent(new Observable());
     }
 
-    const zombieSpawner = new Spawner(80 * 6, 4, 1, 1, 100, () => {
+    const zombieSpawner = new Spawner(3, 4, 1, 1, 100, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
           /*randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
           randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),*/
-          randomRange(-50, 30),
-          randomRange(-50, 50),
+          randomRange(-5, 5),
+          randomRange(-5, 5),
         ),
         fixedRotation: true,
         linearDamping: 10,
@@ -186,7 +191,7 @@ export default class GameRoom extends Room {
       entity.addComponent(new PhysicsBody(body));
       entity.addComponent(new Team(1));
       entity.addComponent(new Health(40, 5));
-      entity.addComponent(new KillRewards(20, 10));
+      entity.addComponent(new KillRewards(200, 10));
       entity.addComponent(new Movement(20));
 
       entity.addComponent(new ZombieAI());
@@ -352,8 +357,6 @@ export default class GameRoom extends Room {
     (<GameClient>client.getUserData()).addOwnedEntity(entity);
     (<GameClient>client.getUserData()).cameraFollowing = entity;
 
-    const axe = createItem(EntityId.WoodenAxe, new Axe(), this.gameWorld, client);
-    inventory.addItem(axe);
     inventory.addItem(createItem(EntityId.Food, new Food(ItemSlot.Slot2), this.gameWorld, client));
     inventory.addItem(
       createItem(
@@ -372,11 +375,19 @@ export default class GameRoom extends Room {
       ),
     );
 
+    const defaultHand = createItem(EntityId.WoodenTool, new Tool(), this.gameWorld, client);
     const upgradeComponent = <ItemUpgrade>entity.addComponent(new ItemUpgrade());
+    upgradeComponent.addDefault('weapon', 'weapon', () => defaultHand, 1);
     upgradeComponent.addPointsWhen('weapon', [2]);
-    upgradeComponent.addUpgrade('weapon', 'weapon', EntityId.WoodenAxe, new Axe(), 2);
+    upgradeComponent.addUpgrade(
+      'weapon',
+      'weapon',
+      EntityId.WoodenSmallAxe,
+      () => createItem(EntityId.WoodenSmallAxe, new Axe(), this.gameWorld, client),
+      2,
+    );
 
-    equipment.hand = axe;
+    equipment.hand = defaultHand;
 
     client.send(getBytes[Protocol.WorldSize](this.playableArea));
     client.send(getBytes[Protocol.CameraFollow](entity.objectId));

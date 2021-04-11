@@ -15,7 +15,7 @@ export class Axe extends Item {
   private _entitiesToDamage: Health[] = [];
   private _damageTick = 0;
   private myTeam: Team;
-  private attackSpeed = 2; // todo cant be more than 10
+  private attackSpeed = 2.1; // todo cant be more than 10
   private ownerEntity: Entity;
   private animationComponent: Animation;
 
@@ -25,7 +25,7 @@ export class Axe extends Item {
 
   public init() {
     super.init();
-    this.entity.id = EntityId.WoodenAxe;
+    this.entity.id = EntityId.WoodenSmallAxe;
   }
 
   public onEquip(entity: Entity): void {
@@ -38,11 +38,13 @@ export class Axe extends Item {
       isSensor: true,
     });
     this.fixture.setUserData(this.entity.objectId);
+    body.setAwake(true);
     this.myTeam = <Team>entity.getComponent(Team);
     this.animationComponent = <Animation>entity.getComponent(Animation);
   }
 
   public onUnequip() {
+    this.fixture.getBody().destroyFixture(this.fixture);
     this.animationComponent.setAnimation(0, 0);
   }
 
@@ -90,8 +92,8 @@ export class Axe extends Item {
       this._damageTick = 0;
       for (let i = 0; i < this._entitiesToDamage.length; i++) {
         const h = this._entitiesToDamage[i];
-        let dmg = randomRange(5, 20);
-        if (h.entity.id == EntityId.YoungZombie) dmg += 30;
+        let dmg = randomRange(10, 20);
+        if (h.entity.id == EntityId.GoldMine) dmg += 30;
         h.damage(dmg, this.ownerEntity);
       }
     }

@@ -77,7 +77,6 @@ export const createWoodenSpike = (
         EntityCategory.NPC |
         EntityCategory.BULLET |
         EntityCategory.MELEE,
-      isSensor: true,
     });
 
     // Create entity
@@ -96,7 +95,7 @@ export const createWoodenSpike = (
 
 export const createAxe = (world: World, owner?: Client): Item => {
   // Create entity
-  const entity = new Entity(EntityId.WoodenAxe, world, owner);
+  const entity = new Entity(EntityId.WoodenSmallAxe, world, owner);
   entity.addComponent(new Observable());
   return <Item>entity.addComponent(new Axe());
   // todo take axe as a parameter
