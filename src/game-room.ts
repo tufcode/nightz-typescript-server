@@ -187,13 +187,16 @@ export default class GameRoom extends Room {
       entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
     }
-    const zombieSpawner = new Spawner(1, 4, 1, 1, 10, () => {
+    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 10, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
           /*randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),*/ 5,
-          0,
+          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),*/ randomRange(
+            -20,
+            20,
+          ),
+          randomRange(-20, 20),
         ),
         fixedRotation: true,
         linearDamping: 10,
@@ -255,7 +258,7 @@ export default class GameRoom extends Room {
       findSequence.addNode(new WaitSeconds(tree, 1));
       findSequence.addNode(new GetPosition(tree, body));
       findSequence.addNode(
-        new GetObjectsInRadius(tree, this.gameWorld.getPhysicsWorld(), 10, (f) => {
+        new GetObjectsInRadius(tree, this.gameWorld.getPhysicsWorld(), 50, (f) => {
           return (
             (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
             (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE
