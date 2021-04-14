@@ -8,12 +8,13 @@ import { PhysicsBody } from '../../physics-body';
 import { Position } from '../../position';
 import { World } from '../../../systems/world';
 import { Client } from 'elsa';
-import { Axe } from '../axe';
+import { MeleeWeapon } from '../melee-weapon';
 import { Item } from '../item';
 import { Observable } from '../../observable';
 import { Rotation } from '../../rotation';
 import { EntityId } from '../../../data/entity-id';
 import { Spike } from '../spike';
+import { ObservableItem } from '../../observable-item';
 
 export const createWoodenBlock = (
   owner?: Client,
@@ -66,7 +67,7 @@ export const createWoodenSpike = (
       angle: angle,
     });
     body.createFixture({
-      shape: planck.Circle(0.5),
+      shape: planck.Circle(0.4),
       density: 0.0,
       filterCategoryBits: EntityCategory.STRUCTURE,
       filterMaskBits:
@@ -93,17 +94,9 @@ export const createWoodenSpike = (
   };
 };
 
-export const createAxe = (world: World, owner?: Client): Item => {
-  // Create entity
-  const entity = new Entity(EntityId.WoodenSmallAxe, world, owner);
-  entity.addComponent(new Observable());
-  return <Item>entity.addComponent(new Axe());
-  // todo take axe as a parameter
-};
-
 export const createItem = (id: EntityId, item: Item, world: World, owner?: Client): Item => {
   const entity = new Entity(id, world, owner);
   const i = <Item>entity.addComponent(item);
-  entity.addComponent(new Observable());
+  entity.addComponent(new ObservableItem());
   return i;
 };

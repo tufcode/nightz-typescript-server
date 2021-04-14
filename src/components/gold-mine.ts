@@ -16,10 +16,10 @@ export class GoldMine extends Component {
     const sourceExp = <Level>source.getComponent(Level);
 
     if (sourceGold != null) {
-      sourceGold.amount += 1 + amount * 0.1;
+      sourceGold.amount += amount;
     }
     if (sourceExp != null) {
-      sourceExp.points += 4 + amount * 0.1;
+      sourceExp.points += 4 + amount * 0.2;
     }
   }
 }

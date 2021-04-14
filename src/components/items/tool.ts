@@ -25,7 +25,6 @@ export class Tool extends Item {
 
   public init() {
     super.init();
-    this.entity.id = EntityId.WoodenTool;
   }
 
   public onEquip(entity: Entity): void {

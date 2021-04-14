@@ -49,6 +49,7 @@ export class PhysicsBody extends Component {
     // Rotate
     if (this._rotationComponent.angle.toFixed(2) != ang.toFixed(2)) {
       this._rotationComponent.angle = ang;
+      this.body.setAwake(true);
     }
   }
 

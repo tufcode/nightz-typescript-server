@@ -18,10 +18,10 @@ export class FoodMine extends Component {
     const sourceExp = <Level>source.getComponent(Level);
 
     if (sourceFood != null) {
-      sourceFood.current += 1 + amount * 0.1;
+      sourceFood.current += amount;
     }
     if (sourceExp != null) {
-      sourceExp.points += 4 + amount * 0.1;
+      sourceExp.points += 4 + amount * 0.2;
     }
   }
 }

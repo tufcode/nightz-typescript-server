@@ -1,6 +1,6 @@
 import { Item } from './item';
 import { Entity } from '../../entity';
-import { Box, Fixture, Vec2 } from 'planck-js';
+import { Box, Fixture, Shape, Vec2 } from 'planck-js';
 import { EntityCategory } from '../../protocol';
 import { PhysicsBody } from '../physics-body';
 import { ItemSlot } from '../inventory';
@@ -9,33 +9,51 @@ import { Health } from '../health';
 import { randomRange } from '../../utils';
 import { Animation } from '../animation';
 import { EntityId } from '../../data/entity-id';
+import { NameTag } from '../name-tag';
 
-export class Axe extends Item {
+export class MeleeWeapon extends Item {
   private fixture: Fixture;
-  private _entitiesToDamage: Health[] = [];
+  private _entitiesToDamage: { [key: number]: { type: number; health: Health } } = {};
   private _damageTick = 0;
   private myTeam: Team;
   private attackSpeed = 2.1; // todo cant be more than 10
   private ownerEntity: Entity;
   private animationComponent: Animation;
+  private damageToPlayers: number;
+  private damageToStructures: number;
+  private damageToResources: number;
+  private damageToZombies: number;
+  private hitShape: Shape;
+  private mass: number;
 
-  public constructor() {
+  public constructor(
+    mass: number,
+    attackSpeed: number,
+    damageToPlayers: number,
+    damageToStructures: number,
+    damageToResources: number,
+    damageToZombies: number,
+    hitShape: Shape,
+  ) {
     super(ItemSlot.Slot1);
-  }
-
-  public init() {
-    super.init();
-    this.entity.id = EntityId.WoodenSmallAxe;
+    this.mass = mass;
+    this.attackSpeed = attackSpeed;
+    this.damageToPlayers = damageToPlayers;
+    this.damageToStructures = damageToStructures;
+    this.damageToResources = damageToResources;
+    this.damageToZombies = damageToZombies;
+    this.hitShape = hitShape;
   }
 
   public onEquip(entity: Entity): void {
     this.ownerEntity = entity;
     const body = (<PhysicsBody>entity.getComponent(PhysicsBody)).getBody();
     this.fixture = body.createFixture({
-      shape: Box(0.3, 0.5, Vec2(0.8, 0)),
+      shape: this.hitShape,
       filterCategoryBits: EntityCategory.MELEE,
       filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.RESOURCE | EntityCategory.PLAYER | EntityCategory.NPC,
       isSensor: true,
+      density: this.mass,
     });
     this.fixture.setUserData(this.entity.objectId);
     body.setAwake(true);
@@ -49,27 +67,25 @@ export class Axe extends Item {
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {
-    if (me.getUserData() != this.entity.objectId) return;
+    if (me.getUserData() != this.entity.objectId || other.isSensor()) return;
+    const entity = <Entity>other.getBody().getUserData();
     // Get teams
-    const teamComponent = <Team>(<Entity>other.getBody().getUserData()).getComponent(Team);
+    const teamComponent = <Team>entity.getComponent(Team);
     // Compare teams
     if (teamComponent == null || teamComponent.id == this.myTeam.id) return;
     // Get entity health component
-    const healthComponent = <Health>(<Entity>other.getBody().getUserData()).getComponent(Health);
+    const healthComponent = <Health>entity.getComponent(Health);
 
     if (healthComponent != null) {
       // There is a health component, we can damage this entity.
-      this._entitiesToDamage.push(healthComponent);
+      this._entitiesToDamage[entity.objectId] = { type: other.getFilterCategoryBits(), health: healthComponent };
     }
   }
 
   public onTriggerExit(me: Fixture, other: Fixture): void {
-    if (me.getUserData() != this.entity.objectId) return;
-    const healthComponent = <Health>(<Entity>other.getBody().getUserData()).getComponent(Health);
-
-    if (healthComponent != null) {
-      this._entitiesToDamage.splice(this._entitiesToDamage.indexOf(healthComponent), 1);
-    }
+    if (me.getUserData() != this.entity.objectId || other.isSensor()) return;
+    const entity = <Entity>other.getBody().getUserData();
+    delete this._entitiesToDamage[entity.objectId];
   }
 
   public setPrimary(b: boolean) {
@@ -90,11 +106,24 @@ export class Axe extends Item {
     this._damageTick += deltaTime;
     if (this._damageTick >= 1 / this.attackSpeed) {
       this._damageTick = 0;
-      for (let i = 0; i < this._entitiesToDamage.length; i++) {
-        const h = this._entitiesToDamage[i];
-        let dmg = randomRange(10, 20);
-        if (h.entity.id == EntityId.GoldMine) dmg += 30;
-        h.damage(dmg, this.ownerEntity);
+      for (const key in this._entitiesToDamage) {
+        const entityData = this._entitiesToDamage[key];
+        switch (entityData.type) {
+          case EntityCategory.PLAYER:
+            entityData.health.damage(this.damageToPlayers, this.ownerEntity);
+            break;
+          case EntityCategory.STRUCTURE:
+            entityData.health.damage(this.damageToStructures, this.ownerEntity);
+            break;
+          case EntityCategory.RESOURCE:
+            entityData.health.damage(this.damageToResources, this.ownerEntity);
+            break;
+          case EntityCategory.NPC:
+            entityData.health.damage(this.damageToZombies, this.ownerEntity);
+            break;
+          default:
+            break;
+        }
       }
     }
   }

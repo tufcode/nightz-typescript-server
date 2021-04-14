@@ -106,7 +106,7 @@ export class ItemUpgrade extends Component {
       const tree = this._upgradeTree[keys[i]];
       if (!this._points[tree.pointsId]) continue;
       for (let j = 0; j < tree.upgrades.length; j++) {
-        const upgrade = tree.upgrades[i];
+        const upgrade = tree.upgrades[j];
         if (upgrade.upgradedItemId == id) {
           if (upgrade.minimumLevel > tree.currentUpgradeLevel && upgrade.minimumLevel <= this._levelComponent.level) {
             tree.currentUpgradeLevel = upgrade.minimumLevel;

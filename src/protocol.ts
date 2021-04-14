@@ -3,6 +3,7 @@ import { Entity } from './entity';
 import { Component } from './components/component';
 import { ITier } from './game-client';
 import { Vec2 } from 'planck-js';
+import { LeaderboardEntry } from './components/leaderboard-entry';
 
 export enum Protocol {
   Entities = 0,
@@ -30,6 +31,7 @@ export enum ClientProtocol {
   InputPrimary = 1,
   SelectItem = 2,
   SelectUpgrade = 3,
+  ChatMessage = 4,
 }
 
 export enum ComponentIds {
@@ -43,6 +45,9 @@ export enum ComponentIds {
   Equipment = 7,
   Animation = 8,
   Construction = 9,
+  ChatMessage = 10,
+  Minimap = 11,
+  Zone = 12,
 }
 export enum EntityCategory {
   BOUNDARY = 0x0001,
@@ -182,6 +187,35 @@ export const getBytes = {
     buf.writeUInt8(Protocol.WorldSize, 0);
     buf.writeFloatLE(size.x, 1);
     buf.writeFloatLE(size.y, 5);
+
+    return buf;
+  },
+  [Protocol.Leaderboard]: (lb: LeaderboardEntry[]) => {
+    let totalNameLen = 2;
+    for (let i = 0; i < lb.length; i++) {
+      totalNameLen += lb[i].getName().length * 2;
+    }
+    const buf = Buffer.allocUnsafe(2 + totalNameLen + (4 + 4) * lb.length);
+
+    let index = 0;
+    buf.writeUInt8(Protocol.Leaderboard, index);
+    index += 1;
+    buf.writeUInt8(lb.length, index);
+    index += 1;
+    for (let i = 0; i < lb.length; i++) {
+      const entry = lb[i];
+      const name = entry.getName();
+      buf.writeUInt32LE(entry.getId(), index);
+      index += 4;
+      buf.writeUInt32LE(entry.getPoints(), index);
+      index += 4;
+      buf.writeUInt16LE(name.length, index);
+      index += 2;
+      for (let j = 0; j < name.length; j++) {
+        buf.writeUInt16LE(name.charCodeAt(j), index);
+        index += 2;
+      }
+    }
 
     return buf;
   },

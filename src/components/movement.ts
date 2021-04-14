@@ -28,6 +28,6 @@ export class Movement extends Component {
     input.normalize();
     input.mul(this.speed);
 
-    body.applyLinearImpulse(input, body.getWorldCenter(), true);
+    body.applyForceToCenter(input, true);
   }
 }

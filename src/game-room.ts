@@ -11,7 +11,7 @@ import { World } from './systems/world';
 import { BuildingBlock } from './components/items/building-block';
 import { Position } from './components/position';
 import { Health } from './components/health';
-import { Circle, Vec2 } from 'planck-js';
+import { Box, Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
 import { createItem, createWoodenBlock, createWoodenSpike } from './components/items/util/create-object';
 import { Tiers } from './data/tiers';
@@ -38,11 +38,17 @@ import { AISystem } from './systems/ai-system';
 import { PlayerInput } from './components/player-input';
 import { Animation } from './components/animation';
 import { EntityId } from './data/entity-id';
-import { Axe } from './components/items/axe';
+import { MeleeWeapon } from './components/items/melee-weapon';
 import { Food } from './components/items/food';
 import { FoodMine } from './components/food-mine';
 import { ItemUpgrade } from './components/item-upgrade';
 import { Tool } from './components/items/tool';
+import { LeaderboardEntry } from './components/leaderboard-entry';
+import { LeaderboardSystem } from './systems/leaderboard-system';
+import { ChatMessage } from './components/chat-message';
+import { Minimap } from './components/minimap';
+import { Zone } from './components/zone';
+import { ObservableByAll } from './components/observable-by-all';
 
 const debug = debugModule('GameRoom');
 
@@ -83,7 +89,17 @@ export default class GameRoom extends Room {
     this.addSystem(new SimpleSystems(this));
     this.addSystem(new AISystem(this));
     this.addSystem(new VisibilitySystem(this));
+    this.addSystem(new LeaderboardSystem(this));
     this.addSystem(this.gameWorld);
+
+    {
+      const entity = new Entity(EntityId.Zone, this.gameWorld);
+      entity.addComponent(new Position(Vec2.zero(), Vec2.zero()));
+      entity.addComponent(new Minimap());
+      entity.addComponent(new ObservableByAll());
+      const zone = <Zone>entity.addComponent(new Zone());
+      zone.setData('Ground Zero', Vec2(3000, 3000), 102, 0, 0);
+    }
 
     // Create mines
     const mineCount = Math.round(this.playableArea.length() / 2);
@@ -119,6 +135,7 @@ export default class GameRoom extends Room {
       entity.addComponent(new Health(1, 1));
       entity.addComponent(new Team(1));
       entity.addComponent(new GoldMine());
+      entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
     }
 
@@ -153,17 +170,15 @@ export default class GameRoom extends Room {
       entity.addComponent(new Health(1, 1));
       entity.addComponent(new Team(1));
       entity.addComponent(new FoodMine());
+      entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
     }
-
-    const zombieSpawner = new Spawner(3, 4, 1, 1, 100, () => {
+    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 10, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
-          /*randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),*/
-          randomRange(-5, 5),
-          randomRange(-5, 5),
+          randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
+          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
         ),
         fixedRotation: true,
         linearDamping: 10,
@@ -191,13 +206,14 @@ export default class GameRoom extends Room {
       entity.addComponent(new PhysicsBody(body));
       entity.addComponent(new Team(1));
       entity.addComponent(new Health(40, 5));
-      entity.addComponent(new KillRewards(200, 10));
-      entity.addComponent(new Movement(20));
+      entity.addComponent(new KillRewards(20, randomRange(0, 10)));
+      entity.addComponent(new Movement(500));
+      entity.addComponent(new Minimap());
 
       entity.addComponent(new ZombieAI());
       entity.addComponent(new Observable());
 
-      (<NameTag>entity.addComponent(new NameTag())).setName('Young Zombie');
+      (<NameTag>entity.addComponent(new NameTag())).setName('Young Zombie ');
 
       return entity;
     });
@@ -298,6 +314,22 @@ export default class GameRoom extends Room {
         const upgrade = <ItemUpgrade>clientData.cameraFollowing.getComponent(ItemUpgrade); // TODO EXPLOIT: CAMERAFOLLOWING MIGHT NOT BE OWNED BY CLIENT!
         upgrade.upgrade(message.readUInt16LE(1));
         break;
+      case ClientProtocol.ChatMessage:
+        if (!clientData.cameraFollowing) break;
+        let t = '';
+        const len = message.readUInt16LE(1);
+        for (let i = 0; i < len; i++) {
+          t += String.fromCharCode(message.readUInt16LE(3 + i * 2));
+        }
+
+        if (t.startsWith('/exp')) {
+          (<Level>clientData.cameraFollowing.getComponent(Level)).points += Number.parseInt(t.split(' ')[1], 10);
+          return;
+        }
+
+        const chatMessage = <ChatMessage>clientData.cameraFollowing.getComponent(ChatMessage); // TODO EXPLOIT
+        chatMessage.text = t;
+        break;
       default:
         console.log('unknown packet:', packetId);
         break;
@@ -311,7 +343,8 @@ export default class GameRoom extends Room {
 
   public onJoin(client: Client, auth: any): void {
     // Create a ClientData object for this client
-    client.setUserData(new GameClient(client));
+    const gameClient = new GameClient(client);
+    client.setUserData(gameClient);
 
     const body = this.gameWorld.getPhysicsWorld().createBody({
       type: 'dynamic',
@@ -346,9 +379,12 @@ export default class GameRoom extends Room {
     entity.addComponent(new Rotation(body.getAngle()));
     entity.addComponent(new PhysicsBody(body));
     entity.addComponent(new Health(100, 2));
-    entity.addComponent(new Movement(30));
+    entity.addComponent(new Movement(1000));
     entity.addComponent(new PlayerInput());
     (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + client.id);
+    entity.addComponent(new ChatMessage());
+    entity.addComponent(new LeaderboardEntry(client.id));
+    entity.addComponent(new Minimap());
     entity.addComponent(new Observable());
 
     // Add items and inventory
@@ -375,22 +411,54 @@ export default class GameRoom extends Room {
       ),
     );
 
-    const defaultHand = createItem(EntityId.WoodenTool, new Tool(), this.gameWorld, client);
+    const defaultHand = createItem(EntityId.Stick, new Tool(), this.gameWorld, client);
     const upgradeComponent = <ItemUpgrade>entity.addComponent(new ItemUpgrade());
     upgradeComponent.addDefault('weapon', 'weapon', () => defaultHand, 1);
-    upgradeComponent.addPointsWhen('weapon', [2]);
+    upgradeComponent.addPointsWhen('weapon', [2, 3, 4]);
     upgradeComponent.addUpgrade(
       'weapon',
       'weapon',
-      EntityId.WoodenSmallAxe,
-      () => createItem(EntityId.WoodenSmallAxe, new Axe(), this.gameWorld, client),
+      EntityId.AxeBasic,
+      () =>
+        createItem(
+          EntityId.AxeBasic,
+          new MeleeWeapon(1.6, 1.4, 5, 8, 6, 10, Box(0.5, 0.75, Vec2(1, -0.2))),
+          this.gameWorld,
+          client,
+        ),
       2,
+    );
+    upgradeComponent.addUpgrade(
+      'weapon',
+      'weapon',
+      EntityId.AxeNormal,
+      () =>
+        createItem(
+          EntityId.AxeNormal,
+          new MeleeWeapon(1.8, 2, 10, 10, 8, 15, Box(0.5, 0.75, Vec2(1, -0.2))),
+          this.gameWorld,
+          client,
+        ),
+      3,
+    );
+    upgradeComponent.addUpgrade(
+      'weapon',
+      'weapon',
+      EntityId.AxeGreat,
+      () =>
+        createItem(
+          EntityId.AxeGreat,
+          new MeleeWeapon(2, 2.75, 15, 20, 10, 40, Box(0.625, 0.875, Vec2(1.25, -0.1))),
+          this.gameWorld,
+          client,
+        ),
+      4,
     );
 
     equipment.hand = defaultHand;
 
-    client.send(getBytes[Protocol.WorldSize](this.playableArea));
-    client.send(getBytes[Protocol.CameraFollow](entity.objectId));
+    gameClient.queuedMessages.push(getBytes[Protocol.WorldSize](this.playableArea));
+    gameClient.queuedMessages.push(getBytes[Protocol.CameraFollow](entity.objectId));
 
     client.getUserData().setTier(Tiers.Wood);
   }

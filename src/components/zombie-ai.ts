@@ -12,6 +12,7 @@ import { Equipment } from './equipment';
 import { Hand } from './items/hand';
 import { Animation } from './animation';
 import { EntityId } from '../data/entity-id';
+import { ChatMessage } from './chat-message';
 
 export class ZombieAI extends AI {
   private _entitiesToDamage: Health[] = [];

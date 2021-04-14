@@ -9,7 +9,7 @@ import { VisibilitySystem } from '../systems/visibility-system';
 
 export class Observable extends Component {
   private _syncComponent: Position;
-  private _itemComponent: Item;
+  protected _itemComponent: Item;
 
   public init(): void {
     this._syncComponent = <Position>this.entity.getComponent(Position);
@@ -80,7 +80,7 @@ export class Observable extends Component {
     } else return false; // I'm not an item and I don't have a sync component, I don't know how to be visible!
   }
 
-  private checkDistance(position: Vec2, position2: Vec2): boolean {
+  protected checkDistance(position: Vec2, position2: Vec2): boolean {
     return Vec2.distance(position, position2) < 20.0;
   }
 }

@@ -22,7 +22,7 @@ export class Entity {
   private _eventEmitter: EventEmitter;
   public componentBuffers: { [key: string]: { t: number; buffer: Buffer } } = {};
 
-  public constructor(id = EntityId.None, world: World, owner?: Client) {
+  public constructor(id: EntityId, world: World, owner?: Client) {
     this.id = id;
     this.world = world;
     this.owner = owner;

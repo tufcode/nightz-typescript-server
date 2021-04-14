@@ -57,8 +57,8 @@ export class Level extends Component {
       this._previousPoints += this._neededPoints;
       this._points = clamp(this._points - this._neededPoints, 0, Number.MAX_SAFE_INTEGER);
       this._neededPoints = Math.round((this._neededPoints + 200) * 1.05);
+      this._eventEmitter.emit('levelUp');
     }
-    if (this.isDirty) this._eventEmitter.emit('levelUp');
   }
 
   public serialize(): Buffer {

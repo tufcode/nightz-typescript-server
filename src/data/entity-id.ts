@@ -11,11 +11,11 @@ export enum EntityId {
 
   // Items (2001-3001)
   Food = 2001,
-  WoodenTool = 2002,
-  WoodenSmallAxe = 2010,
-  WoodenAxe = 2011,
-  WoodenGreatAxe = 2012,
+  Stick = 2010,
+  AxeBasic = 2020,
+  AxeNormal = 2021,
+  AxeGreat = 2022,
 
   // Other
-  None = 8000,
+  Zone = 8000,
 }

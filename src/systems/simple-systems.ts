@@ -20,6 +20,9 @@ import { Construction } from '../components/construction';
 import { Item } from '../components/items/item';
 import { Animation } from '../components/animation';
 import { Spike } from '../components/items/spike';
+import { ChatMessage } from '../components/chat-message';
+import { Minimap } from '../components/minimap';
+import { Zone } from '../components/zone';
 
 export class SimpleSystems extends System {
   private room: GameRoom;
@@ -115,6 +118,35 @@ export class SimpleSystems extends System {
       if (c.isDirty) {
         c.entity.isDirty = true;
         c.entity.componentBuffers[Equipment.name] = { t: this.room.currentTick, buffer: c.serialize() };
+      }
+    }
+
+    // Chat Message
+    const componentsCM = <ChatMessage[]>this.room.getComponentsOfType(ChatMessage.name);
+    for (let i = 0; i < componentsCM.length; i++) {
+      const c = componentsCM[i];
+      c.update(deltaTime);
+      if (c.isDirty) {
+        c.entity.isDirty = true;
+        c.entity.componentBuffers[ChatMessage.name] = { t: this.room.currentTick, buffer: c.serialize() };
+      }
+    }
+    // Minimap
+    const componentsMM = <Minimap[]>this.room.getComponentsOfType(Minimap.name);
+    for (let i = 0; i < componentsMM.length; i++) {
+      const c = componentsMM[i];
+      if (c.isDirty) {
+        c.entity.isDirty = true;
+        c.entity.componentBuffers[Minimap.name] = { t: this.room.currentTick, buffer: c.serialize() };
+      }
+    }
+    // Zone
+    const componentsZ = <Zone[]>this.room.getComponentsOfType(Zone.name);
+    for (let i = 0; i < componentsZ.length; i++) {
+      const c = componentsZ[i];
+      if (c.isDirty) {
+        c.entity.isDirty = true;
+        c.entity.componentBuffers[Zone.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }
 
