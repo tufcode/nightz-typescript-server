@@ -49,6 +49,20 @@ import { ChatMessage } from './components/chat-message';
 import { Minimap } from './components/minimap';
 import { Zone } from './components/zone';
 import { ObservableByAll } from './components/observable-by-all';
+import { BehaviourTree } from './ai/behaviour-tree';
+import { Sequence } from './ai/nodes/sequence';
+import { GetObjectsInRadius } from './ai/nodes/get-objects-in-radius';
+import { GetClosestObject } from './ai/nodes/get-closest-object';
+import { GetPosition } from './ai/nodes/get-position';
+import { InRange } from './ai/nodes/in-range';
+import { Inverted } from './ai/nodes/inverted';
+import { Chase } from './ai/nodes/chase';
+import { RotateTowards } from './ai/nodes/rotate-towards';
+import { BetterAI } from './components/better-ai';
+import { Selector } from './ai/nodes/selector';
+import { Flee } from './ai/nodes/flee';
+import { RotateAway } from './ai/nodes/rotate-away';
+import { WaitSeconds } from './ai/nodes/wait-seconds';
 
 const debug = debugModule('GameRoom');
 
@@ -173,12 +187,13 @@ export default class GameRoom extends Room {
       entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
     }
-    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 10, () => {
+    const zombieSpawner = new Spawner(1, 4, 1, 1, 10, () => {
       const body = this.gameWorld.getPhysicsWorld().createBody({
         type: 'dynamic',
         position: Vec2(
-          randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
+          /*randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
+          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),*/ 5,
+          0,
         ),
         fixedRotation: true,
         linearDamping: 10,
@@ -207,11 +222,48 @@ export default class GameRoom extends Room {
       entity.addComponent(new Team(1));
       entity.addComponent(new Health(40, 5));
       entity.addComponent(new KillRewards(20, randomRange(0, 10)));
-      entity.addComponent(new Movement(500));
+      const moveComponent = <Movement>entity.addComponent(new Movement(500));
       entity.addComponent(new Minimap());
 
-      entity.addComponent(new ZombieAI());
+      //entity.addComponent(new ZombieAI());
       entity.addComponent(new Observable());
+
+      const tree = new BehaviourTree();
+      const seq = new Sequence(tree);
+      seq.addNode(new GetPosition(tree, body));
+      seq.addNode(new GetClosestObject(tree));
+
+      const selector = new Selector(tree);
+      const chaseSequence = new Sequence(tree);
+
+      chaseSequence.addNode(new Inverted(tree, new InRange(tree, 'closestObject', 3)));
+      chaseSequence.addNode(new Chase(tree, moveComponent, 'closestObject'));
+      chaseSequence.addNode(new RotateTowards(tree, body, 'closestObject'));
+
+      const escapeSequence = new Sequence(tree);
+
+      escapeSequence.addNode(new InRange(tree, 'closestObject', 2));
+      escapeSequence.addNode(new Flee(tree, moveComponent, 'closestObject'));
+      escapeSequence.addNode(new RotateAway(tree, body, 'closestObject'));
+
+      selector.addNode(chaseSequence);
+      selector.addNode(escapeSequence);
+
+      seq.addNode(selector);
+
+      const findSequence = new Sequence(tree);
+      findSequence.addNode(new WaitSeconds(tree, 1));
+      findSequence.addNode(new GetPosition(tree, body));
+      findSequence.addNode(
+        new GetObjectsInRadius(tree, this.gameWorld.getPhysicsWorld(), 10, (f) => {
+          return (
+            (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
+            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE
+          );
+        }),
+      );
+
+      (<BetterAI>entity.addComponent(new BetterAI())).addNode(findSequence).addNode(seq);
 
       (<NameTag>entity.addComponent(new NameTag())).setName('Young Zombie ');
 

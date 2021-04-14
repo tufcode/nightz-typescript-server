@@ -1,7 +1,6 @@
 import { BehaviourNode, Status } from './behaviour-node';
-import { BehaviourTree } from '../behaviour-tree';
 
-export class Sequence extends BehaviourNode {
+export class Selector extends BehaviourNode {
   private nodes: BehaviourNode[] = [];
   private currentIndex = 0;
 
@@ -12,20 +11,19 @@ export class Sequence extends BehaviourNode {
   public execute(deltaTime: number): Status {
     for (; this.currentIndex < this.nodes.length; this.currentIndex++) {
       const childStatus = this.nodes[this.currentIndex].execute(deltaTime);
-      //console.log('Child', this.currentIndex, 'status', Status[childStatus]);
       switch (childStatus) {
         case Status.FAILED:
-          this.currentIndex = 0;
-          return childStatus;
+          continue;
         case Status.RUNNING:
           return childStatus;
         case Status.SUCCESS:
-          continue;
+          this.currentIndex = 0;
+          return Status.SUCCESS;
         default:
           return Status.SUCCESS;
       }
     }
-    //console.log('Sequence complete');
     this.currentIndex = 0;
+    return Status.FAILED;
   }
 }

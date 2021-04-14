@@ -1,6 +1,7 @@
 import { System } from './system';
 import GameRoom from '../game-room';
 import { AI } from '../components/ai';
+import { BetterAI } from '../components/better-ai';
 
 export class AISystem extends System {
   private room: GameRoom;
@@ -11,12 +12,11 @@ export class AISystem extends System {
   }
 
   public tick(deltaTime: number): void {
-    const components = <AI[]>this.room.getComponentsOfType(AI.name);
+    const components = <BetterAI[]>this.room.getComponentsOfType(BetterAI.name);
     for (let i = 0; i < components.length; i++) {
       const c = components[i];
 
-      c.updateTargets(deltaTime);
-      c.executeActions(deltaTime);
+      c.update(deltaTime);
     }
   }
 }

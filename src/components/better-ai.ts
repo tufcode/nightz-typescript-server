@@ -3,17 +3,19 @@ import { Entity } from '../entity';
 import { Body } from 'planck-js';
 import { Position } from './position';
 import { BehaviourTree } from '../ai/behaviour-tree';
+import { BehaviourNode } from '../ai/nodes/behaviour-node';
 
 export class BetterAI extends Component {
-  private trees: BehaviourTree[] = [];
+  private nodes: BehaviourNode[] = [];
 
-  public addTree(tree: BehaviourTree): void {
-    this.trees.push(tree);
+  public addNode(node: BehaviourNode): this {
+    this.nodes.push(node);
+    return this;
   }
 
   public update(deltaTime: number): void {
-    for (let i = 0; i < this.trees.length; i++) {
-      this.trees[i].tick(deltaTime);
+    for (let i = 0; i < this.nodes.length; i++) {
+      this.nodes[i].execute(deltaTime);
     }
   }
 }

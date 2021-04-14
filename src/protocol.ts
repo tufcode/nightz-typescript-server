@@ -54,10 +54,10 @@ export enum EntityCategory {
   STRUCTURE = 0x0002,
   RESOURCE = 0x0004,
   PLAYER = 0x0008,
-  NPC = 0x0016,
-  BULLET = 0x0032,
-  MELEE = 0x0064,
-  SENSOR = 0x0128,
+  NPC = 0x0010,
+  BULLET = 0x0012,
+  MELEE = 0x0014,
+  SENSOR = 0x0016,
 }
 
 export const getBytes = {
