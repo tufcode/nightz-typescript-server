@@ -5,15 +5,15 @@ import { Position } from './position';
 import { BehaviourTree } from '../ai/behaviour-tree';
 
 export class BetterAI extends Component {
-  private trees: { tree: BehaviourTree; executeIf: () => boolean }[] = [];
+  private trees: BehaviourTree[] = [];
 
-  public addTree(tree: BehaviourTree, executeIf: () => boolean): void {
-    this.trees.push({ tree, executeIf });
+  public addTree(tree: BehaviourTree): void {
+    this.trees.push(tree);
   }
 
-  public update(deltaTime: number) {
+  public update(deltaTime: number): void {
     for (let i = 0; i < this.trees.length; i++) {
-      const t = this.trees[i];
+      this.trees[i].tick(deltaTime);
     }
   }
 }

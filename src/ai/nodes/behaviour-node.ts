@@ -1,13 +1,19 @@
-import { BehaviourTree } from './behaviour-tree';
+import { BehaviourTree } from '../behaviour-tree';
 
-export class Action {
-  private tree: BehaviourTree;
+export enum Status {
+  FAILED,
+  RUNNING,
+  SUCCESS,
+}
+
+export class BehaviourNode {
+  protected tree: BehaviourTree;
   public constructor(tree: BehaviourTree) {
     this.tree = tree;
   }
-  public execute(): void {}
-  public _execute(): void {
-    this.execute();
+
+  public execute(deltaTime: number): Status {
+    return Status.SUCCESS;
   }
 }
 
