@@ -1,5 +1,6 @@
 import { BehaviourNode, Status } from './behaviour-node';
 import { BehaviourTree } from '../behaviour-tree';
+import { ChatMessage } from '../../components/chat-message';
 
 export class Sequence extends BehaviourNode {
   private nodes: BehaviourNode[] = [];

@@ -16,7 +16,6 @@ export class Tool extends Item {
   private _damageTick = 0;
   private myTeam: Team;
   private attackSpeed = 2; // todo cant be more than 10
-  private ownerEntity: Entity;
   private animationComponent: Animation;
 
   public constructor() {
@@ -27,9 +26,8 @@ export class Tool extends Item {
     super.init();
   }
 
-  public onEquip(entity: Entity): void {
-    this.ownerEntity = entity;
-    const body = (<PhysicsBody>entity.getComponent(PhysicsBody)).getBody();
+  public onEquip(): void {
+    const body = (<PhysicsBody>this.parent.getComponent(PhysicsBody)).getBody();
     this.fixture = body.createFixture({
       shape: Box(0.3, 0.5, Vec2(0.8, 0)),
       filterCategoryBits: EntityCategory.MELEE,
@@ -38,8 +36,8 @@ export class Tool extends Item {
     });
     this.fixture.setUserData(this.entity.objectId);
     body.setAwake(true);
-    this.myTeam = <Team>entity.getComponent(Team);
-    this.animationComponent = <Animation>entity.getComponent(Animation);
+    this.myTeam = <Team>this.parent.getComponent(Team);
+    this.animationComponent = <Animation>this.parent.getComponent(Animation);
   }
 
   public onUnequip() {
@@ -92,8 +90,8 @@ export class Tool extends Item {
       for (let i = 0; i < this._entitiesToDamage.length; i++) {
         const h = this._entitiesToDamage[i];
         let dmg = randomRange(5, 10);
-        if (h.entity.id == EntityId.YoungZombie) dmg += 30;
-        h.damage(dmg, this.ownerEntity);
+        if (h.entity.id == EntityId.Zombie) dmg += 30;
+        h.damage(dmg, this.parent);
       }
     }
   }

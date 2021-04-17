@@ -17,7 +17,6 @@ export class MeleeWeapon extends Item {
   private _damageTick = 0;
   private myTeam: Team;
   private attackSpeed = 2.1; // todo cant be more than 10
-  private ownerEntity: Entity;
   private animationComponent: Animation;
   private damageToPlayers: number;
   private damageToStructures: number;
@@ -25,6 +24,7 @@ export class MeleeWeapon extends Item {
   private damageToZombies: number;
   private hitShape: Shape;
   private mass: number;
+  private animationId: number;
 
   public constructor(
     mass: number,
@@ -34,6 +34,7 @@ export class MeleeWeapon extends Item {
     damageToResources: number,
     damageToZombies: number,
     hitShape: Shape,
+    animationId = 2,
   ) {
     super(ItemSlot.Slot1);
     this.mass = mass;
@@ -43,11 +44,13 @@ export class MeleeWeapon extends Item {
     this.damageToResources = damageToResources;
     this.damageToZombies = damageToZombies;
     this.hitShape = hitShape;
+    this.animationId = animationId;
   }
 
-  public onEquip(entity: Entity): void {
-    this.ownerEntity = entity;
-    const body = (<PhysicsBody>entity.getComponent(PhysicsBody)).getBody();
+  public onEquip(): void {
+    super.onEquip();
+
+    const body = (<PhysicsBody>this.parent.getComponent(PhysicsBody)).getBody();
     this.fixture = body.createFixture({
       shape: this.hitShape,
       filterCategoryBits: EntityCategory.MELEE,
@@ -57,8 +60,8 @@ export class MeleeWeapon extends Item {
     });
     this.fixture.setUserData(this.entity.objectId);
     body.setAwake(true);
-    this.myTeam = <Team>entity.getComponent(Team);
-    this.animationComponent = <Animation>entity.getComponent(Animation);
+    this.myTeam = <Team>this.parent.getComponent(Team);
+    this.animationComponent = <Animation>this.parent.getComponent(Animation);
   }
 
   public onUnequip() {
@@ -90,7 +93,7 @@ export class MeleeWeapon extends Item {
 
   public setPrimary(b: boolean) {
     if (!this._primary && b) {
-      this.animationComponent.setAnimation(2, this.attackSpeed);
+      this.animationComponent.setAnimation(this.animationId, this.attackSpeed);
     } else if (this._primary && !b) {
       this.animationComponent.setAnimation(0, 0);
     }
@@ -110,16 +113,16 @@ export class MeleeWeapon extends Item {
         const entityData = this._entitiesToDamage[key];
         switch (entityData.type) {
           case EntityCategory.PLAYER:
-            entityData.health.damage(this.damageToPlayers, this.ownerEntity);
+            entityData.health.damage(this.damageToPlayers, this.parent);
             break;
           case EntityCategory.STRUCTURE:
-            entityData.health.damage(this.damageToStructures, this.ownerEntity);
+            entityData.health.damage(this.damageToStructures, this.parent);
             break;
           case EntityCategory.RESOURCE:
-            entityData.health.damage(this.damageToResources, this.ownerEntity);
+            entityData.health.damage(this.damageToResources, this.parent);
             break;
           case EntityCategory.NPC:
-            entityData.health.damage(this.damageToZombies, this.ownerEntity);
+            entityData.health.damage(this.damageToZombies, this.parent);
             break;
           default:
             break;

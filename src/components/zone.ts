@@ -20,6 +20,8 @@ export class Zone extends Component {
     this.isDirty = true;
   }
 
+  public update(deltaTime: number) {}
+
   public serialize(): Buffer {
     this.isDirty = false;
 

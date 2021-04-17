@@ -1,16 +1,16 @@
-import { Item } from './item';
-import { Entity } from '../../entity';
+import { Item } from './items/item';
+import { Entity } from '../entity';
 import { Box, Fixture, Vec2 } from 'planck-js';
-import { EntityCategory } from '../../protocol';
-import { PhysicsBody } from '../physics-body';
-import { ItemSlot } from '../inventory';
-import { Team } from '../team';
-import { Health } from '../health';
-import { randomRange } from '../../utils';
-import { Animation } from '../animation';
-import { EntityId } from '../../data/entity-id';
-import { Component } from '../component';
-import { Movement } from '../movement';
+import { EntityCategory } from '../protocol';
+import { PhysicsBody } from './physics-body';
+import { ItemSlot } from './inventory';
+import { Team } from './team';
+import { Health } from './health';
+import { randomRange } from '../utils';
+import { Animation } from './animation';
+import { EntityId } from '../data/entity-id';
+import { Component } from './component';
+import { Movement } from './movement';
 
 export class Spike extends Component {
   private fixture: Fixture;
@@ -24,7 +24,7 @@ export class Spike extends Component {
 
   public init() {
     super.init();
-    this.entity.id = EntityId.WoodenSpike;
+    this.entity.id = EntityId.SpikeWooden;
     this.myTeam = <Team>this.entity.getComponent(Team);
   }
 

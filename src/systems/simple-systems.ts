@@ -19,7 +19,7 @@ import { PlayerInput } from '../components/player-input';
 import { Construction } from '../components/construction';
 import { Item } from '../components/items/item';
 import { Animation } from '../components/animation';
-import { Spike } from '../components/items/spike';
+import { Spike } from '../components/spike';
 import { ChatMessage } from '../components/chat-message';
 import { Minimap } from '../components/minimap';
 import { Zone } from '../components/zone';

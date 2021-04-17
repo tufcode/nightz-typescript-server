@@ -2,6 +2,7 @@ import { Component } from './component';
 import { ComponentIds } from '../protocol';
 import { Item } from './items/item';
 import { Fixture } from 'planck-js';
+import { EntityId } from '../data/entity-id';
 
 export class Equipment extends Component {
   private _hand: Item;
@@ -20,7 +21,7 @@ export class Equipment extends Component {
   }
 
   public set hand(value: Item) {
-    value.onEquip(this.entity);
+    value.onEquip();
     this._hand = value;
     this.isDirty = true;
   }
@@ -39,7 +40,7 @@ export class Equipment extends Component {
     const buf = Buffer.allocUnsafe(9);
     // Packet Id
     buf.writeUInt8(ComponentIds.Equipment, 0);
-    buf.writeUInt32LE(this._hand?.entity.objectId ?? 0, 1);
+    buf.writeUInt32LE(this._hand != null && this._hand.entity.id != EntityId.None ? this._hand.entity.objectId : 0, 1);
     buf.writeUInt32LE(this._hat?.entity.objectId ?? 0, 5);
 
     return buf;

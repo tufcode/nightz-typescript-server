@@ -1,4 +1,5 @@
 import { BehaviourTree } from '../behaviour-tree';
+import { ChatMessage } from '../../components/chat-message';
 
 export enum Status {
   FAILED,

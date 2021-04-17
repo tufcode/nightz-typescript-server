@@ -9,25 +9,26 @@ export class Health extends Component {
 
   private _currentHealth = 100;
   private _maxHealth = 100;
-  private lastDamageSource: Entity;
   private _eventEmitter: EventEmitter;
-  private _regeneration = 0;
 
-  private _lastDamage = Date.now();
+  private lastDamageSource: Entity;
   private lastDamageTime: number;
   private lastDamageAmount: number;
+  public get damagedRecently(): boolean {
+    return Date.now() - this.lastDamageTime <= 3000;
+  }
 
-  public constructor(maxHealth: number, regeneration: number) {
+  public constructor(maxHealth: number) {
     super();
     this._eventEmitter = new EventEmitter();
     this._maxHealth = maxHealth;
     this._currentHealth = maxHealth;
-    this._regeneration = regeneration;
   }
 
   public on(event: 'damage' | 'heal', fn: (...args: any[]) => void): EventEmitter {
     return this._eventEmitter.on(event, fn);
   }
+
   public get isDead(): boolean {
     return this._currentHealth <= 0;
   }

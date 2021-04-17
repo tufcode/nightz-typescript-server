@@ -12,6 +12,7 @@ import { Movement } from '../components/movement';
 import { Vec2 } from 'planck-js';
 import { AI } from '../components/ai';
 import { Health } from '../components/health';
+import { Regeneration } from '../components/regeneration';
 
 export class HealthSystem extends System {
   private room: GameRoom;
@@ -22,6 +23,11 @@ export class HealthSystem extends System {
   }
 
   public tick(deltaTime: number): void {
+    this.updateRegeneration(deltaTime);
+    this.updateHealth(deltaTime);
+  }
+
+  private updateHealth(deltaTime: number) {
     const components = <Health[]>this.room.getComponentsOfType(Health.name);
     for (let i = 0; i < components.length; i++) {
       const c = components[i];
@@ -35,6 +41,14 @@ export class HealthSystem extends System {
         c.entity.isDirty = true;
         c.entity.componentBuffers[HealthSystem.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
+    }
+  }
+
+  private updateRegeneration(deltaTime: number) {
+    const components = <Regeneration[]>this.room.getComponentsOfType(Regeneration.name);
+    for (let i = 0; i < components.length; i++) {
+      const c = components[i];
+      c.update(deltaTime);
     }
   }
 }

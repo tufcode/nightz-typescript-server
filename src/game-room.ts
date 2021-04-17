@@ -63,6 +63,10 @@ import { Selector } from './ai/nodes/selector';
 import { Flee } from './ai/nodes/flee';
 import { RotateAway } from './ai/nodes/rotate-away';
 import { WaitSeconds } from './ai/nodes/wait-seconds';
+import { GetCurrentHand } from './ai/nodes/get-current-hand';
+import { ActivateHandItem } from './ai/nodes/activate-hand-item';
+import { Regeneration } from './components/regeneration';
+import { CreateZombie } from './entities/zombie';
 
 const debug = debugModule('GameRoom');
 
@@ -71,15 +75,15 @@ export default class GameRoom extends Room {
   public systems: { [key: string]: System } = {};
 
   private gameWorld: World;
-  private observerUpdateTick = 0;
   private playableArea: Vec2 = Vec2(200, 200);
   private systemsArray: System[] = [];
-  private _i = 0;
   public currentTick = 0;
   private _sendTick = 0;
   private sendRate = 1 / 15;
   public componentCache: { [key: string]: Component[] } = {};
   private lastSend = 0;
+  private _dayNightCycleTick = 0;
+  private _isNight = false;
 
   public onCreate(options: any) {
     debug(
@@ -142,11 +146,11 @@ export default class GameRoom extends Room {
           EntityCategory.MELEE,
       });
       // Create AI entity
-      const entity = new Entity(EntityId.GoldMine, this.gameWorld);
+      const entity = new Entity(EntityId.StoneMine, this.gameWorld);
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Health(1, 1));
+      entity.addComponent(new Health(1));
       entity.addComponent(new Team(1));
       entity.addComponent(new GoldMine());
       entity.addComponent(new Minimap());
@@ -177,100 +181,25 @@ export default class GameRoom extends Room {
           EntityCategory.MELEE,
       });
       // Create AI entity
-      const entity = new Entity(EntityId.FoodBush, this.gameWorld);
+      const entity = new Entity(EntityId.FoodMine, this.gameWorld);
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Health(1, 1));
+      entity.addComponent(new Health(1));
       entity.addComponent(new Team(1));
       entity.addComponent(new FoodMine());
       entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
     }
-    const zombieSpawner = new Spawner(this.playableArea.length(), 4, 1, 1, 10, () => {
-      const body = this.gameWorld.getPhysicsWorld().createBody({
-        type: 'dynamic',
-        position: Vec2(
-          /*randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),*/ randomRange(
-            -20,
-            20,
-          ),
-          randomRange(-20, 20),
+    const zombieSpawner = new Spawner(this.playableArea.length() / 2, 4, 1, 1, 10, () => {
+      return CreateZombie(
+        this.gameWorld,
+        Vec2(
+          randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
+          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
         ),
-        fixedRotation: true,
-        linearDamping: 10,
-      });
-      body.createFixture({
-        shape: Circle(0.375),
-        density: 25.0,
-        friction: 0,
-        filterCategoryBits: EntityCategory.NPC,
-        filterMaskBits:
-          EntityCategory.BOUNDARY |
-          EntityCategory.STRUCTURE |
-          EntityCategory.RESOURCE |
-          EntityCategory.PLAYER |
-          EntityCategory.NPC |
-          EntityCategory.BULLET |
-          EntityCategory.MELEE |
-          EntityCategory.SENSOR,
-      });
-      // Create AI entity
-      const entity = new Entity(EntityId.YoungZombie, this.gameWorld);
-      entity.addComponent(new Animation());
-      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
-      entity.addComponent(new Rotation(body.getAngle()));
-      entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Team(1));
-      entity.addComponent(new Health(40, 5));
-      entity.addComponent(new KillRewards(20, randomRange(0, 10)));
-      const moveComponent = <Movement>entity.addComponent(new Movement(500));
-      entity.addComponent(new Minimap());
-
-      //entity.addComponent(new ZombieAI());
-      entity.addComponent(new Observable());
-
-      const tree = new BehaviourTree();
-      const seq = new Sequence(tree);
-      seq.addNode(new GetPosition(tree, body));
-      seq.addNode(new GetClosestObject(tree));
-
-      const selector = new Selector(tree);
-      const chaseSequence = new Sequence(tree);
-
-      chaseSequence.addNode(new Inverted(tree, new InRange(tree, 'closestObject', 3)));
-      chaseSequence.addNode(new Chase(tree, moveComponent, 'closestObject'));
-      chaseSequence.addNode(new RotateTowards(tree, body, 'closestObject'));
-
-      const escapeSequence = new Sequence(tree);
-
-      escapeSequence.addNode(new InRange(tree, 'closestObject', 2));
-      escapeSequence.addNode(new Flee(tree, moveComponent, 'closestObject'));
-      escapeSequence.addNode(new RotateAway(tree, body, 'closestObject'));
-
-      selector.addNode(chaseSequence);
-      selector.addNode(escapeSequence);
-
-      seq.addNode(selector);
-
-      const findSequence = new Sequence(tree);
-      findSequence.addNode(new WaitSeconds(tree, 1));
-      findSequence.addNode(new GetPosition(tree, body));
-      findSequence.addNode(
-        new GetObjectsInRadius(tree, this.gameWorld.getPhysicsWorld(), 50, (f) => {
-          return (
-            (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
-            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE
-          );
-        }),
+        Math.random() * Math.PI * 2,
       );
-
-      (<BetterAI>entity.addComponent(new BetterAI())).addNode(findSequence).addNode(seq);
-
-      (<NameTag>entity.addComponent(new NameTag())).setName('Young Zombie ');
-
-      return entity;
     });
     this.addSimulationInterval(zombieSpawner.update.bind(zombieSpawner), 1000 / 10);
     // Add timers
@@ -283,15 +212,23 @@ export default class GameRoom extends Room {
   public update(deltaTime: number): void {
     const t = performance.now();
     this.currentTick++;
+    this._dayNightCycleTick += deltaTime;
     this._sendTick += deltaTime;
     // Tick systems
     for (let i = 0; i < this.systemsArray.length; i++) {
       this.systemsArray[i].tick(deltaTime);
     }
+    // Day-night cycle
+    if (this._dayNightCycleTick >= 10) {
+      this._dayNightCycleTick = 0;
+      this._isNight = !this._isNight;
+    }
+
     // Send updates if necessary
     if (this._sendTick >= this.sendRate) {
       this._sendTick = 0;
 
+      this.broadcast(getBytes[Protocol.DayNightCycle](this._isNight, this._dayNightCycleTick / 10));
       const now = performance.now();
 
       // Send updates to every client
@@ -433,7 +370,8 @@ export default class GameRoom extends Room {
     entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
     entity.addComponent(new Rotation(body.getAngle()));
     entity.addComponent(new PhysicsBody(body));
-    entity.addComponent(new Health(100, 2));
+    entity.addComponent(new Health(100000));
+    entity.addComponent(new Regeneration(0.25));
     entity.addComponent(new Movement(1000));
     entity.addComponent(new PlayerInput());
     (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + client.id);
@@ -451,7 +389,7 @@ export default class GameRoom extends Room {
     inventory.addItem(createItem(EntityId.Food, new Food(ItemSlot.Slot2), this.gameWorld, client));
     inventory.addItem(
       createItem(
-        EntityId.WoodenBlock,
+        EntityId.WallWooden,
         new BuildingBlock(ItemSlot.Slot3, 0.25, 20, createWoodenBlock(client, new Team(100 + client.id))),
         this.gameWorld,
         client,
@@ -459,7 +397,7 @@ export default class GameRoom extends Room {
     );
     inventory.addItem(
       createItem(
-        EntityId.WoodenSpike,
+        EntityId.SpikeWooden,
         new BuildingBlock(ItemSlot.Slot2, 0.25, 20, createWoodenSpike(client, new Team(100 + client.id))),
         this.gameWorld,
         client,
@@ -477,7 +415,7 @@ export default class GameRoom extends Room {
       () =>
         createItem(
           EntityId.AxeBasic,
-          new MeleeWeapon(1.6, 1.4, 5, 8, 6, 10, Box(0.5, 0.75, Vec2(1, -0.2))),
+          new MeleeWeapon(1.6, 1.75, 5, 8, 6, 20, Box(0.5, 0.75, Vec2(1, -0.2))),
           this.gameWorld,
           client,
         ),
@@ -490,7 +428,7 @@ export default class GameRoom extends Room {
       () =>
         createItem(
           EntityId.AxeNormal,
-          new MeleeWeapon(1.8, 2, 10, 10, 8, 15, Box(0.5, 0.75, Vec2(1, -0.2))),
+          new MeleeWeapon(1.8, 2, 12, 12, 8, 28, Box(0.5, 0.75, Vec2(1, -0.2))),
           this.gameWorld,
           client,
         ),
@@ -503,7 +441,7 @@ export default class GameRoom extends Room {
       () =>
         createItem(
           EntityId.AxeGreat,
-          new MeleeWeapon(2, 2.75, 15, 20, 10, 40, Box(0.625, 0.875, Vec2(1.25, -0.1))),
+          new MeleeWeapon(2, 2.25, 20, 20, 10, 40, Box(0.625, 0.875, Vec2(1.25, -0.1))),
           this.gameWorld,
           client,
         ),

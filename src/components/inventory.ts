@@ -37,7 +37,8 @@ export class Inventory extends Component {
     this.itemsWithClass[item.constructor.name] = item;
     this.items.push(item);
 
-    const cli = <GameClient>this.entity.owner.getUserData();
+    const cli = <GameClient>this.entity.owner?.getUserData();
+    if (cli == null) return;
     if (this.queuedMessageIndex != -1 && cli.queuedMessages.length > this.queuedMessageIndex) {
       cli.queuedMessages.splice(this.queuedMessageIndex, 1);
     }

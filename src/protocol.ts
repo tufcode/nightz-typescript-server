@@ -14,6 +14,7 @@ export enum Protocol {
 
   WorldSize = 10,
   Leaderboard = 11,
+  DayNightCycle = 12,
 
   // Player-related (50-99)
   CameraFollow = 50,
@@ -23,6 +24,7 @@ export enum Protocol {
   Inventory = 63,
   FoodInfo = 64,
   Upgrade = 65,
+  ItemInfo = 66,
   TemporaryMessage = 70,
 }
 
@@ -216,6 +218,15 @@ export const getBytes = {
         index += 2;
       }
     }
+
+    return buf;
+  },
+  [Protocol.DayNightCycle]: (isNight: boolean, percentage: number) => {
+    const buf = Buffer.allocUnsafe(6);
+
+    buf.writeUInt8(Protocol.DayNightCycle, 0);
+    buf.writeUInt8(isNight ? 1 : 0, 1);
+    buf.writeFloatLE(percentage, 2);
 
     return buf;
   },

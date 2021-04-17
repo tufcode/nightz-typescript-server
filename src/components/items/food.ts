@@ -18,20 +18,30 @@ export class Food extends Item {
   private eatTick = 0;
   private animationComponent: Animation;
 
+  public constructor(type: ItemSlot) {
+    super(type);
+    this.requiredFood = 1;
+  }
+
   public get current(): number {
     return this._current;
   }
 
   public set current(value: number) {
-    // todo maybe make it so it only sends one packet per patch even if there are multiple updates?
     this._current = value;
-    (<GameClient>this.parent.owner.getUserData()).queuedMessages.push(this.serialize());
+    /*
+    const cli = <GameClient>this.parent.owner.getUserData();
+    if (this.queuedMessageIndex != -1 && cli.queuedMessages.length > this.queuedMessageIndex) {
+      cli.queuedMessages.splice(this.queuedMessageIndex, 1);
+    }
+
+    this.queuedMessageIndex = cli.queuedMessages.push(this.serialize()) - 1;*/
   }
 
   private parentHealth: Health;
 
-  public onEquip(entity: Entity) {
-    super.onEquip(entity);
+  public onEquip() {
+    super.onEquip();
     this.parentHealth = <Health>this.parent.getComponent(Health);
     this.animationComponent = <Animation>this.parent.getComponent(Animation);
   }

@@ -9,7 +9,6 @@ import { Movement } from './movement';
 import { Rotation } from './rotation';
 import { EntityCategory } from '../protocol';
 import { Equipment } from './equipment';
-import { Hand } from './items/hand';
 import { Animation } from './animation';
 import { EntityId } from '../data/entity-id';
 import { ChatMessage } from './chat-message';

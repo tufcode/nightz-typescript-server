@@ -116,7 +116,7 @@ export class ItemUpgrade extends Component {
             // Create item
             const item = upgrade.createCallback();
 
-            // Make observers update next frame so inventory packet doesn't get sent before entity is visible.
+            // Make observers update next frame so inventory packet doesn't get sent before entity is visible. TODO might be unnecessary
             (<VisibilitySystem>(<GameRoom>this.entity.world.room).systems[VisibilitySystem.name]).forceUpdateNext();
 
             // Add item to inventory

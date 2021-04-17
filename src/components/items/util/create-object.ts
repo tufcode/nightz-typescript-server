@@ -13,7 +13,7 @@ import { Item } from '../item';
 import { Observable } from '../../observable';
 import { Rotation } from '../../rotation';
 import { EntityId } from '../../../data/entity-id';
-import { Spike } from '../spike';
+import { Spike } from '../../spike';
 import { ObservableItem } from '../../observable-item';
 
 export const createWoodenBlock = (
@@ -43,8 +43,8 @@ export const createWoodenBlock = (
     });
 
     // Create entity
-    const entity = new Entity(EntityId.WoodenBlock, world, owner);
-    entity.addComponent(new Health(200, 20));
+    const entity = new Entity(EntityId.WallWooden, world, owner);
+    entity.addComponent(new Health(200));
     entity.addComponent(new Position(position, Vec2.zero()));
     entity.addComponent(new Rotation(angle));
     entity.addComponent(new PhysicsBody(body));
@@ -81,9 +81,9 @@ export const createWoodenSpike = (
     });
 
     // Create entity
-    const entity = new Entity(EntityId.WoodenSpike, world, owner);
+    const entity = new Entity(EntityId.SpikeWooden, world, owner);
     if (team != null) entity.addComponent(team);
-    entity.addComponent(new Health(200, 20));
+    entity.addComponent(new Health(200));
     entity.addComponent(new Position(position, Vec2.zero()));
     entity.addComponent(new Rotation(angle));
     entity.addComponent(new PhysicsBody(body));
@@ -94,9 +94,9 @@ export const createWoodenSpike = (
   };
 };
 
-export const createItem = (id: EntityId, item: Item, world: World, owner?: Client): Item => {
+export const createItem = (id: EntityId, item: Item, world: World, owner?: Client, noObserver?: boolean): Item => {
   const entity = new Entity(id, world, owner);
   const i = <Item>entity.addComponent(item);
-  entity.addComponent(new ObservableItem());
+  if (!noObserver) entity.addComponent(new ObservableItem());
   return i;
 };

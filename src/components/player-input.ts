@@ -23,9 +23,6 @@ export class PlayerInput extends Component {
   public init(): void {
     this.ownerClientData = this.entity.owner.getUserData();
     const h = <Health>this.entity.getComponent(Health);
-    h.on('damage', (amount) => {
-      if (h.currentHealth <= h.maxHealth / 2) h.currentHealth = h.maxHealth;
-    });
     this.equipmentComponent = <Equipment>this.entity.getComponent(Equipment);
     this.movementComponent = <Movement>this.entity.getComponent(Movement);
     this.bodyComponent = <PhysicsBody>this.entity.getComponent(PhysicsBody);

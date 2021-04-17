@@ -5,20 +5,26 @@ import { GameClient } from '../game-client';
 
 export class Gold extends Component {
   private _amount = 0;
+  private queuedMessageIndex = -1;
 
   public get amount(): number {
     return this._amount;
   }
 
   public set amount(value: number) {
-    // todo maybe make it so it only sends one packet per patch even if there are multiple updates?
     this._amount = value;
-    (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
+
+    const cli = <GameClient>this.entity.owner.getUserData();
+    if (this.queuedMessageIndex != -1 && cli.queuedMessages.length > this.queuedMessageIndex) {
+      cli.queuedMessages.splice(this.queuedMessageIndex, 1);
+    }
+
+    this.queuedMessageIndex = cli.queuedMessages.push(this.serialize()) - 1;
   }
 
   public constructor() {
     super();
-    // Set isDirty to false because it is true when a Component is instantiated and we don't want inventory to be
+    // Set isDirty to false because it is true when a Component is instantiated and we don't want gold to be
     // sent to anyone but owner.
     this.isDirty = false;
   }
