@@ -10,14 +10,26 @@ import { Equipment } from './equipment';
 import GameRoom from '../game-room';
 import { VisibilitySystem } from '../systems/visibility-system';
 
+export class Upgrade {
+  public _upgrades: Upgrade[] = [];
+  public _upgradeLevel: number;
+  public _upgradeItemId: EntityId;
+  public _createCallback: () => Item;
+
+  public addUpgrade(upgradedItemId: EntityId, createCallback: () => Item, minimumLevel: number): Upgrade {
+    const upgrade = new Upgrade();
+    upgrade._upgradeItemId = upgradedItemId;
+    upgrade._upgradeLevel = minimumLevel;
+    upgrade._createCallback = createCallback;
+
+    this._upgrades.push(upgrade);
+    return upgrade;
+  }
+}
+
 export class ItemUpgrade extends Component {
   private _upgradeTree: {
-    [key: string]: {
-      pointsId: string;
-      upgrades: { upgradedItemId: EntityId; createCallback: () => Item; minimumLevel: number }[];
-      currentItem?: Item;
-      currentUpgradeLevel: number;
-    };
+    [key: string]: { pointsId: string; currentUpgrade: Upgrade; currentItem?: Item };
   } = {};
   private _points: {
     [key: string]: number;
@@ -56,37 +68,29 @@ export class ItemUpgrade extends Component {
     });
   }
 
-  public addUpgrade(
+  public addDefaultUpgrade(
     id: string,
     pointsId: string,
     upgradedItemId: EntityId,
     createCallback: () => Item,
     minimumLevel: number,
-  ): void {
-    if (this._upgradeTree.hasOwnProperty(id)) {
-      this._upgradeTree[id].upgrades.push({ upgradedItemId, createCallback, minimumLevel });
-    } else {
-      this._upgradeTree[id] = {
-        pointsId,
-        upgrades: [{ upgradedItemId, createCallback, minimumLevel }],
-        currentUpgradeLevel: 1,
-      };
-    }
-  }
+  ): Upgrade {
+    const upgrade = new Upgrade();
+    upgrade._upgradeItemId = upgradedItemId;
+    upgrade._upgradeLevel = minimumLevel;
+    upgrade._createCallback = createCallback;
 
-  public addDefault(id: string, pointsId: string, createCallback: () => Item, minimumLevel: number): void {
-    if (!this._upgradeTree.hasOwnProperty(id)) {
-      this._upgradeTree[id] = {
-        pointsId,
-        upgrades: [],
-        currentUpgradeLevel: minimumLevel,
-      };
+    this._upgradeTree[id] = {
+      pointsId,
+      currentUpgrade: upgrade,
+    };
 
-      const item = createCallback();
-      if (this._upgradeTree[id].currentItem) this._inventoryComponent.removeItem(this._upgradeTree[id].currentItem);
-      this._inventoryComponent.addItem(item);
-      this._upgradeTree[id].currentItem = item;
-    }
+    const item = createCallback();
+    if (this._upgradeTree[id].currentItem) this._inventoryComponent.removeItem(this._upgradeTree[id].currentItem);
+    this._inventoryComponent.addItem(item);
+    this._upgradeTree[id].currentItem = item;
+
+    return upgrade;
   }
 
   public addPointsWhen(pointsId: string, levels: number[]): void {
@@ -105,16 +109,19 @@ export class ItemUpgrade extends Component {
     for (let i = 0; i < keys.length; i++) {
       const tree = this._upgradeTree[keys[i]];
       if (!this._points[tree.pointsId]) continue;
-      for (let j = 0; j < tree.upgrades.length; j++) {
-        const upgrade = tree.upgrades[j];
-        if (upgrade.upgradedItemId == id) {
-          if (upgrade.minimumLevel > tree.currentUpgradeLevel && upgrade.minimumLevel <= this._levelComponent.level) {
-            tree.currentUpgradeLevel = upgrade.minimumLevel;
+      for (let j = 0; j < tree.currentUpgrade._upgrades.length; j++) {
+        const upgrade = tree.currentUpgrade._upgrades[j];
+        if (upgrade._upgradeItemId == id) {
+          if (
+            upgrade._upgradeLevel > tree.currentUpgrade._upgradeLevel &&
+            upgrade._upgradeLevel <= this._levelComponent.level
+          ) {
+            tree.currentUpgrade = upgrade;
             this._points[tree.pointsId] -= 1;
             this._totalPoints--;
 
             // Create item
-            const item = upgrade.createCallback();
+            const item = upgrade._createCallback();
 
             // Make observers update next frame so inventory packet doesn't get sent before entity is visible. TODO might be unnecessary
             (<VisibilitySystem>(<GameRoom>this.entity.world.room).systems[VisibilitySystem.name]).forceUpdateNext();
@@ -151,10 +158,13 @@ export class ItemUpgrade extends Component {
       const tree = this._upgradeTree[keys[i]];
       // Has enough points?
       if (this._points[tree.pointsId]) {
-        for (let j = 0; j < tree.upgrades.length; j++) {
-          const upgrade = tree.upgrades[j];
+        for (let j = 0; j < tree.currentUpgrade._upgrades.length; j++) {
+          const upgrade = tree.currentUpgrade._upgrades[j];
           // Can upgrade to this item?
-          if (upgrade.minimumLevel > tree.currentUpgradeLevel && upgrade.minimumLevel <= this._levelComponent.level) {
+          if (
+            upgrade._upgradeLevel > tree.currentUpgrade._upgradeLevel &&
+            upgrade._upgradeLevel <= this._levelComponent.level
+          ) {
             upgradable.push(upgrade);
           }
         }
@@ -167,7 +177,7 @@ export class ItemUpgrade extends Component {
     let index = 0;
 
     for (let i = 0; i < upgradable.length; i++) {
-      newBuf.writeUInt16LE(upgradable[i].upgradedItemId, index);
+      newBuf.writeUInt16LE(upgradable[i]._upgradeItemId, index);
       index += 2;
     }
 

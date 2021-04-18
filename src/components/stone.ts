@@ -3,7 +3,7 @@ import { ComponentIds, Protocol } from '../protocol';
 import { Item } from './items/item';
 import { GameClient } from '../game-client';
 
-export class Gold extends Component {
+export class Stone extends Component {
   private _amount = 0;
   private queuedMessageIndex = -1;
 
@@ -32,7 +32,7 @@ export class Gold extends Component {
   public serialize(): Buffer {
     const buf = Buffer.allocUnsafe(5);
     // Packet Id
-    buf.writeUInt8(Protocol.GoldInfo, 0);
+    buf.writeUInt8(Protocol.StoneInfo, 0);
     buf.writeUInt32LE(Math.floor(this._amount), 1);
 
     return buf;

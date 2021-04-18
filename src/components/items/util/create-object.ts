@@ -28,7 +28,7 @@ export const createWoodenBlock = (
       angle: angle,
     });
     body.createFixture({
-      shape: planck.Circle(0.5),
+      shape: planck.Circle(0.45),
       density: 0.0,
       filterCategoryBits: EntityCategory.STRUCTURE,
       filterMaskBits:
@@ -67,7 +67,7 @@ export const createWoodenSpike = (
       angle: angle,
     });
     body.createFixture({
-      shape: planck.Circle(0.4),
+      shape: planck.Circle(0.45),
       density: 0.0,
       filterCategoryBits: EntityCategory.STRUCTURE,
       filterMaskBits:

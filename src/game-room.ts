@@ -11,13 +11,13 @@ import { World } from './systems/world';
 import { BuildingBlock } from './components/items/building-block';
 import { Position } from './components/position';
 import { Health } from './components/health';
-import { Box, Circle, Vec2 } from 'planck-js';
+import { AABB, Box, Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
 import { createItem, createWoodenBlock, createWoodenSpike } from './components/items/util/create-object';
 import { Tiers } from './data/tiers';
-import { Spawner } from './systems/spawner';
+import { Spawner, SpawnerData } from './systems/spawner';
 import { randomRange, randomRangeFloat } from './utils';
-import { GoldMine } from './components/gold-mine';
+import { Mine } from './components/mine';
 import { Observable } from './components/observable';
 import { Level } from './components/level';
 import { KillRewards } from './components/kill-rewards';
@@ -67,30 +67,33 @@ import { GetCurrentHand } from './ai/nodes/get-current-hand';
 import { ActivateHandItem } from './ai/nodes/activate-hand-item';
 import { Regeneration } from './components/regeneration';
 import { CreateZombie } from './entities/zombie';
+import { Stone } from './components/stone';
+import { Wood } from './components/wood';
 
 const debug = debugModule('GameRoom');
 
 export default class GameRoom extends Room {
   public startTime: number;
-  public systems: { [key: string]: System } = {};
-
-  private gameWorld: World;
-  private playableArea: Vec2 = Vec2(200, 200);
-  private systemsArray: System[] = [];
   public currentTick = 0;
-  private _sendTick = 0;
-  private sendRate = 1 / 15;
+  public systems: { [key: string]: System } = {};
   public componentCache: { [key: string]: Component[] } = {};
-  private lastSend = 0;
+
+  private _gameWorld: World;
+  private _playableArea: Vec2 = Vec2(200, 200);
+  private _systemsArray: System[] = [];
+  private _sendTick = 0;
+  private _sendRate = 1 / 15;
+  private _lastSend = 0;
   private _dayNightCycleTick = 0;
   private _isNight = false;
+  private _zombieSpawner: SpawnerData;
 
   public onCreate(options: any) {
     debug(
       'Room created! :) joinOptions: ' + JSON.stringify(options) + ', handlerOptions: ' + JSON.stringify(this.options),
     );
     this.startTime = performance.now();
-    this.gameWorld = new World(
+    this._gameWorld = new World(
       this,
       {
         gravity: Vec2.zero(),
@@ -99,7 +102,7 @@ export default class GameRoom extends Room {
     );
 
     // Create boundaries
-    this.gameWorld.updateBounds(this.playableArea);
+    this._gameWorld.updateBounds(this._playableArea);
 
     this.addSystem(new HealthSystem(this));
     this.addSystem(new LevelSystem(this));
@@ -108,10 +111,11 @@ export default class GameRoom extends Room {
     this.addSystem(new AISystem(this));
     this.addSystem(new VisibilitySystem(this));
     this.addSystem(new LeaderboardSystem(this));
-    this.addSystem(this.gameWorld);
+    this.addSystem(new Spawner());
+    this.addSystem(this._gameWorld);
 
     {
-      const entity = new Entity(EntityId.Zone, this.gameWorld);
+      const entity = new Entity(EntityId.Zone, this._gameWorld);
       entity.addComponent(new Position(Vec2.zero(), Vec2.zero()));
       entity.addComponent(new Minimap());
       entity.addComponent(new ObservableByAll());
@@ -119,56 +123,71 @@ export default class GameRoom extends Room {
       zone.setData('Ground Zero', Vec2(3000, 3000), 102, 0, 0);
     }
 
-    // Create mines
-    const mineCount = Math.round(this.playableArea.length() / 2);
-    console.log(mineCount);
-    for (let i = 0; i < mineCount; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const body = this.gameWorld.getPhysicsWorld().createBody({
-        type: 'static',
-        position: Vec2(
-          randomRangeFloat(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRangeFloat(-(this.playableArea.y / 2), this.playableArea.y / 2),
-        ),
-        angle,
-      });
-      body.createFixture({
-        shape: Circle(1),
-        friction: 0,
-        filterCategoryBits: EntityCategory.RESOURCE,
-        filterMaskBits:
-          EntityCategory.BOUNDARY |
-          EntityCategory.STRUCTURE |
-          EntityCategory.RESOURCE |
-          EntityCategory.PLAYER |
-          EntityCategory.NPC |
-          EntityCategory.BULLET |
-          EntityCategory.MELEE,
-      });
-      // Create AI entity
-      const entity = new Entity(EntityId.StoneMine, this.gameWorld);
-      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
-      entity.addComponent(new Rotation(body.getAngle()));
-      entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Health(1));
-      entity.addComponent(new Team(1));
-      entity.addComponent(new GoldMine());
-      entity.addComponent(new Minimap());
-      entity.addComponent(new Observable());
-    }
+    const spawner = <Spawner>this.systems[Spawner.name];
+    // Zombie spawner
+    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 10, () => {
+      let pos: Vec2 = null;
+      while (true) {
+        let canSpawn = true;
+        pos = Vec2(
+          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
+        );
 
-    for (let i = 0; i < mineCount; i++) {
+        const aabbLower = pos.clone().sub(Vec2(1, 1));
+        const aabbUpper = pos.clone().add(Vec2(1, 1));
+        const aabb = new AABB(aabbLower, aabbUpper);
+        this._gameWorld.getPhysicsWorld().queryAABB(aabb, (f) => {
+          canSpawn = !(
+            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE ||
+            (f.getFilterCategoryBits() & EntityCategory.RESOURCE) == EntityCategory.RESOURCE ||
+            (f.getFilterCategoryBits() & EntityCategory.BOUNDARY) == EntityCategory.BOUNDARY
+          );
+          return canSpawn;
+        });
+
+        if (canSpawn) break;
+      }
+      return CreateZombie(this._gameWorld, pos, Math.random() * Math.PI * 2);
+    });
+
+    // Tree spawner
+    spawner.addSpawn(this._playableArea.length() / 3, 2, 1, 500, () => {
+      // Get unoccupied pos
+      let pos: Vec2 = null;
+      while (true) {
+        let canSpawn = true;
+        pos = Vec2(
+          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
+        );
+
+        const aabbLower = pos.clone().sub(Vec2(1, 1));
+        const aabbUpper = pos.clone().add(Vec2(1, 1));
+        const aabb = new AABB(aabbLower, aabbUpper);
+        this._gameWorld.getPhysicsWorld().queryAABB(aabb, (f) => {
+          canSpawn = !(
+            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE ||
+            (f.getFilterCategoryBits() & EntityCategory.RESOURCE) == EntityCategory.RESOURCE ||
+            (f.getFilterCategoryBits() & EntityCategory.BOUNDARY) == EntityCategory.BOUNDARY
+          );
+          return canSpawn;
+        });
+
+        if (canSpawn) break;
+      }
+      // Create
       const angle = Math.random() * Math.PI * 2;
-      const body = this.gameWorld.getPhysicsWorld().createBody({
+      const body = this._gameWorld.getPhysicsWorld().createBody({
         type: 'static',
         position: Vec2(
-          randomRangeFloat(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRangeFloat(-(this.playableArea.y / 2), this.playableArea.y / 2),
+          randomRangeFloat(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRangeFloat(-(this._playableArea.y / 2), this._playableArea.y / 2),
         ),
         angle,
       });
       body.createFixture({
-        shape: Circle(0.75),
+        shape: Circle(1.25),
         friction: 0,
         filterCategoryBits: EntityCategory.RESOURCE,
         filterMaskBits:
@@ -180,28 +199,142 @@ export default class GameRoom extends Room {
           EntityCategory.BULLET |
           EntityCategory.MELEE,
       });
-      // Create AI entity
-      const entity = new Entity(EntityId.FoodMine, this.gameWorld);
+
+      const entity = new Entity(EntityId.WoodMine, this._gameWorld);
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Health(1));
+      entity.addComponent(new Health(800));
       entity.addComponent(new Team(1));
-      entity.addComponent(new FoodMine());
+      entity.addComponent(new Mine(false, true, false, false));
       entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
-    }
-    const zombieSpawner = new Spawner(this.playableArea.length() / 2, 4, 1, 1, 10, () => {
-      return CreateZombie(
-        this.gameWorld,
-        Vec2(
-          randomRange(-(this.playableArea.x / 2), this.playableArea.x / 2),
-          randomRange(-(this.playableArea.y / 2), this.playableArea.y / 2),
-        ),
-        Math.random() * Math.PI * 2,
-      );
+
+      return entity;
     });
-    this.addSimulationInterval(zombieSpawner.update.bind(zombieSpawner), 1000 / 10);
+    // Stone spawner
+    spawner.addSpawn(this._playableArea.length() / 3, 2, 1, 500, () => {
+      // Get unoccupied pos
+      let pos: Vec2 = null;
+      while (true) {
+        let canSpawn = true;
+        pos = Vec2(
+          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
+        );
+
+        const aabbLower = pos.clone().sub(Vec2(1, 1));
+        const aabbUpper = pos.clone().add(Vec2(1, 1));
+        const aabb = new AABB(aabbLower, aabbUpper);
+        this._gameWorld.getPhysicsWorld().queryAABB(aabb, (f) => {
+          canSpawn = !(
+            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE ||
+            (f.getFilterCategoryBits() & EntityCategory.RESOURCE) == EntityCategory.RESOURCE ||
+            (f.getFilterCategoryBits() & EntityCategory.BOUNDARY) == EntityCategory.BOUNDARY
+          );
+          return canSpawn;
+        });
+
+        if (canSpawn) break;
+      }
+      // Create
+      const angle = Math.random() * Math.PI * 2;
+      const body = this._gameWorld.getPhysicsWorld().createBody({
+        type: 'static',
+        position: Vec2(
+          randomRangeFloat(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRangeFloat(-(this._playableArea.y / 2), this._playableArea.y / 2),
+        ),
+        angle,
+      });
+      body.createFixture({
+        shape: Circle(1.25),
+        friction: 0,
+        filterCategoryBits: EntityCategory.RESOURCE,
+        filterMaskBits:
+          EntityCategory.BOUNDARY |
+          EntityCategory.STRUCTURE |
+          EntityCategory.RESOURCE |
+          EntityCategory.PLAYER |
+          EntityCategory.NPC |
+          EntityCategory.BULLET |
+          EntityCategory.MELEE,
+      });
+
+      const entity = new Entity(EntityId.StoneMine, this._gameWorld);
+      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
+      entity.addComponent(new Rotation(body.getAngle()));
+      entity.addComponent(new PhysicsBody(body));
+      entity.addComponent(new Health(800));
+      entity.addComponent(new Team(1));
+      entity.addComponent(new Mine(false, false, true, false));
+      entity.addComponent(new Minimap());
+      entity.addComponent(new Observable());
+
+      return entity;
+    });
+    // FoodBush spawner
+    spawner.addSpawn(this._playableArea.length() / 4, 2, 1, 500, () => {
+      // Get unoccupied pos
+      let pos: Vec2 = null;
+      while (true) {
+        let canSpawn = true;
+        pos = Vec2(
+          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
+        );
+
+        const aabbLower = pos.clone().sub(Vec2(1, 1));
+        const aabbUpper = pos.clone().add(Vec2(1, 1));
+        const aabb = new AABB(aabbLower, aabbUpper);
+        this._gameWorld.getPhysicsWorld().queryAABB(aabb, (f) => {
+          canSpawn = !(
+            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE ||
+            (f.getFilterCategoryBits() & EntityCategory.RESOURCE) == EntityCategory.RESOURCE ||
+            (f.getFilterCategoryBits() & EntityCategory.BOUNDARY) == EntityCategory.BOUNDARY
+          );
+          return canSpawn;
+        });
+
+        if (canSpawn) break;
+      }
+      // Create
+      const angle = Math.random() * Math.PI * 2;
+      const body = this._gameWorld.getPhysicsWorld().createBody({
+        type: 'static',
+        position: Vec2(
+          randomRangeFloat(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRangeFloat(-(this._playableArea.y / 2), this._playableArea.y / 2),
+        ),
+        angle,
+      });
+      body.createFixture({
+        shape: Circle(0.95),
+        friction: 0,
+        filterCategoryBits: EntityCategory.RESOURCE,
+        filterMaskBits:
+          EntityCategory.BOUNDARY |
+          EntityCategory.STRUCTURE |
+          EntityCategory.RESOURCE |
+          EntityCategory.PLAYER |
+          EntityCategory.NPC |
+          EntityCategory.BULLET |
+          EntityCategory.MELEE,
+      });
+
+      const entity = new Entity(EntityId.FoodMine, this._gameWorld);
+      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
+      entity.addComponent(new Rotation(body.getAngle()));
+      entity.addComponent(new PhysicsBody(body));
+      entity.addComponent(new Health(800));
+      entity.addComponent(new Team(1));
+      entity.addComponent(new Mine(false, false, false, true));
+      entity.addComponent(new Minimap());
+      entity.addComponent(new Observable());
+
+      return entity;
+    });
+
     // Add timers
     //this.addSimulationInterval(this.systems[World.name].tick.bind(this.systems[World.name]), 1000 / 30);
     //this.addSimulationInterval(this.systems[Visibility.name].tick.bind(this.systems[Visibility.name]), 1000 / 10);
@@ -215,20 +348,29 @@ export default class GameRoom extends Room {
     this._dayNightCycleTick += deltaTime;
     this._sendTick += deltaTime;
     // Tick systems
-    for (let i = 0; i < this.systemsArray.length; i++) {
-      this.systemsArray[i].tick(deltaTime);
+    for (let i = 0; i < this._systemsArray.length; i++) {
+      this._systemsArray[i].tick(deltaTime);
     }
     // Day-night cycle
-    if (this._dayNightCycleTick >= 10) {
+    if (this._dayNightCycleTick >= 60) {
       this._dayNightCycleTick = 0;
       this._isNight = !this._isNight;
+      if (this._isNight) {
+        this._zombieSpawner.spawnChance = 0.9;
+        this._zombieSpawner.maximum = this._playableArea.length() / 2;
+        this._zombieSpawner.spawnFrequency = 1;
+      } else {
+        this._zombieSpawner.spawnChance = 0.55;
+        this._zombieSpawner.maximum = this._playableArea.length() / 4;
+        this._zombieSpawner.spawnFrequency = 3;
+      }
     }
 
     // Send updates if necessary
-    if (this._sendTick >= this.sendRate) {
+    if (this._sendTick >= this._sendRate) {
       this._sendTick = 0;
 
-      this.broadcast(getBytes[Protocol.DayNightCycle](this._isNight, this._dayNightCycleTick / 10));
+      this.broadcast(getBytes[Protocol.DayNightCycle](this._isNight, this._dayNightCycleTick / 60));
       const now = performance.now();
 
       // Send updates to every client
@@ -245,7 +387,7 @@ export default class GameRoom extends Room {
           }
         });
         if (dirty.length > 0) {
-          client.send(getBytes[Protocol.EntityUpdate](client, dirty, now - this.startTime, this.lastSend));
+          client.send(getBytes[Protocol.EntityUpdate](client, dirty, now - this.startTime, this._lastSend));
         }
 
         // Send queued messages like inventory and gold updates
@@ -255,7 +397,7 @@ export default class GameRoom extends Room {
         clientData.queuedMessages = [];
         //client.flush(); // Send all queued messages
       }
-      this.lastSend = this.currentTick;
+      this._lastSend = this.currentTick;
     }
 
     /*console.log(
@@ -338,7 +480,7 @@ export default class GameRoom extends Room {
     const gameClient = new GameClient(client);
     client.setUserData(gameClient);
 
-    const body = this.gameWorld.getPhysicsWorld().createBody({
+    const body = this._gameWorld.getPhysicsWorld().createBody({
       type: 'dynamic',
       position: Vec2(0, 0),
       fixedRotation: true,
@@ -360,8 +502,10 @@ export default class GameRoom extends Room {
     });
 
     // Create player entity
-    const entity = new Entity(EntityId.Player, this.gameWorld, client);
-    const goldComponent = <Gold>entity.addComponent(new Gold());
+    const entity = new Entity(EntityId.Player, this._gameWorld, client);
+    entity.addComponent(new Gold());
+    entity.addComponent(new Stone());
+    entity.addComponent(new Wood());
     const equipment = <Equipment>entity.addComponent(new Equipment());
     entity.addComponent(new Animation());
     entity.addComponent(new Inventory());
@@ -386,12 +530,12 @@ export default class GameRoom extends Room {
     (<GameClient>client.getUserData()).addOwnedEntity(entity);
     (<GameClient>client.getUserData()).cameraFollowing = entity;
 
-    inventory.addItem(createItem(EntityId.Food, new Food(ItemSlot.Slot2), this.gameWorld, client));
+    inventory.addItem(createItem(EntityId.Food, new Food(ItemSlot.Slot2), this._gameWorld, client));
     inventory.addItem(
       createItem(
         EntityId.WallWooden,
         new BuildingBlock(ItemSlot.Slot3, 0.25, 20, createWoodenBlock(client, new Team(100 + client.id))),
-        this.gameWorld,
+        this._gameWorld,
         client,
       ),
     );
@@ -399,58 +543,134 @@ export default class GameRoom extends Room {
       createItem(
         EntityId.SpikeWooden,
         new BuildingBlock(ItemSlot.Slot2, 0.25, 20, createWoodenSpike(client, new Team(100 + client.id))),
-        this.gameWorld,
+        this._gameWorld,
         client,
       ),
     );
 
-    const defaultHand = createItem(EntityId.Stick, new Tool(), this.gameWorld, client);
+    const defaultHand = createItem(EntityId.Stick, new Tool(), this._gameWorld, client);
     const upgradeComponent = <ItemUpgrade>entity.addComponent(new ItemUpgrade());
-    upgradeComponent.addDefault('weapon', 'weapon', () => defaultHand, 1);
-    upgradeComponent.addPointsWhen('weapon', [2, 3, 4]);
-    upgradeComponent.addUpgrade(
+    upgradeComponent.addPointsWhen('weapon', [2, 3, 4, 5, 6]);
+
+    const weaponRoot = upgradeComponent.addDefaultUpgrade(
       'weapon',
       'weapon',
-      EntityId.AxeBasic,
-      () =>
-        createItem(
-          EntityId.AxeBasic,
-          new MeleeWeapon(1.6, 1.75, 5, 8, 6, 20, Box(0.5, 0.75, Vec2(1, -0.2))),
-          this.gameWorld,
-          client,
-        ),
-      2,
+      defaultHand.entity.id,
+      () => defaultHand,
+      1,
     );
-    upgradeComponent.addUpgrade(
-      'weapon',
-      'weapon',
-      EntityId.AxeNormal,
-      () =>
-        createItem(
-          EntityId.AxeNormal,
-          new MeleeWeapon(1.8, 2, 12, 12, 8, 28, Box(0.5, 0.75, Vec2(1, -0.2))),
-          this.gameWorld,
-          client,
-        ),
-      3,
-    );
-    upgradeComponent.addUpgrade(
-      'weapon',
-      'weapon',
-      EntityId.AxeGreat,
-      () =>
-        createItem(
-          EntityId.AxeGreat,
-          new MeleeWeapon(2, 2.25, 20, 20, 10, 40, Box(0.625, 0.875, Vec2(1.25, -0.1))),
-          this.gameWorld,
-          client,
-        ),
-      4,
-    );
+
+    // Sword upgrade tree
+    weaponRoot
+      .addUpgrade(
+        EntityId.SwordBasic,
+        () =>
+          createItem(
+            EntityId.SwordBasic,
+            new MeleeWeapon(0.5, 2, 6, 3, 1, 12, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
+            this._gameWorld,
+            client,
+          ),
+        2,
+      )
+      .addUpgrade(
+        EntityId.SwordNormal,
+        () =>
+          createItem(
+            EntityId.SwordNormal,
+            new MeleeWeapon(0.5, 2.25, 10, 6, 2, 18, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
+            this._gameWorld,
+            client,
+          ),
+        3,
+      )
+      .addUpgrade(
+        EntityId.SwordGreat,
+        () =>
+          createItem(
+            EntityId.SwordGreat,
+            new MeleeWeapon(0.5, 2.5, 15, 11, 4, 36, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
+            this._gameWorld,
+            client,
+          ),
+        4,
+      );
+
+    // Axe upgrade tree
+    weaponRoot
+      .addUpgrade(
+        EntityId.AxeBasic,
+        () =>
+          createItem(
+            EntityId.AxeBasic,
+            new MeleeWeapon(1.6, 1.5, 4, 8, 4, 8, Box(0.5, 0.75, Vec2(1, -0.2))),
+            this._gameWorld,
+            client,
+          ),
+        2,
+      )
+      .addUpgrade(
+        EntityId.AxeNormal,
+        () =>
+          createItem(
+            EntityId.AxeNormal,
+            new MeleeWeapon(1.8, 1.75, 8, 12, 8, 12, Box(0.5, 0.75, Vec2(1, -0.2))),
+            this._gameWorld,
+            client,
+          ),
+        3,
+      )
+      .addUpgrade(
+        EntityId.AxeGreat,
+        () =>
+          createItem(
+            EntityId.AxeGreat,
+            new MeleeWeapon(2, 2, 16, 24, 16, 24, Box(0.625, 0.875, Vec2(1.25, -0.1))),
+            this._gameWorld,
+            client,
+          ),
+        4,
+      );
+
+    // Spear upgrade tree
+    weaponRoot
+      .addUpgrade(
+        EntityId.SpearBasic,
+        () =>
+          createItem(
+            EntityId.SpearBasic,
+            new MeleeWeapon(1.6, 1.25, 16, 3, 1.6, 12, Box(0.875, 0.5, Vec2(1.4, 0.5))),
+            this._gameWorld,
+            client,
+          ),
+        2,
+      )
+      .addUpgrade(
+        EntityId.SpearNormal,
+        () =>
+          createItem(
+            EntityId.SpearNormal,
+            new MeleeWeapon(1.8, 1.5, 24, 6, 3, 18, Box(0.875, 0.5, Vec2(1.4, 0.5))),
+            this._gameWorld,
+            client,
+          ),
+        3,
+      )
+      .addUpgrade(
+        EntityId.SpearGreat,
+        () =>
+          createItem(
+            EntityId.SpearGreat,
+            new MeleeWeapon(2, 1.75, 32, 11, 5.71428571, 31, Box(0.875, 0.5, Vec2(1.4, 0.5))),
+            this._gameWorld,
+            client,
+          ),
+        4,
+      );
 
     equipment.hand = defaultHand;
 
-    gameClient.queuedMessages.push(getBytes[Protocol.WorldSize](this.playableArea));
+    gameClient.queuedMessages.push(getBytes[Protocol.WorldSize](this._playableArea));
     gameClient.queuedMessages.push(getBytes[Protocol.CameraFollow](entity.objectId));
 
     client.getUserData().setTier(Tiers.Wood);
@@ -470,7 +690,7 @@ export default class GameRoom extends Room {
 
   private addSystem(system: System) {
     this.systems[system.constructor.name] = system;
-    this.systemsArray.push(system);
+    this._systemsArray.push(system);
   }
 
   public getComponentsOfType(c: string): Component[] {

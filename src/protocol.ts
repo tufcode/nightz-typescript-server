@@ -20,12 +20,14 @@ export enum Protocol {
   CameraFollow = 50,
   TierInfo = 60,
   GoldInfo = 61,
-  Experience = 62,
-  Inventory = 63,
-  FoodInfo = 64,
-  Upgrade = 65,
-  ItemInfo = 66,
-  TemporaryMessage = 70,
+  WoodInfo = 64,
+  StoneInfo = 65,
+  FoodInfo = 66,
+  Experience = 67,
+  Inventory = 68,
+  Upgrade = 69,
+  ItemInfo = 70,
+  TemporaryMessage = 71,
 }
 
 export enum ClientProtocol {
@@ -247,11 +249,35 @@ export const getBytes = {
 
     return buf;
   },
-  [Protocol.GoldInfo]: (gold: number) => {
+  [Protocol.GoldInfo]: (a: number) => {
     const buf = Buffer.allocUnsafe(1 + 4);
 
     buf.writeUInt8(Protocol.GoldInfo, 0);
-    buf.writeUInt32LE(gold, 1);
+    buf.writeUInt32LE(a, 1);
+
+    return buf;
+  },
+  [Protocol.FoodInfo]: (a: number) => {
+    const buf = Buffer.allocUnsafe(1 + 4);
+
+    buf.writeUInt8(Protocol.FoodInfo, 0);
+    buf.writeUInt32LE(a, 1);
+
+    return buf;
+  },
+  [Protocol.StoneInfo]: (a: number) => {
+    const buf = Buffer.allocUnsafe(1 + 4);
+
+    buf.writeUInt8(Protocol.StoneInfo, 0);
+    buf.writeUInt32LE(a, 1);
+
+    return buf;
+  },
+  [Protocol.WoodInfo]: (a: number) => {
+    const buf = Buffer.allocUnsafe(1 + 4);
+
+    buf.writeUInt8(Protocol.WoodInfo, 0);
+    buf.writeUInt32LE(a, 1);
 
     return buf;
   },

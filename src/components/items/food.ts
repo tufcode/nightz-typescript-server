@@ -8,12 +8,13 @@ import { Item } from './item';
 import { ItemSlot } from '../inventory';
 
 export class Food extends Item {
+  private foodQueuedMessageIndex = -1;
   public set isEating(value: boolean) {
     this._isEating = value;
     if (value) this.animationComponent.setAnimation(3, 3);
     else this.animationComponent.setAnimation(0, 0);
   }
-  private _current = 0;
+  private _amount = 0;
   private _isEating: boolean;
   private eatTick = 0;
   private animationComponent: Animation;
@@ -23,19 +24,20 @@ export class Food extends Item {
     this.requiredFood = 1;
   }
 
-  public get current(): number {
-    return this._current;
+  public get amount(): number {
+    return this._amount;
   }
 
-  public set current(value: number) {
-    this._current = value;
-    /*
-    const cli = <GameClient>this.parent.owner.getUserData();
-    if (this.queuedMessageIndex != -1 && cli.queuedMessages.length > this.queuedMessageIndex) {
-      cli.queuedMessages.splice(this.queuedMessageIndex, 1);
+  public set amount(value: number) {
+    this._amount = value;
+    // todo do i need to send this somewhere else?
+    const cli = <GameClient>this.entity.owner?.getUserData();
+    if (cli == null) return;
+    if (this.foodQueuedMessageIndex != -1 && cli.queuedMessages.length > this.foodQueuedMessageIndex) {
+      cli.queuedMessages.splice(this.foodQueuedMessageIndex, 1);
     }
 
-    this.queuedMessageIndex = cli.queuedMessages.push(this.serialize()) - 1;*/
+    this.foodQueuedMessageIndex = cli.queuedMessages.push(this.serialize()) - 1;
   }
 
   private parentHealth: Health;
@@ -54,7 +56,7 @@ export class Food extends Item {
   }
 
   protected onConsume(): void {
-    if (this.current >= 1) {
+    if (this.amount >= 1) {
       this.eatTick = 0;
       this.isEating = true;
     }
@@ -65,7 +67,7 @@ export class Food extends Item {
       this.eatTick += deltaTime;
       if (this.eatTick >= 1) {
         this.isEating = false;
-        this.current--;
+        this.amount--;
         this.parentHealth.currentHealth += 10;
       }
     }
@@ -75,7 +77,7 @@ export class Food extends Item {
     const buf = Buffer.allocUnsafe(5);
     // Packet Id
     buf.writeUInt8(Protocol.FoodInfo, 0);
-    buf.writeUInt32LE(Math.floor(this._current), 1);
+    buf.writeUInt32LE(Math.floor(this._amount), 1);
 
     return buf;
   }
