@@ -22,7 +22,7 @@ export class Inventory extends Component {
   private items: Item[] = [];
   private itemsWithId: { [key: number]: Item } = {};
   private itemsWithClass: { [key: string]: Item } = {};
-  private queuedMessageIndex = -1;
+  private lastItemId = 0;
 
   public constructor() {
     super();
@@ -32,28 +32,32 @@ export class Inventory extends Component {
   }
 
   public addItem(item: Item): void {
-    item.inventory = this;
-    this.itemsWithId[item.entity.objectId] = item;
+    item.id = this.lastItemId++;
+    this.itemsWithId[item.id] = item;
     this.itemsWithClass[item.constructor.name] = item;
     this.items.push(item);
 
-    if (this.entity.owner == null) return;
-    this.entity.owner.queueMessage('inv', this.serialize());
+    if (this.entity.owner != null) {
+      this.entity.owner.queueMessage('inv', this.serialize());
+    }
+
+    item.inventory = this;
   }
 
   public removeItem(item: Item): void {
-    delete this.itemsWithId[item.entity.objectId];
+    delete this.itemsWithId[item.id];
     delete this.itemsWithClass[item.constructor.name];
     this.items.splice(this.items.indexOf(item), 1);
 
-    if (this.entity.owner == null) return;
-    this.entity.owner.queueMessage('inv', this.serialize());
+    if (this.entity.owner != null) {
+      this.entity.owner.queueMessage('inv', this.serialize());
+    }
 
-    item.entity.destroy();
+    item.onDestroy();
   }
 
   public serialize(): Buffer {
-    const buf = Buffer.allocUnsafe(2 + 6 * this.items.length + 4);
+    const buf = Buffer.allocUnsafe(2 + 6 * this.items.length);
 
     let index = 0;
     buf.writeUInt8(Protocol.Inventory, index);
@@ -62,11 +66,9 @@ export class Inventory extends Component {
     index += 1;
 
     for (let i = 0; i < this.items.length; i++) {
-      buf.writeUInt8(this.items[i].used, index);
-      index += 1;
-      buf.writeUInt8(this.items[i].max, index);
-      index += 1;
-      buf.writeUInt32LE(this.items[i].entity.objectId, index);
+      buf.writeUInt16LE(this.items[i].entityId, index);
+      index += 2;
+      buf.writeUInt32LE(this.items[i].id, index);
       index += 4;
     }
 

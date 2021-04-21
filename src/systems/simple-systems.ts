@@ -41,13 +41,6 @@ export class SimpleSystems extends System {
       c.update(deltaTime);
     }
 
-    // Items
-    const componentsI = <Item[]>this.room.getComponentsOfType(Item.name);
-    for (let i = 0; i < componentsI.length; i++) {
-      const c = componentsI[i];
-      c.update(deltaTime);
-    }
-
     // Spikes
     const componentsS = <Spike[]>this.room.getComponentsOfType(Spike.name);
     for (let i = 0; i < componentsS.length; i++) {
@@ -123,6 +116,7 @@ export class SimpleSystems extends System {
     const componentsE = <Equipment[]>this.room.getComponentsOfType(Equipment.name);
     for (let i = 0; i < componentsE.length; i++) {
       const c = componentsE[i];
+      c.update(deltaTime);
       if (c.isDirty) {
         c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[Equipment.name] = { t: this.room.currentTick, buffer: c.serialize() };

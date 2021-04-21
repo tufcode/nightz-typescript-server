@@ -11,10 +11,10 @@ import { Position } from '../position';
 import { Rotation } from '../rotation';
 import { Observable } from '../observable';
 import { Gold } from '../gold';
-import { Food } from './food';
 import { Wood } from '../wood';
 import { Stone } from '../stone';
 import { Item } from './item';
+import { FoodBag } from '../food-bag';
 
 export class BuildingBlock extends Item {
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;
@@ -23,14 +23,16 @@ export class BuildingBlock extends Item {
   private radius: number;
   private requiredGold: number;
   public constructor(
+    entityId: EntityId,
     type: ItemSlot,
     radius: number,
-    requiredGold: number,
+    requiredWood: number,
+    requiredStone: number,
+    requiredFood: number,
     createCallback: (world: World, position: Vec2, angle: number) => Entity,
   ) {
-    super(type);
+    super(entityId, type, requiredStone, requiredFood, requiredWood);
     this.radius = radius;
-    this.requiredGold = requiredGold;
     this.createCallback = createCallback;
   }
 
@@ -47,7 +49,7 @@ export class BuildingBlock extends Item {
 
     const stoneComponent = <Stone>this.parent.getComponent(Stone);
     const woodComponent = <Wood>this.parent.getComponent(Wood);
-    const foodComponent = <Food>this.parent.getComponent(Food);
+    const foodComponent = <FoodBag>this.parent.getComponent(FoodBag);
 
     if (this.requiredStone > 0) {
       if (stoneComponent.amount < this.requiredStone) {
@@ -81,7 +83,7 @@ export class BuildingBlock extends Item {
     const aabbUpper = pos.clone().add(Vec2(this.radius, this.radius));
     const aabb = new AABB(aabbLower, aabbUpper);
     let canPlace = true;
-    this.entity.world.getPhysicsWorld().queryAABB(aabb, (f) => {
+    this.parent.world.getPhysicsWorld().queryAABB(aabb, (f) => {
       canPlace =
         (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
         (f.getFilterCategoryBits() & EntityCategory.SENSOR) == EntityCategory.SENSOR ||
@@ -90,7 +92,7 @@ export class BuildingBlock extends Item {
       return canPlace;
     });
 
-    if (canPlace) this.createCallback(this.entity.world, pos, body.getAngle());
+    if (canPlace) this.createCallback(this.parent.world, pos, body.getAngle());
     else {
       if (this.requiredStone > 0) {
         stoneComponent.amount += this.requiredStone;

@@ -34,14 +34,18 @@ export class Equipment extends Component {
     if (this._hand != null) this._hand.onTriggerExit(me, other);
   }
 
+  public update(deltaTime: number): void {
+    if (this._hand != null) this._hand.update(deltaTime);
+  }
+
   public serialize(): Buffer {
     this.isDirty = false;
 
-    const buf = Buffer.allocUnsafe(9);
+    const buf = Buffer.allocUnsafe(5);
     // Packet Id
     buf.writeUInt8(ComponentIds.Equipment, 0);
-    buf.writeUInt32LE(this._hand != null && this._hand.entity.id != EntityId.None ? this._hand.entity.objectId : 0, 1);
-    buf.writeUInt32LE(this._hat?.entity.objectId ?? 0, 5);
+    buf.writeUInt16LE(this._hand != null ? this._hand.entityId : EntityId.None, 1);
+    buf.writeUInt16LE(this._hat != null ? this._hat.entityId : EntityId.None, 3);
 
     return buf;
   }

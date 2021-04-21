@@ -27,6 +27,7 @@ export class MeleeWeapon extends Item {
   private animationId: number;
 
   public constructor(
+    entityId: EntityId,
     mass: number,
     attackSpeed: number,
     damageToPlayers: number,
@@ -36,7 +37,7 @@ export class MeleeWeapon extends Item {
     hitShape: Shape,
     animationId = 2,
   ) {
-    super(ItemSlot.Slot1);
+    super(entityId, ItemSlot.Slot1);
     this.mass = mass;
     this.attackSpeed = attackSpeed;
     this.damageToPlayers = damageToPlayers;
@@ -57,7 +58,7 @@ export class MeleeWeapon extends Item {
       filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.RESOURCE | EntityCategory.PLAYER | EntityCategory.NPC,
       isSensor: true,
     });
-    this.fixture.setUserData(this.entity.objectId);
+    this.fixture.setUserData('I' + this.id);
     body.setAwake(true);
     this.myTeam = <Team>this.parent.getComponent(Team);
     this.animationComponent = <Animation>this.parent.getComponent(Animation);
@@ -69,7 +70,7 @@ export class MeleeWeapon extends Item {
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {
-    if (me.getUserData() != this.entity.objectId || other.isSensor()) return;
+    if (me.getUserData() != 'I' + this.id || other.isSensor()) return;
     const entity = <Entity>other.getBody().getUserData();
     // Get teams
     const teamComponent = <Team>entity.getComponent(Team);
@@ -85,7 +86,7 @@ export class MeleeWeapon extends Item {
   }
 
   public onTriggerExit(me: Fixture, other: Fixture): void {
-    if (me.getUserData() != this.entity.objectId || other.isSensor()) return;
+    if (me.getUserData() != 'I' + this.id || other.isSensor()) return;
     const entity = <Entity>other.getBody().getUserData();
     delete this._entitiesToDamage[entity.objectId];
   }

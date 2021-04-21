@@ -1,6 +1,6 @@
 import { Component } from '../component';
 import { Inventory, ItemSlot } from '../inventory';
-import { Shape, Vec2 } from 'planck-js';
+import { Fixture, Shape, Vec2 } from 'planck-js';
 import { World } from '../../systems/world';
 import { Entity } from '../../entity';
 import { GameClient } from '../../game-client';
@@ -12,7 +12,7 @@ export enum ItemState {
   EQUIPPED,
 }
 
-export class Item extends Component {
+export class Item {
   public get inventory(): Inventory {
     return this._inventory;
   }
@@ -27,6 +27,8 @@ export class Item extends Component {
     return this._inventory?.entity;
   }
 
+  public id: number;
+  public entityId: EntityId;
   public state: ItemState;
   public type: ItemSlot;
   public used = 0;
@@ -39,12 +41,14 @@ export class Item extends Component {
   public currentUse = 0;
 
   protected _primary: boolean;
-  private queuedMessageIndex = -1;
   private _inventory: Inventory;
 
-  public constructor(type: ItemSlot) {
-    super();
+  public constructor(entityId: EntityId, type: ItemSlot, requiredStone = 0, requiredFood = 0, requiredWood = 0) {
+    this.entityId = entityId;
     this.type = type;
+    this.requiredWood = requiredWood;
+    this.requiredStone = requiredStone;
+    this.requiredFood = requiredFood;
   }
 
   public update(deltaTime: number): void {}
@@ -64,7 +68,7 @@ export class Item extends Component {
     const buf = Buffer.allocUnsafe(15);
 
     buf.writeUInt8(Protocol.ItemInfo, 0);
-    buf.writeUInt32LE(this.entity.objectId, 1);
+    buf.writeUInt32LE(this.id, 1);
     buf.writeUInt16LE(this.requiredWood, 5);
     buf.writeUInt16LE(this.requiredStone, 7);
     buf.writeUInt16LE(this.requiredFood, 9);
@@ -73,6 +77,8 @@ export class Item extends Component {
 
     return buf;
   }
-}
 
-// HOWTO: You can create "status components" to send item updates to clients such as cooldowns
+  public onTriggerEnter(me: Fixture, other: Fixture) {}
+
+  public onTriggerExit(me: Fixture, other: Fixture) {}
+}

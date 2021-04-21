@@ -15,7 +15,6 @@ import { Movement } from '../components/movement';
 import { Inventory } from '../components/inventory';
 import { Equipment } from '../components/equipment';
 import { Minimap } from '../components/minimap';
-import { createItem } from '../components/items/util/create-object';
 import { MeleeWeapon } from '../components/items/melee-weapon';
 import { Observable } from '../components/observable';
 import { BehaviourTree } from '../ai/behaviour-tree';

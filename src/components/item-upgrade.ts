@@ -125,18 +125,18 @@ export class ItemUpgrade extends Component {
             // Create item
             const item = upgrade._createCallback();
 
-            // Make observers update next frame so inventory packet doesn't get sent before entity is visible. TODO might be unnecessary
-            (<VisibilitySystem>(<GameRoom>this.entity.world.room).systems[VisibilitySystem.name]).forceUpdateNext();
-
-            // Add item to inventory
-            this._inventoryComponent.addItem(item);
-
             // Remove current item of this type if any exists
             if (tree.currentItem) {
               this._inventoryComponent.removeItem(tree.currentItem);
-              if (this._equipmentComponent.hand.entity.id == tree.currentItem.entity.id) {
+              // Add item to inventory
+              this._inventoryComponent.addItem(item);
+              // Replace hand if necessary
+              if (this._equipmentComponent.hand.entityId == tree.currentItem.entityId) {
                 this._equipmentComponent.hand = item;
               }
+            } else {
+              // Add item to inventory
+              this._inventoryComponent.addItem(item);
             }
             // Set current item
             tree.currentItem = item;

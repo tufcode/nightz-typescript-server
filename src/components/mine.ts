@@ -5,8 +5,8 @@ import { Level } from './level';
 import { Gold } from './gold';
 import { Wood } from './wood';
 import { Stone } from './stone';
-import { Food } from './items/food';
 import { Inventory } from './inventory';
+import { FoodBag } from './food-bag';
 
 export class Mine extends Component {
   private enableGold: boolean;
@@ -48,7 +48,7 @@ export class Mine extends Component {
       }
     }
     if (this.enableFood) {
-      const s = <Food>(<Inventory>source.getComponent(Inventory)).getItem(Food);
+      const s = <FoodBag>source.getComponent(FoodBag);
 
       if (s != null) {
         s.amount += amount;

@@ -15,7 +15,6 @@ import { Movement } from '../components/movement';
 import { Inventory } from '../components/inventory';
 import { Equipment } from '../components/equipment';
 import { Minimap } from '../components/minimap';
-import { createItem } from '../components/items/util/create-object';
 import { MeleeWeapon } from '../components/items/melee-weapon';
 import { Observable } from '../components/observable';
 import { BehaviourTree } from '../ai/behaviour-tree';
@@ -72,13 +71,7 @@ export const CreateZombie = (gameWorld: World, position: Vec2, angle: number): E
   const inventory = <Inventory>entity.addComponent(new Inventory());
   const equipment = <Equipment>entity.addComponent(new Equipment());
   entity.addComponent(new Minimap());
-  const item = createItem(
-    EntityId.None,
-    new MeleeWeapon(0, 2.5, 4, 3.2, 0, 0, Box(0.1, 0.4, Vec2(0.5 + 0.1, 0)), 5),
-    gameWorld,
-    null,
-    true,
-  );
+  const item = new MeleeWeapon(EntityId.None, 0, 2.5, 4, 3.2, 0, 0, Box(0.1, 0.4, Vec2(0.5 + 0.1, 0)), 5);
   inventory.addItem(item);
   equipment.hand = item;
 
