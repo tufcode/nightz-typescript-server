@@ -11,18 +11,18 @@ import { EntityId } from './data/entity-id';
 
 export class Entity {
   public id: EntityId;
-  public owner: Client;
+  public owner: GameClient;
   public world: World;
   public objectId: number;
   public input: InputState = { down: false, left: false, right: false, up: false, angle: 0, primary: false };
   public components: Component[] = [];
 
   private componentCache: { [key: string]: Component } = {};
-  public isDirty: boolean;
+  public dirtyTick = 0;
   private _eventEmitter: EventEmitter;
   public componentBuffers: { [key: string]: { t: number; buffer: Buffer } } = {};
 
-  public constructor(id: EntityId, world: World, owner?: Client) {
+  public constructor(id: EntityId, world: World, owner?: GameClient) {
     this.id = id;
     this.world = world;
     this.owner = owner;
@@ -61,6 +61,7 @@ export class Entity {
 
   public addComponent(component: Component): Component {
     component.entity = this;
+    component.init();
     const room = <GameRoom>this.world.room;
 
     const parent = Object.getPrototypeOf(component.constructor).name;
@@ -80,7 +81,6 @@ export class Entity {
     else {
       room.componentCache[component.constructor.name] = [component];
     }
-    component.init();
 
     return component;
   }

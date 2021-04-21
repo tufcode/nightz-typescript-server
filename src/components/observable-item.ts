@@ -1,4 +1,3 @@
-import { Client } from 'elsa';
 import { Position } from './position';
 import { GameClient } from '../game-client';
 import { Item, ItemState } from './items/item';
@@ -9,10 +8,10 @@ export class ObservableItem extends Observable {
     this._itemComponent = <Item>this.entity.getComponent(Item);
   }
 
-  public onCheckObserver(client: Client): boolean {
-    return this.entity.owner != null && this.entity.owner.id == client.id
+  public onCheckObserver(gameClient: GameClient): boolean {
+    return this.entity.owner != null && this.entity.owner.client.id == gameClient.client.id
       ? true
-      : this.checkPosition(<GameClient>client.getUserData());
+      : this.checkPosition(gameClient);
   }
 
   private checkPosition(client: GameClient) {

@@ -11,7 +11,7 @@ import { Observable } from './observable';
 export class ObservableByAll extends Observable {
   public init(): void {}
 
-  public onCheckObserver(client: Client): boolean {
+  public onCheckObserver(gameClient: GameClient): boolean {
     return true;
   }
 }

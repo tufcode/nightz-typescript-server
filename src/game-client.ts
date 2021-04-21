@@ -24,10 +24,26 @@ export class GameClient {
   public input: InputState = { down: false, left: false, right: false, up: false, angle: 0, primary: false };
   public ownedEntities: Entity[] = [];
 
-  public queuedMessages: Buffer[] = [];
+  private _queuedMessages: [string, Buffer][] = [];
 
   public constructor(client: Client) {
     this.client = client;
+  }
+
+  public queueMessage(id: string, buf: Buffer): void {
+    const index = this._queuedMessages.findIndex((x) => x[0] == id);
+    if (index != -1) {
+      this._queuedMessages.splice(index, 1);
+    }
+
+    this._queuedMessages.push([id, buf]);
+  }
+
+  public takeMessageFromQueue(): Buffer {
+    const m = this._queuedMessages.shift();
+    if (m == undefined) return null;
+
+    return m[1];
   }
 
   public setTier(tier: ITier): void {

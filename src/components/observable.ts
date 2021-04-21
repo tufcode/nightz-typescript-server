@@ -16,17 +16,15 @@ export class Observable extends Component {
     this._itemComponent = <Item>this.entity.getComponent(Item);
   }
 
-  public onCheckObserver(client: Client): boolean {
+  public onCheckObserver(gameClient: GameClient): boolean {
     if (this.entity.owner != null) {
-      if (this.entity.owner.id == client.id) return true;
+      if (this.entity.owner.client.id == gameClient.client.id) return true;
     } else {
-      const clientOwner = <GameClient>client.getUserData();
-
       // Don't be visible to players with no objects
-      if (clientOwner.cameraFollowing == null) return false;
+      if (gameClient.cameraFollowing == null) return false;
 
       // Get client sync component
-      const clientSyncComponent = <Position>clientOwner.cameraFollowing.getComponent(Position);
+      const clientSyncComponent = <Position>gameClient.cameraFollowing.getComponent(Position);
       // Don't be visible to players with no position, if such thing is possible
       if (clientSyncComponent == null) return false;
 
@@ -46,14 +44,11 @@ export class Observable extends Component {
       return false;
     }
 
-    const myOwner = <GameClient>this.entity.owner.getUserData();
-    const clientOwner = <GameClient>client.getUserData();
-
     // Don't be visible to players with no objects
-    if (clientOwner.cameraFollowing == null) return false;
+    if (gameClient.cameraFollowing == null) return false;
 
     // Get client sync component
-    const clientSyncComponent = <Position>clientOwner.cameraFollowing.getComponent(Position);
+    const clientSyncComponent = <Position>gameClient.cameraFollowing.getComponent(Position);
     // Don't be visible to players with no position, if such thing is possible
     if (clientSyncComponent == null) return false;
 
@@ -62,22 +57,9 @@ export class Observable extends Component {
       return this.checkDistance(this._syncComponent.position, clientSyncComponent.position);
 
     // I can't verify anything if my owner has no controlling entity. I'm invisible.
-    if (myOwner.cameraFollowing == null) return false;
+    if (this.entity.owner.cameraFollowing == null) return false;
 
-    // I don't have a sync component. Check if I'm an item
-    const item = <Item>this.entity.getComponent(Item);
-    if (item != null) {
-      // Do a distance check with my owner's entity if I'm equipped
-      if (item.state == ItemState.EQUIPPED) {
-        // Check if my owner's controlling entity has a sync component and return false if it doesn't
-        const controllingEntitySync = <Position>myOwner.cameraFollowing.getComponent(Position);
-        if (controllingEntitySync == null) {
-          return false;
-        }
-        // Do a distance check
-        return this.checkDistance(controllingEntitySync.position, clientSyncComponent.position);
-      } else return false; // I'm not equipped, no point showing.
-    } else return false; // I'm not an item and I don't have a sync component, I don't know how to be visible!
+    return false; // I don't know how to be visible!
   }
 
   protected checkDistance(position: Vec2, position2: Vec2): boolean {

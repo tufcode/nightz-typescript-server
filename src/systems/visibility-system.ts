@@ -42,7 +42,7 @@ export class VisibilitySystem extends System {
     clientData.observing = components
       .map((observable) => {
         // Check observer
-        if (observable.onCheckObserver(client)) {
+        if (observable.onCheckObserver(clientData)) {
           if (!cache.includes(observable.entity)) {
             newEntities.push(observable.entity);
           } else {

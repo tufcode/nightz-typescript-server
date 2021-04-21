@@ -37,13 +37,8 @@ export class Inventory extends Component {
     this.itemsWithClass[item.constructor.name] = item;
     this.items.push(item);
 
-    const cli = <GameClient>this.entity.owner?.getUserData();
-    if (cli == null) return;
-    if (this.queuedMessageIndex != -1 && cli.queuedMessages.length > this.queuedMessageIndex) {
-      cli.queuedMessages.splice(this.queuedMessageIndex, 1);
-    }
-
-    this.queuedMessageIndex = cli.queuedMessages.push(this.serialize()) - 1;
+    if (this.entity.owner == null) return;
+    this.entity.owner.queueMessage('inv', this.serialize());
   }
 
   public removeItem(item: Item): void {
@@ -51,12 +46,8 @@ export class Inventory extends Component {
     delete this.itemsWithClass[item.constructor.name];
     this.items.splice(this.items.indexOf(item), 1);
 
-    const cli = <GameClient>this.entity.owner.getUserData();
-    if (this.queuedMessageIndex != -1 && cli.queuedMessages.length > this.queuedMessageIndex) {
-      cli.queuedMessages.splice(this.queuedMessageIndex, 1);
-    }
-
-    this.queuedMessageIndex = cli.queuedMessages.push(this.serialize()) - 1;
+    if (this.entity.owner == null) return;
+    this.entity.owner.queueMessage('inv', this.serialize());
 
     item.entity.destroy();
   }

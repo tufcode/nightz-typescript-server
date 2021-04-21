@@ -24,9 +24,8 @@ export class KillRewards extends Component {
       if (health.isDead) {
         let actualSource = source;
         if (source.owner != null) {
-          const client = <GameClient>source.owner.getUserData();
-          if (client != null && client.cameraFollowing) {
-            actualSource = client.cameraFollowing;
+          if (source.owner.cameraFollowing) {
+            actualSource = source.owner.cameraFollowing;
           }
         }
         // Give gold and exp to the killer

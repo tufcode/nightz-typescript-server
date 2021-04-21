@@ -74,7 +74,7 @@ export const CreateZombie = (gameWorld: World, position: Vec2, angle: number): E
   entity.addComponent(new Minimap());
   const item = createItem(
     EntityId.None,
-    new MeleeWeapon(0, 2.5, 4, 3.2, 0, 0, Box(0.1, 0.4, Vec2(0.5 + 0.1, 0)), 1),
+    new MeleeWeapon(0, 2.5, 4, 3.2, 0, 0, Box(0.1, 0.4, Vec2(0.5 + 0.1, 0)), 5),
     gameWorld,
     null,
     true,
@@ -108,6 +108,7 @@ export const CreateZombie = (gameWorld: World, position: Vec2, angle: number): E
 
   attackSequence.addNode(new InRange(tree, 'closestObject', 1.4));
   attackSequence.addNode(new ActivateHandItem(tree, true));
+  attackSequence.addNode(new Chase(tree, moveComponent, 'closestObject'));
   attackSequence.addNode(new RotateTowards(tree, body, 'closestObject'));
 
   selector.addNode(chaseSequence);

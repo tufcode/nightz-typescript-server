@@ -19,11 +19,6 @@ export class Food extends Item {
   private eatTick = 0;
   private animationComponent: Animation;
 
-  public constructor(type: ItemSlot) {
-    super(type);
-    this.requiredFood = 1;
-  }
-
   public get amount(): number {
     return this._amount;
   }
@@ -31,13 +26,8 @@ export class Food extends Item {
   public set amount(value: number) {
     this._amount = value;
     // todo do i need to send this somewhere else?
-    const cli = <GameClient>this.entity.owner?.getUserData();
-    if (cli == null) return;
-    if (this.foodQueuedMessageIndex != -1 && cli.queuedMessages.length > this.foodQueuedMessageIndex) {
-      cli.queuedMessages.splice(this.foodQueuedMessageIndex, 1);
-    }
-
-    this.foodQueuedMessageIndex = cli.queuedMessages.push(this.serialize()) - 1;
+    if (this.entity.owner == null) return;
+    this.entity.owner.queueMessage('food', this.serialize());
   }
 
   private parentHealth: Health;

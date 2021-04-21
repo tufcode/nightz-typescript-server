@@ -20,12 +20,7 @@ export class Item extends Component {
     this._inventory = value;
 
     if (this.parent.owner == null) return;
-    const cli = <GameClient>this.parent.owner.getUserData();
-    if (this.queuedMessageIndex != -1 && cli.queuedMessages.length > this.queuedMessageIndex) {
-      cli.queuedMessages.splice(this.queuedMessageIndex, 1);
-    }
-
-    this.queuedMessageIndex = cli.queuedMessages.push(this.serializeForOwner()) - 1;
+    this.parent.owner.queueMessage('item', this.serializeForOwner());
   }
 
   public get parent(): Entity {

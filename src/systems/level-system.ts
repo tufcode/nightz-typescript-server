@@ -23,7 +23,7 @@ export class LevelSystem extends System {
     for (let i = 0; i < components.length; i++) {
       const c = components[i];
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[LevelSystem.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }

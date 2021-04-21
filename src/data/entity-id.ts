@@ -22,6 +22,10 @@ export enum EntityId {
   TurretStone = 1057,
   TurretReinforced = 1058,
 
+  MinerWooden = 1059,
+  MinerStone = 1060,
+  MinerReinforced = 1061,
+
   // Items (2001-3001)
   Food = 2001,
   Stick = 2010,

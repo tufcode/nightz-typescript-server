@@ -23,6 +23,7 @@ import { Spike } from '../components/spike';
 import { ChatMessage } from '../components/chat-message';
 import { Minimap } from '../components/minimap';
 import { Zone } from '../components/zone';
+import { Miner } from '../components/miner';
 
 export class SimpleSystems extends System {
   private room: GameRoom;
@@ -59,7 +60,7 @@ export class SimpleSystems extends System {
     for (let i = 0; i < componentsA.length; i++) {
       const c = componentsA[i];
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[Animation.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }
@@ -69,7 +70,7 @@ export class SimpleSystems extends System {
     for (let i = 0; i < componentsNT.length; i++) {
       const c = componentsNT[i];
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[NameTag.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }
@@ -81,12 +82,19 @@ export class SimpleSystems extends System {
       c.update(deltaTime);
     }
 
+    // Miner
+    const componentsM = <Miner[]>this.room.getComponentsOfType(Miner.name);
+    for (let i = 0; i < componentsM.length; i++) {
+      const c = componentsM[i];
+      c.update(deltaTime);
+    }
+
     // Position
     const componentsP = <Position[]>this.room.getComponentsOfType(Position.name);
     for (let i = 0; i < componentsP.length; i++) {
       const c = componentsP[i];
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[Position.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }
@@ -96,7 +104,7 @@ export class SimpleSystems extends System {
     for (let i = 0; i < componentsR.length; i++) {
       const c = componentsR[i];
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[Rotation.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }
@@ -106,7 +114,7 @@ export class SimpleSystems extends System {
     for (let i = 0; i < componentsT.length; i++) {
       const c = componentsT[i];
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[Tier.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }
@@ -116,7 +124,7 @@ export class SimpleSystems extends System {
     for (let i = 0; i < componentsE.length; i++) {
       const c = componentsE[i];
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[Equipment.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }
@@ -127,7 +135,7 @@ export class SimpleSystems extends System {
       const c = componentsCM[i];
       c.update(deltaTime);
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[ChatMessage.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }
@@ -136,7 +144,7 @@ export class SimpleSystems extends System {
     for (let i = 0; i < componentsMM.length; i++) {
       const c = componentsMM[i];
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[Minimap.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }
@@ -145,7 +153,7 @@ export class SimpleSystems extends System {
     for (let i = 0; i < componentsZ.length; i++) {
       const c = componentsZ[i];
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[Zone.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }
@@ -156,7 +164,7 @@ export class SimpleSystems extends System {
       const c = componentsC[i];
       c.update(deltaTime);
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[Construction.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }

@@ -62,8 +62,10 @@ export class ItemUpgrade extends Component {
       }
 
       if (this._totalPoints > 0) {
-        // Send upgrade here TODO only one per update pls
-        (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
+        // Send upgrade here
+
+        if (this.entity.owner == null) return;
+        this.entity.owner.queueMessage('upgrade', this.serialize());
       }
     });
   }
@@ -139,7 +141,8 @@ export class ItemUpgrade extends Component {
             // Set current item
             tree.currentItem = item;
 
-            (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(this.serialize());
+            if (this.entity.owner == null) break;
+            this.entity.owner.queueMessage('upgrade', this.serialize());
           }
           break;
         }

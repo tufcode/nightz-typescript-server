@@ -15,9 +15,10 @@ import { Rotation } from '../../rotation';
 import { EntityId } from '../../../data/entity-id';
 import { Spike } from '../../spike';
 import { ObservableItem } from '../../observable-item';
+import { GameClient } from '../../../game-client';
 
 export const createWoodenBlock = (
-  owner?: Client,
+  owner?: GameClient,
   team?: Team,
 ): ((world: World, position: Vec2, angle: number) => Entity) => {
   return (world: World, position: Vec2, angle: number) => {
@@ -56,7 +57,7 @@ export const createWoodenBlock = (
   };
 };
 export const createWoodenSpike = (
-  owner?: Client,
+  owner?: GameClient,
   team?: Team,
 ): ((world: World, position: Vec2, angle: number) => Entity) => {
   return (world: World, position: Vec2, angle: number) => {
@@ -94,9 +95,21 @@ export const createWoodenSpike = (
   };
 };
 
-export const createItem = (id: EntityId, item: Item, world: World, owner?: Client, noObserver?: boolean): Item => {
+export const createItem = (
+  id: EntityId,
+  item: Item,
+  world: World,
+  owner?: GameClient,
+  noObserver?: boolean,
+  requiredWood = 0,
+  requiredStone = 0,
+  requiredFood = 0,
+): Item => {
   const entity = new Entity(id, world, owner);
   const i = <Item>entity.addComponent(item);
+  i.requiredWood = requiredWood;
+  i.requiredStone = requiredStone;
+  i.requiredFood = requiredFood;
   if (!noObserver) entity.addComponent(new ObservableItem());
   return i;
 };

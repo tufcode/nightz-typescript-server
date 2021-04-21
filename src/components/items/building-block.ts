@@ -11,8 +11,12 @@ import { Position } from '../position';
 import { Rotation } from '../rotation';
 import { Observable } from '../observable';
 import { Gold } from '../gold';
+import { Food } from './food';
+import { Wood } from '../wood';
+import { Stone } from '../stone';
+import { Item } from './item';
 
-export class BuildingBlock extends Consumable {
+export class BuildingBlock extends Item {
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;
   private permissionCallback: (position: Vec2, angle: number) => boolean;
   private failureCallback: () => void;
@@ -30,17 +34,48 @@ export class BuildingBlock extends Consumable {
     this.createCallback = createCallback;
   }
 
+  public setPrimary(b: boolean): void {
+    if (!this._primary && b) {
+      this.onConsume();
+    }
+    super.setPrimary(b);
+  }
+
   protected onConsume(): void {
     const body = (<PhysicsBody>this.inventory.entity.getComponent(PhysicsBody)).getBody();
     const pos = body.getWorldPoint(Vec2(1, 0));
 
-    const goldComponent = <Gold>this.parent.getComponent(Gold);
-    if (goldComponent.amount < this.requiredGold) {
-      this.parent.owner.send(getBytes[Protocol.TemporaryMessage]('NotEnoughGold', 2));
-      return;
-    }
+    const stoneComponent = <Stone>this.parent.getComponent(Stone);
+    const woodComponent = <Wood>this.parent.getComponent(Wood);
+    const foodComponent = <Food>this.parent.getComponent(Food);
 
-    goldComponent.amount -= this.requiredGold;
+    if (this.requiredStone > 0) {
+      if (stoneComponent.amount < this.requiredStone) {
+        return;
+      }
+      stoneComponent.amount -= this.requiredStone;
+    }
+    if (this.requiredWood > 0) {
+      if (woodComponent.amount < this.requiredWood) {
+        if (this.requiredStone > 0) {
+          stoneComponent.amount += this.requiredStone;
+        }
+        return;
+      }
+      woodComponent.amount -= this.requiredWood;
+    }
+    if (this.requiredFood > 0) {
+      if (foodComponent.amount < this.requiredFood) {
+        if (this.requiredStone > 0) {
+          stoneComponent.amount += this.requiredStone;
+        }
+        if (this.requiredWood > 0) {
+          woodComponent.amount += this.requiredWood;
+        }
+        return;
+      }
+      foodComponent.amount -= this.requiredFood;
+    }
 
     const aabbLower = pos.clone().sub(Vec2(this.radius, this.radius));
     const aabbUpper = pos.clone().add(Vec2(this.radius, this.radius));
@@ -57,7 +92,15 @@ export class BuildingBlock extends Consumable {
 
     if (canPlace) this.createCallback(this.entity.world, pos, body.getAngle());
     else {
-      goldComponent.amount += this.requiredGold;
+      if (this.requiredStone > 0) {
+        stoneComponent.amount += this.requiredStone;
+      }
+      if (this.requiredWood > 0) {
+        woodComponent.amount += this.requiredWood;
+      }
+      if (this.requiredFood > 0) {
+        foodComponent.amount += this.requiredFood;
+      }
     }
   }
 }

@@ -15,13 +15,11 @@ import { Health } from './health';
 export class PlayerInput extends Component {
   private movementComponent: Movement;
   private bodyComponent: PhysicsBody;
-  private ownerClientData: GameClient;
   private equipmentComponent: Equipment;
   private levelComponent: Level;
   private lastPrimary: boolean;
 
   public init(): void {
-    this.ownerClientData = this.entity.owner.getUserData();
     const h = <Health>this.entity.getComponent(Health);
     this.equipmentComponent = <Equipment>this.entity.getComponent(Equipment);
     this.movementComponent = <Movement>this.entity.getComponent(Movement);
@@ -45,26 +43,28 @@ export class PlayerInput extends Component {
     const body = this.bodyComponent.getBody();
     const input = Vec2.zero();
 
-    if (this.ownerClientData.input.right) input.x = 1;
-    else if (this.ownerClientData.input.left) input.x = -1;
-    if (this.ownerClientData.input.up) input.y = 1;
-    else if (this.ownerClientData.input.down) input.y = -1;
+    if (this.entity.owner.input.right) input.x = 1;
+    else if (this.entity.owner.input.left) input.x = -1;
+    if (this.entity.owner.input.up) input.y = 1;
+    else if (this.entity.owner.input.down) input.y = -1;
 
     if (input.lengthSquared() != 0) {
       this.movementComponent.move(input);
     }
 
-    if (this.equipmentComponent != null && this.lastPrimary != this.ownerClientData.input.primary) {
-      this.lastPrimary = this.ownerClientData.input.primary;
-      this.equipmentComponent.hand?.setPrimary(this.ownerClientData.input.primary);
-      this.equipmentComponent.hat?.setPrimary(this.ownerClientData.input.primary);
+    if (this.equipmentComponent != null && this.lastPrimary != this.entity.owner.input.primary) {
+      this.lastPrimary = this.entity.owner.input.primary;
+      this.equipmentComponent.hand?.setPrimary(this.entity.owner.input.primary);
+      this.equipmentComponent.hat?.setPrimary(this.entity.owner.input.primary);
     }
 
-    body.setAngle(this.ownerClientData.input.angle);
+    body.setAngle(this.entity.owner.input.angle);
   }
 
   private sendExperienceToOwner() {
-    (<GameClient>this.entity.owner.getUserData()).queuedMessages.push(
+    if (this.entity.owner == null) return;
+    this.entity.owner.queueMessage(
+      'exp',
       getBytes[Protocol.Experience](
         this.levelComponent.level,
         this.levelComponent.points,

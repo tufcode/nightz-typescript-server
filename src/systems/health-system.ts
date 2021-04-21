@@ -38,7 +38,7 @@ export class HealthSystem extends System {
       }
 
       if (c.isDirty) {
-        c.entity.isDirty = true;
+        c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[HealthSystem.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
     }

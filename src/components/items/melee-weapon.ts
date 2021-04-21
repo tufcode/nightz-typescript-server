@@ -56,7 +56,6 @@ export class MeleeWeapon extends Item {
       filterCategoryBits: EntityCategory.MELEE,
       filterMaskBits: EntityCategory.STRUCTURE | EntityCategory.RESOURCE | EntityCategory.PLAYER | EntityCategory.NPC,
       isSensor: true,
-      density: this.mass,
     });
     this.fixture.setUserData(this.entity.objectId);
     body.setAwake(true);

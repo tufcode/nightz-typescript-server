@@ -195,7 +195,7 @@ export const getBytes = {
     return buf;
   },
   [Protocol.Leaderboard]: (lb: LeaderboardEntry[]) => {
-    let totalNameLen = 2;
+    let totalNameLen = 2 * lb.length;
     for (let i = 0; i < lb.length; i++) {
       totalNameLen += lb[i].getName().length * 2;
     }

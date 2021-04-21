@@ -69,6 +69,7 @@ import { Regeneration } from './components/regeneration';
 import { CreateZombie } from './entities/zombie';
 import { Stone } from './components/stone';
 import { Wood } from './components/wood';
+import { createMinerWooden } from './entities/miner-wooden';
 
 const debug = debugModule('GameRoom');
 
@@ -352,10 +353,10 @@ export default class GameRoom extends Room {
       this._systemsArray[i].tick(deltaTime);
     }
     // Day-night cycle
-    if (this._dayNightCycleTick >= 60) {
+    if (this._dayNightCycleTick >= 1) {
       this._dayNightCycleTick = 0;
-      this._isNight = !this._isNight;
-      if (this._isNight) {
+      this._isNight = true; //!this._isNight;
+      if (/*this._isNight*/ false) {
         this._zombieSpawner.spawnChance = 0.9;
         this._zombieSpawner.maximum = this._playableArea.length() / 2;
         this._zombieSpawner.spawnFrequency = 1;
@@ -380,23 +381,18 @@ export default class GameRoom extends Room {
         if (clientData == undefined || clientData.observing == null) continue;
 
         // Send update for dirty entities if there are any
-        const dirty = clientData.observing.filter((e: Entity) => {
-          if (e.isDirty) {
-            e.isDirty = false;
-            return e;
-          }
-        });
+        const dirty = clientData.observing.filter((e: Entity) => e.dirtyTick > this._lastSend);
         if (dirty.length > 0) {
           client.send(getBytes[Protocol.EntityUpdate](client, dirty, now - this.startTime, this._lastSend));
         }
 
         // Send queued messages like inventory and gold updates
-        for (let j = 0; j < clientData.queuedMessages.length; j++) {
-          client.send(clientData.queuedMessages[j]);
+        let queued;
+        while ((queued = clientData.takeMessageFromQueue()) != null) {
+          client.send(queued);
         }
-        clientData.queuedMessages = [];
-        //client.flush(); // Send all queued messages
       }
+
       this._lastSend = this.currentTick;
     }
 
@@ -502,7 +498,7 @@ export default class GameRoom extends Room {
     });
 
     // Create player entity
-    const entity = new Entity(EntityId.Player, this._gameWorld, client);
+    const entity = new Entity(EntityId.Player, this._gameWorld, gameClient);
     entity.addComponent(new Gold());
     entity.addComponent(new Stone());
     entity.addComponent(new Wood());
@@ -527,28 +523,55 @@ export default class GameRoom extends Room {
     // Add items and inventory
     const inventory = <Inventory>entity.addComponent(new Inventory());
 
-    (<GameClient>client.getUserData()).addOwnedEntity(entity);
+    (<GameClient>client.getUserData()).addOwnedEntity(entity); // todo add for items
     (<GameClient>client.getUserData()).cameraFollowing = entity;
 
-    inventory.addItem(createItem(EntityId.Food, new Food(ItemSlot.Slot2), this._gameWorld, client));
+    inventory.addItem(createItem(EntityId.Food, new Food(ItemSlot.Slot2), this._gameWorld, gameClient, false, 0, 0, 1));
     inventory.addItem(
       createItem(
         EntityId.WallWooden,
-        new BuildingBlock(ItemSlot.Slot3, 0.25, 20, createWoodenBlock(client, new Team(100 + client.id))),
+        new BuildingBlock(ItemSlot.Slot3, 0.25, 20, createWoodenBlock(gameClient, new Team(100 + client.id))),
         this._gameWorld,
-        client,
+        gameClient,
+        false,
+        10,
+        3,
+        0,
       ),
     );
     inventory.addItem(
       createItem(
         EntityId.SpikeWooden,
-        new BuildingBlock(ItemSlot.Slot2, 0.25, 20, createWoodenSpike(client, new Team(100 + client.id))),
+        new BuildingBlock(ItemSlot.Slot2, 0.25, 20, createWoodenSpike(gameClient, new Team(100 + client.id))),
         this._gameWorld,
-        client,
+        gameClient,
+        false,
+        10,
+        3,
+        0,
+      ),
+    );
+    inventory.addItem(
+      createItem(
+        EntityId.MinerWooden,
+        new BuildingBlock(ItemSlot.Slot2, 0.25, 20, (world: World, position: Vec2, angle: number) => {
+          return createMinerWooden(world, position, angle, gameClient);
+        }),
+        this._gameWorld,
+        gameClient,
+        false,
+        10,
+        3,
+        0,
       ),
     );
 
-    const defaultHand = createItem(EntityId.Stick, new Tool(), this._gameWorld, client);
+    const defaultHand = createItem(
+      EntityId.Stick,
+      new MeleeWeapon(0, 1.5, 2, 2, 1, 4, Box(0.4, 0.5, Vec2(0.9, 0)), 1),
+      this._gameWorld,
+      gameClient,
+    );
     const upgradeComponent = <ItemUpgrade>entity.addComponent(new ItemUpgrade());
     upgradeComponent.addPointsWhen('weapon', [2, 3, 4, 5, 6]);
 
@@ -569,7 +592,7 @@ export default class GameRoom extends Room {
             EntityId.SwordBasic,
             new MeleeWeapon(0.5, 2, 6, 3, 1, 12, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
             this._gameWorld,
-            client,
+            gameClient,
           ),
         2,
       )
@@ -580,7 +603,7 @@ export default class GameRoom extends Room {
             EntityId.SwordNormal,
             new MeleeWeapon(0.5, 2.25, 10, 6, 2, 18, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
             this._gameWorld,
-            client,
+            gameClient,
           ),
         3,
       )
@@ -591,7 +614,7 @@ export default class GameRoom extends Room {
             EntityId.SwordGreat,
             new MeleeWeapon(0.5, 2.5, 15, 11, 4, 36, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
             this._gameWorld,
-            client,
+            gameClient,
           ),
         4,
       );
@@ -603,9 +626,9 @@ export default class GameRoom extends Room {
         () =>
           createItem(
             EntityId.AxeBasic,
-            new MeleeWeapon(1.6, 1.5, 4, 8, 4, 8, Box(0.5, 0.75, Vec2(1, -0.2))),
+            new MeleeWeapon(1.6, 1.5, 4, 8, 4, 8, Box(0.5, 0.75, Vec2(1, -0.2)), 1),
             this._gameWorld,
-            client,
+            gameClient,
           ),
         2,
       )
@@ -614,9 +637,9 @@ export default class GameRoom extends Room {
         () =>
           createItem(
             EntityId.AxeNormal,
-            new MeleeWeapon(1.8, 1.75, 8, 12, 8, 12, Box(0.5, 0.75, Vec2(1, -0.2))),
+            new MeleeWeapon(1.8, 1.75, 8, 12, 8, 12, Box(0.5, 0.75, Vec2(1, -0.2)), 1),
             this._gameWorld,
-            client,
+            gameClient,
           ),
         3,
       )
@@ -625,9 +648,9 @@ export default class GameRoom extends Room {
         () =>
           createItem(
             EntityId.AxeGreat,
-            new MeleeWeapon(2, 2, 16, 24, 16, 24, Box(0.625, 0.875, Vec2(1.25, -0.1))),
+            new MeleeWeapon(2, 2, 16, 24, 16, 24, Box(0.625, 0.875, Vec2(1.25, -0.1)), 1),
             this._gameWorld,
-            client,
+            gameClient,
           ),
         4,
       );
@@ -639,9 +662,9 @@ export default class GameRoom extends Room {
         () =>
           createItem(
             EntityId.SpearBasic,
-            new MeleeWeapon(1.6, 1.25, 16, 3, 1.6, 12, Box(0.875, 0.5, Vec2(1.4, 0.5))),
+            new MeleeWeapon(1.6, 1.25, 16, 3, 1.6, 12, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
             this._gameWorld,
-            client,
+            gameClient,
           ),
         2,
       )
@@ -650,9 +673,9 @@ export default class GameRoom extends Room {
         () =>
           createItem(
             EntityId.SpearNormal,
-            new MeleeWeapon(1.8, 1.5, 24, 6, 3, 18, Box(0.875, 0.5, Vec2(1.4, 0.5))),
+            new MeleeWeapon(1.8, 1.5, 24, 6, 3, 18, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
             this._gameWorld,
-            client,
+            gameClient,
           ),
         3,
       )
@@ -661,17 +684,53 @@ export default class GameRoom extends Room {
         () =>
           createItem(
             EntityId.SpearGreat,
-            new MeleeWeapon(2, 1.75, 32, 11, 5.71428571, 31, Box(0.875, 0.5, Vec2(1.4, 0.5))),
+            new MeleeWeapon(2, 1.75, 32, 11, 5.71428571, 31, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
             this._gameWorld,
-            client,
+            gameClient,
+          ),
+        4,
+      );
+
+    // Dagger upgrade tree
+    weaponRoot
+      .addUpgrade(
+        EntityId.DaggerBasic,
+        () =>
+          createItem(
+            EntityId.DaggerBasic,
+            new MeleeWeapon(0, 3, 5, 1.8, 0.8, 6, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
+            this._gameWorld,
+            gameClient,
+          ),
+        2,
+      )
+      .addUpgrade(
+        EntityId.DaggerNormal,
+        () =>
+          createItem(
+            EntityId.DaggerNormal,
+            new MeleeWeapon(0, 3.25, 8.5, 3.5, 1.6, 10, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
+            this._gameWorld,
+            gameClient,
+          ),
+        3,
+      )
+      .addUpgrade(
+        EntityId.DaggerGreat,
+        () =>
+          createItem(
+            EntityId.DaggerGreat,
+            new MeleeWeapon(0, 3.5, 12, 8.75, 4, 16.5, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
+            this._gameWorld,
+            gameClient,
           ),
         4,
       );
 
     equipment.hand = defaultHand;
 
-    gameClient.queuedMessages.push(getBytes[Protocol.WorldSize](this._playableArea));
-    gameClient.queuedMessages.push(getBytes[Protocol.CameraFollow](entity.objectId));
+    gameClient.queueMessage('size', getBytes[Protocol.WorldSize](this._playableArea));
+    gameClient.queueMessage('follow', getBytes[Protocol.CameraFollow](entity.objectId));
 
     client.getUserData().setTier(Tiers.Wood);
   }

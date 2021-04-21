@@ -14,12 +14,8 @@ export class Gold extends Component {
   public set amount(value: number) {
     this._amount = value;
 
-    const cli = <GameClient>this.entity.owner.getUserData();
-    if (this.queuedMessageIndex != -1 && cli.queuedMessages.length > this.queuedMessageIndex) {
-      cli.queuedMessages.splice(this.queuedMessageIndex, 1);
-    }
-
-    this.queuedMessageIndex = cli.queuedMessages.push(this.serialize()) - 1;
+    if (this.entity.owner == null) return;
+    this.entity.owner.queueMessage('gold', this.serialize());
   }
 
   public constructor() {
