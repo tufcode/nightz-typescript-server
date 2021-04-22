@@ -47,17 +47,13 @@ export class Entity {
     for (let i = 0; i < this.components.length; i++) {
       const c = this.components[i];
 
-      // Remove component with parent id
+      // Remove component
       let parent = Object.getPrototypeOf(this.components[i]);
       while (parent.constructor.name != 'Component') {
         room.componentCache[parent.constructor.name].splice(room.componentCache[parent.constructor.name].indexOf(c), 1);
 
         parent = Object.getPrototypeOf(parent);
       }
-
-      // Remove component
-      const n = this.components[i].constructor.name;
-      room.componentCache[n].splice(room.componentCache[n].indexOf(c), 1);
       this.components[i].onDestroy();
     }
   }
