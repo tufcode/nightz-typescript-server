@@ -123,16 +123,6 @@ export class SimpleSystems extends System {
       }
     }
 
-    // Chat Message
-    const componentsCM = <ChatMessage[]>this.room.getComponentsOfType(ChatMessage.name);
-    for (let i = 0; i < componentsCM.length; i++) {
-      const c = componentsCM[i];
-      c.update(deltaTime);
-      if (c.isDirty) {
-        c.entity.dirtyTick = this.room.currentTick;
-        c.entity.componentBuffers[ChatMessage.name] = { t: this.room.currentTick, buffer: c.serialize() };
-      }
-    }
     // Minimap
     const componentsMM = <Minimap[]>this.room.getComponentsOfType(Minimap.name);
     for (let i = 0; i < componentsMM.length; i++) {

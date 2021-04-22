@@ -3,7 +3,7 @@ import { Health } from './health';
 import { Entity } from '../entity';
 import { Level } from './level';
 import { Gold } from './gold';
-import { Inventory, ItemSlot } from './inventory';
+import { Inventory, ItemType } from './inventory';
 import { Food } from './items/food';
 
 export class FoodMine extends Component {

@@ -1,8 +1,5 @@
 import { System } from './system';
 import { Entity } from '../entity';
-import { World } from './world';
-import { Type } from '../types';
-import { Vec2 } from 'planck-js';
 
 export class SpawnerData {
   public maximum: number;
@@ -46,8 +43,7 @@ export class Spawner extends System {
           for (let i = 0; i < amountToSpawn; i++) {
             const entity = data.spawnCallback();
             data._spawned.push(entity);
-            entity.on('destroy', () => {
-              // todo possible memory leak?
+            entity.once('destroy', () => {
               data._spawned.splice(data._spawned.indexOf(entity), 1);
             });
           }

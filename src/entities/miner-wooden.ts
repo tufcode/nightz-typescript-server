@@ -60,7 +60,7 @@ export const createMinerWooden = (gameWorld: World, position: Vec2, angle: numbe
   });
   // Create AI entity
   const entity = new Entity(EntityId.MinerWooden, gameWorld, owner);
-  const anim = <Animation>entity.addComponent(new Animation());
+  entity.addComponent(new Animation());
   entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
   entity.addComponent(new Rotation(body.getAngle()));
   entity.addComponent(new PhysicsBody(body));
@@ -68,11 +68,9 @@ export const createMinerWooden = (gameWorld: World, position: Vec2, angle: numbe
   entity.addComponent(new Health(80));
   entity.addComponent(new Regeneration(2));
   entity.addComponent(new Minimap());
-  entity.addComponent(new Miner());
+  entity.addComponent(new Miner(1, 1));
 
   entity.addComponent(new Observable());
-
-  anim.setAnimation(6, 1);
 
   return entity;
 };

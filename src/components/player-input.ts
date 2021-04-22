@@ -35,10 +35,6 @@ export class PlayerInput extends Component {
     this.sendExperienceToOwner();
   }
 
-  public onDestroy(): void {
-    this.levelComponent.off('afterPointsUpdate'); // todo add "off" everywhere:)
-  }
-
   public update(deltaTime: number): void {
     const body = this.bodyComponent.getBody();
     const input = Vec2.zero();

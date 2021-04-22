@@ -1,33 +1,21 @@
-import { Item } from './items/item';
 import { Entity } from '../entity';
-import { Box, Fixture, Vec2 } from 'planck-js';
+import { Fixture } from 'planck-js';
 import { EntityCategory } from '../protocol';
-import { PhysicsBody } from './physics-body';
-import { ItemSlot } from './inventory';
 import { Team } from './team';
 import { Health } from './health';
-import { randomRange } from '../utils';
-import { Animation } from './animation';
 import { EntityId } from '../data/entity-id';
 import { Component } from './component';
-import { Movement } from './movement';
-import { GameClient } from '../game-client';
-// todo zombies avoid taking danage, make this have some sort of trigger to make sure they get damaged, or make zombies less smart
+
 export class Spike extends Component {
-  private fixture: Fixture;
   private _entitiesToDamage: { type: number; health: Health }[] = [];
   private _damageTick = 0;
   private myTeam: Team;
   private attackSpeed = 2;
-  private ownerEntity: Entity;
-  private animationComponent: Animation;
-  private bodyComponent: PhysicsBody;
 
-  public init() {
+  public init(): void {
     super.init();
     this.entity.id = EntityId.SpikeWooden;
     this.myTeam = <Team>this.entity.getComponent(Team);
-    this.ownerEntity = this.entity.owner.cameraFollowing; // todo this will crash everything upon player death :)
   }
 
   public onCollisionEnter(me: Fixture, other: Fixture): void {
@@ -60,13 +48,13 @@ export class Spike extends Component {
         const entityData = this._entitiesToDamage[key];
         switch (entityData.type) {
           case EntityCategory.PLAYER:
-            entityData.health.damage(10, this.ownerEntity);
+            entityData.health.damage(10, this.entity);
             break;
           case EntityCategory.STRUCTURE:
-            entityData.health.damage(10, this.ownerEntity);
+            entityData.health.damage(10, this.entity);
             break;
           case EntityCategory.NPC:
-            entityData.health.damage(10, this.ownerEntity);
+            entityData.health.damage(10, this.entity);
             break;
           default:
             break;

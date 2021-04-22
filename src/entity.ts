@@ -35,17 +35,24 @@ export class Entity {
     return this._eventEmitter.on(event, fn);
   }
 
+  public once(event: 'destroy', fn: (...args: any[]) => void): EventEmitter {
+    return this._eventEmitter.once(event, fn);
+  }
+
   public destroy() {
     this._eventEmitter.emit('destroy');
+    this._eventEmitter.removeAllListeners();
+
     const room = <GameRoom>this.world.room;
     for (let i = 0; i < this.components.length; i++) {
       const c = this.components[i];
 
       // Remove component with parent id
-      const parent = Object.getPrototypeOf(this.components[i].constructor).name;
-      if (parent != 'Component') {
-        // todo make this a while loop or it wont work with multiple inheritances
-        room.componentCache[parent].splice(room.componentCache[parent].indexOf(c), 1);
+      let parent = Object.getPrototypeOf(this.components[i]);
+      while (parent.constructor.name != 'Component') {
+        room.componentCache[parent.constructor.name].splice(room.componentCache[parent.constructor.name].indexOf(c), 1);
+
+        parent = Object.getPrototypeOf(parent);
       }
 
       // Remove component
@@ -64,23 +71,18 @@ export class Entity {
     component.init();
     const room = <GameRoom>this.world.room;
 
-    const parent = Object.getPrototypeOf(component.constructor).name;
-    if (parent != 'Component') {
-      // todo make this a while loop or it wont work with multiple inheritances
-      if (room.componentCache[parent]) room.componentCache[parent].push(component);
+    let parent = Object.getPrototypeOf(component);
+    while (parent.constructor.name != 'Component') {
+      if (room.componentCache[parent.constructor.name]) room.componentCache[parent.constructor.name].push(component);
       else {
-        room.componentCache[parent] = [component];
+        room.componentCache[parent.constructor.name] = [component];
       }
-      this.componentCache[parent] = component;
-    }
+      this.componentCache[parent.constructor.name] = component;
 
-    this.components.push(component);
-    this.componentCache[component.constructor.name] = component;
-    if (room.componentCache[component.constructor.name])
-      room.componentCache[component.constructor.name].push(component);
-    else {
-      room.componentCache[component.constructor.name] = [component];
+      parent = Object.getPrototypeOf(parent);
     }
+    // TODO Maybe make it better: Currently there can only be one component of Type
+    this.components.push(component);
 
     return component;
   }
@@ -91,10 +93,11 @@ export class Entity {
       const c = this.components[i];
 
       // Remove component with parent id
-      const parent = Object.getPrototypeOf(this.components[i].constructor).name;
-      if (parent != 'Component') {
-        // todo make this a while loop or it wont work with multiple inheritances
-        room.componentCache[parent].splice(room.componentCache[parent].indexOf(c), 1);
+      let parent = Object.getPrototypeOf(this.components[i]);
+      while (parent != 'Component') {
+        room.componentCache[parent.constructor.name].splice(room.componentCache[parent.constructor.name].indexOf(c), 1);
+
+        parent = Object.getPrototypeOf(parent);
       }
 
       // Remove component

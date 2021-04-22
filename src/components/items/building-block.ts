@@ -3,7 +3,7 @@ import { AABB, Vec2 } from 'planck-js';
 import { Entity } from '../../entity';
 import { PhysicsBody } from '../physics-body';
 import { EntityCategory, getBytes, Protocol } from '../../protocol';
-import { ItemSlot } from '../inventory';
+import { ItemType } from '../inventory';
 import { World } from '../../systems/world';
 import { Construction } from '../construction';
 import { EntityId } from '../../data/entity-id';
@@ -24,7 +24,7 @@ export class BuildingBlock extends Item {
   private requiredGold: number;
   public constructor(
     entityId: EntityId,
-    type: ItemSlot,
+    type: ItemType,
     radius: number,
     requiredWood: number,
     requiredStone: number,

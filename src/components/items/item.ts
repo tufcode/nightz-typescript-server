@@ -1,5 +1,5 @@
 import { Component } from '../component';
-import { Inventory, ItemSlot } from '../inventory';
+import { Inventory, ItemType } from '../inventory';
 import { Fixture, Shape, Vec2 } from 'planck-js';
 import { World } from '../../systems/world';
 import { Entity } from '../../entity';
@@ -30,7 +30,7 @@ export class Item {
   public id: number;
   public entityId: EntityId;
   public state: ItemState;
-  public type: ItemSlot;
+  public type: ItemType;
   public used = 0;
   public max = 0;
 
@@ -43,7 +43,7 @@ export class Item {
   protected _primary: boolean;
   private _inventory: Inventory;
 
-  public constructor(entityId: EntityId, type: ItemSlot, requiredStone = 0, requiredFood = 0, requiredWood = 0) {
+  public constructor(entityId: EntityId, type: ItemType, requiredStone = 0, requiredFood = 0, requiredWood = 0) {
     this.entityId = entityId;
     this.type = type;
     this.requiredWood = requiredWood;

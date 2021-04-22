@@ -3,7 +3,7 @@ import { Entity } from '../entity';
 import { Body, Shape, Vec2 } from 'planck-js';
 import { Position } from './position';
 import { PhysicsBody } from './physics-body';
-import { ItemSlot } from './inventory';
+import { ItemType } from './inventory';
 import { World } from '../systems/world';
 import { Rotation } from './rotation';
 import { ComponentIds, Protocol } from '../protocol';

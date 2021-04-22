@@ -3,7 +3,7 @@ import { Entity } from '../../entity';
 import { Box, Fixture, Shape, Vec2 } from 'planck-js';
 import { EntityCategory } from '../../protocol';
 import { PhysicsBody } from '../physics-body';
-import { ItemSlot } from '../inventory';
+import { ItemType } from '../inventory';
 import { Team } from '../team';
 import { Health } from '../health';
 import { randomRange } from '../../utils';
@@ -16,7 +16,7 @@ export class MeleeWeapon extends Item {
   private _entitiesToDamage: { [key: number]: { type: number; health: Health } } = {};
   private _damageTick = 0;
   private myTeam: Team;
-  private attackSpeed = 2.1; // todo cant be more than 10
+  private attackSpeed = 1;
   private animationComponent: Animation;
   private damageToPlayers: number;
   private damageToStructures: number;
@@ -37,7 +37,7 @@ export class MeleeWeapon extends Item {
     hitShape: Shape,
     animationId = 2,
   ) {
-    super(entityId, ItemSlot.Slot1);
+    super(entityId, ItemType.Hand);
     this.mass = mass;
     this.attackSpeed = attackSpeed;
     this.damageToPlayers = damageToPlayers;

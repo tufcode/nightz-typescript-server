@@ -6,7 +6,7 @@ import { ClientProtocol, EntityCategory, getBytes, Protocol } from './protocol';
 import { GameClient } from './game-client';
 import { PhysicsBody } from './components/physics-body';
 import { NameTag } from './components/name-tag';
-import { Inventory, ItemSlot } from './components/inventory';
+import { Inventory, ItemType } from './components/inventory';
 import { World } from './systems/world';
 import { BuildingBlock } from './components/items/building-block';
 import { Position } from './components/position';
@@ -20,13 +20,11 @@ import { randomRange, randomRangeFloat } from './utils';
 import { Mine } from './components/mine';
 import { Observable } from './components/observable';
 import { Level } from './components/level';
-import { KillRewards } from './components/kill-rewards';
 import { Rotation } from './components/rotation';
 import { performance } from 'perf_hooks';
 import { System } from './systems/system';
 import { VisibilitySystem } from './systems/visibility-system';
 import { Component } from './components/component';
-import { ZombieAI } from './components/zombie-ai';
 import { Movement } from './components/movement';
 import { Equipment } from './components/equipment';
 import { Gold } from './components/gold';
@@ -40,7 +38,6 @@ import { Animation } from './components/animation';
 import { EntityId } from './data/entity-id';
 import { MeleeWeapon } from './components/items/melee-weapon';
 import { Food } from './components/items/food';
-import { FoodMine } from './components/food-mine';
 import { ItemUpgrade } from './components/item-upgrade';
 import { LeaderboardEntry } from './components/leaderboard-entry';
 import { LeaderboardSystem } from './systems/leaderboard-system';
@@ -48,28 +45,13 @@ import { ChatMessage } from './components/chat-message';
 import { Minimap } from './components/minimap';
 import { Zone } from './components/zone';
 import { ObservableByAll } from './components/observable-by-all';
-import { BehaviourTree } from './ai/behaviour-tree';
-import { Sequence } from './ai/nodes/sequence';
-import { GetObjectsInRadius } from './ai/nodes/get-objects-in-radius';
-import { GetClosestObject } from './ai/nodes/get-closest-object';
-import { GetPosition } from './ai/nodes/get-position';
-import { InRange } from './ai/nodes/in-range';
-import { Inverted } from './ai/nodes/inverted';
-import { Chase } from './ai/nodes/chase';
-import { RotateTowards } from './ai/nodes/rotate-towards';
-import { BetterAI } from './components/better-ai';
-import { Selector } from './ai/nodes/selector';
-import { Flee } from './ai/nodes/flee';
-import { RotateAway } from './ai/nodes/rotate-away';
-import { WaitSeconds } from './ai/nodes/wait-seconds';
-import { GetCurrentHand } from './ai/nodes/get-current-hand';
-import { ActivateHandItem } from './ai/nodes/activate-hand-item';
 import { Regeneration } from './components/regeneration';
 import { CreateZombie } from './entities/zombie';
 import { Stone } from './components/stone';
 import { Wood } from './components/wood';
 import { createMinerWooden } from './entities/miner-wooden';
 import { FoodBag } from './components/food-bag';
+import { ChatSystem } from './systems/chat-system';
 
 const debug = debugModule('GameRoom');
 
@@ -112,6 +94,7 @@ export default class GameRoom extends Room {
     this.addSystem(new AISystem(this));
     this.addSystem(new VisibilitySystem(this));
     this.addSystem(new LeaderboardSystem(this));
+    //this.addSystem(new ChatSystem(this));
     this.addSystem(new Spawner());
     this.addSystem(this._gameWorld);
 
@@ -352,11 +335,12 @@ export default class GameRoom extends Room {
     for (let i = 0; i < this._systemsArray.length; i++) {
       this._systemsArray[i].tick(deltaTime);
     }
+    const duration = this._isNight ? 60 : 120;
     // Day-night cycle
-    if (this._dayNightCycleTick >= 1) {
+    if (this._dayNightCycleTick >= duration) {
       this._dayNightCycleTick = 0;
       this._isNight = true; //!this._isNight;
-      if (/*this._isNight*/ false) {
+      if (this._isNight) {
         this._zombieSpawner.spawnChance = 0.9;
         this._zombieSpawner.maximum = this._playableArea.length() / 2;
         this._zombieSpawner.spawnFrequency = 1;
@@ -371,7 +355,7 @@ export default class GameRoom extends Room {
     if (this._sendTick >= this._sendRate) {
       this._sendTick = 0;
 
-      this.broadcast(getBytes[Protocol.DayNightCycle](this._isNight, this._dayNightCycleTick / 60));
+      this.broadcast(getBytes[Protocol.DayNightCycle](this._isNight, this._dayNightCycleTick / duration));
       const now = performance.now();
 
       // Send updates to every client
@@ -428,7 +412,7 @@ export default class GameRoom extends Room {
         clientData.input.right = message.readUInt8(5) == 1;
         break;
       case ClientProtocol.SelectItem:
-        if (!clientData.cameraFollowing) break;
+        if (clientData.cameraFollowing == null) break;
         const equipment = <Equipment>clientData.cameraFollowing.getComponent(Equipment);
         const inventory = <Inventory>clientData.cameraFollowing.getComponent(Inventory);
         if (!inventory || !equipment) break;
@@ -436,29 +420,26 @@ export default class GameRoom extends Room {
         const item = inventory.getItemById(message.readUInt32LE(1));
         if (!item) break;
 
-        equipment.hand = item; // todo what if it is hat
+        if (item.type == ItemType.Hand) equipment.hand = item;
+        else if (item.type == ItemType.Hat) equipment.hat = item;
 
         break;
       case ClientProtocol.SelectUpgrade:
-        if (!clientData.cameraFollowing) break;
-        const upgrade = <ItemUpgrade>clientData.cameraFollowing.getComponent(ItemUpgrade); // TODO EXPLOIT: CAMERAFOLLOWING MIGHT NOT BE OWNED BY CLIENT!
+        if (clientData.cameraFollowing == null) break;
+        const upgrade = <ItemUpgrade>clientData.cameraFollowing.getComponent(ItemUpgrade);
         upgrade.upgrade(message.readUInt16LE(1));
         break;
       case ClientProtocol.ChatMessage:
-        if (!clientData.cameraFollowing) break;
+        if (clientData.cameraFollowing == null) break;
+
         let t = '';
         const len = message.readUInt16LE(1);
         for (let i = 0; i < len; i++) {
           t += String.fromCharCode(message.readUInt16LE(3 + i * 2));
         }
 
-        if (t.startsWith('/exp')) {
-          (<Level>clientData.cameraFollowing.getComponent(Level)).points += Number.parseInt(t.split(' ')[1], 10);
-          return;
-        }
-
-        const chatMessage = <ChatMessage>clientData.cameraFollowing.getComponent(ChatMessage); // TODO EXPLOIT
-        chatMessage.text = t;
+        const chatMessage = <ChatMessage>clientData.cameraFollowing.getComponent(ChatMessage);
+        chatMessage.text = t; // todo check if theres ChatMessage component?
         break;
       default:
         console.log('unknown packet:', packetId);
@@ -504,7 +485,6 @@ export default class GameRoom extends Room {
     entity.addComponent(new Wood());
     const equipment = <Equipment>entity.addComponent(new Equipment());
     entity.addComponent(new Animation());
-    entity.addComponent(new Inventory());
     entity.addComponent(new Level());
     entity.addComponent(new Team(100 + client.id));
     entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
@@ -527,11 +507,11 @@ export default class GameRoom extends Room {
     (<GameClient>client.getUserData()).addOwnedEntity(entity); // todo add for items
     (<GameClient>client.getUserData()).cameraFollowing = entity;
 
-    inventory.addItem(new Food(EntityId.Food, ItemSlot.Slot2, 0, 0, 1));
+    inventory.addItem(new Food(EntityId.Food, ItemType.Hand, 0, 0, 1));
     inventory.addItem(
       new BuildingBlock(
         EntityId.WallWooden,
-        ItemSlot.Slot3,
+        ItemType.Hand,
         0.25,
         10,
         3,
@@ -542,7 +522,7 @@ export default class GameRoom extends Room {
     inventory.addItem(
       new BuildingBlock(
         EntityId.SpikeWooden,
-        ItemSlot.Slot2,
+        ItemType.Hand,
         0.25,
         20,
         10,
@@ -553,7 +533,7 @@ export default class GameRoom extends Room {
     inventory.addItem(
       new BuildingBlock(
         EntityId.MinerWooden,
-        ItemSlot.Slot2,
+        ItemType.Hand,
         0.25,
         10,
         3,
@@ -622,12 +602,12 @@ export default class GameRoom extends Room {
       )
       .addUpgrade(
         EntityId.SpearNormal,
-        () => new MeleeWeapon(EntityId.SwordNormal, 1.8, 1.5, 24, 6, 3, 18, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
+        () => new MeleeWeapon(EntityId.SpearNormal, 1.8, 1.5, 24, 6, 3, 18, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
         3,
       )
       .addUpgrade(
         EntityId.SpearGreat,
-        () => new MeleeWeapon(EntityId.SwordGreat, 2, 1.75, 32, 11, 5.71428571, 31, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
+        () => new MeleeWeapon(EntityId.SpearGreat, 2, 1.75, 32, 11, 5.71428571, 31, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
         4,
       );
 

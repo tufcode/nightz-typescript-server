@@ -7,6 +7,7 @@ import { Observable } from '../components/observable';
 import { Client } from 'elsa';
 import { GameClient } from '../game-client';
 import { Component } from '../components/component';
+import { EntityId } from '../data/entity-id';
 
 export class VisibilitySystem extends System {
   private room: GameRoom;
