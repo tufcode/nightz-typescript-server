@@ -10,7 +10,7 @@ export class Level extends Component {
     return this._neededPoints;
   }
   public isDirty: boolean;
-  private _neededPoints = 100;
+  private _neededPoints = 50;
   private _points = 0;
   private _previousPoints = 0;
   private _level = 1;
@@ -55,7 +55,7 @@ export class Level extends Component {
       this._level++;
       this._previousPoints += this._neededPoints;
       this._points = clamp(this._points - this._neededPoints, 0, Number.MAX_SAFE_INTEGER);
-      this._neededPoints = Math.round((this._neededPoints + 100) * 1.05);
+      this._neededPoints = Math.round((this._neededPoints + 120) * 1.1);
       this._eventEmitter.emit('levelUp');
 
       if (this._level == 100) {
@@ -81,12 +81,12 @@ export class Level extends Component {
   }
 
   public static calculateLevel(points: number): number {
-    let needed = 100;
+    let needed = 50;
     let level = 1;
     while (points >= needed) {
       level++;
       points = clamp(points - needed, 0, Number.MAX_SAFE_INTEGER);
-      needed = Math.round((needed + 100) * 1.05);
+      needed = Math.round((needed + 120) * 1.1);
 
       if (level == 100) {
         return level;

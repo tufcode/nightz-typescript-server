@@ -52,7 +52,7 @@ while (lvl < 100) {
       ' to get here.\n';
     lvl++;
     currentExp -= neededExp;
-    neededExp = Math.round((neededExp + 120) * 1.05);
+    neededExp = Math.round((neededExp + 120) * 1.1);
   }
 }
 console.log(text);*/

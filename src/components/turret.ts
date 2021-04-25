@@ -35,7 +35,7 @@ export class Turret extends Component {
     }
     this._fireTick = 0;
 
-    const projectile = new Projectile(6, 8, 8);
+    const projectile = new Projectile(6, 10, 8, 8);
     projectile.setDir(this.body.getWorldVector(Vec2(1, 0)).clone());
     createProjectile(
       EntityId.TurretArrowBasic,

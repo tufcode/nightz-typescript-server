@@ -69,7 +69,7 @@ export const createWoodenTurret = (gameWorld: World, position: Vec2, angle: numb
   entity.addComponent(new Rotation(body.getAngle()));
   entity.addComponent(new PhysicsBody(body));
   const team = <Team>entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id));
-  entity.addComponent(new Health(40000));
+  entity.addComponent(new Health(40));
   entity.addComponent(turret);
 
   (<BetterAI>entity.addComponent(new BetterAI())).addNode(createTurretBehaviourTree(body, gameWorld, turret, team));

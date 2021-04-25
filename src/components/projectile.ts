@@ -19,9 +19,12 @@ export class Projectile extends Component {
   public dir: Vec2;
   private body: Body;
   private myTeam: Team;
-  public constructor(speed: number, damageToPlayers: number, damageToZombies: number) {
+  private startPos: Vec2;
+  private maxTravelDistance: number;
+  public constructor(speed: number, maxTravelDistance: number, damageToPlayers: number, damageToZombies: number) {
     super();
     this.speed = speed;
+    this.maxTravelDistance = maxTravelDistance;
     this.damageToPlayers = damageToPlayers;
     this.damageToZombies = damageToZombies;
   }
@@ -33,10 +36,12 @@ export class Projectile extends Component {
   public init(): void {
     this.body = (<PhysicsBody>this.entity.getComponent(PhysicsBody)).getBody();
     this.myTeam = <Team>this.entity.getComponent(Team);
+    this.startPos = this.body.getPosition().clone();
   }
 
   public update(deltaTime: number): void {
     this.body.applyLinearImpulse(this.dir, this.body.getWorldCenter(), true);
+    if (Vec2.distance(this.startPos, this.body.getPosition()) >= this.maxTravelDistance) this.entity.destroy();
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {
