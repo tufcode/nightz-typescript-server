@@ -15,8 +15,7 @@ export class InRange extends BehaviourNode {
   public execute(deltaTime: number): Status {
     if (!this.tree.data[this.varName] || !this.tree.data['position']) return Status.FAILED;
 
-    if (Vec2.distance(this.tree.data['position'], this.tree.data[this.varName].getWorldCenter()) <= this.range)
-      return Status.SUCCESS;
+    if (Vec2.distance(this.tree.data['position'], this.tree.data[this.varName]) <= this.range) return Status.SUCCESS;
 
     return Status.FAILED;
   }

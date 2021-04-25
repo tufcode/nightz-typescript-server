@@ -49,7 +49,7 @@ export class Inventory extends Component {
   }
 
   public serialize(): Buffer {
-    const buf = Buffer.allocUnsafe(2 + 6 * this.items.length);
+    const buf = Buffer.allocUnsafe(2 + 16 * this.items.length);
 
     let index = 0;
     buf.writeUInt8(Protocol.Inventory, index);
@@ -62,6 +62,16 @@ export class Inventory extends Component {
       index += 2;
       buf.writeUInt32LE(this.items[i].id, index);
       index += 4;
+      buf.writeUInt16LE(this.items[i].requiredWood, index);
+      index += 2;
+      buf.writeUInt16LE(this.items[i].requiredStone, index);
+      index += 2;
+      buf.writeUInt16LE(this.items[i].requiredFood, index);
+      index += 2;
+      buf.writeUInt16LE(this.items[i].currentUse, index);
+      index += 2;
+      buf.writeUInt16LE(this.items[i].maximumUse, index);
+      index += 2;
     }
 
     return buf;

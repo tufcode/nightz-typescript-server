@@ -17,8 +17,8 @@ export class RotateTowards extends BehaviourNode {
     if (!this.tree.data[this.varName] || !this.tree.data['position']) return Status.FAILED;
 
     const targetAngle = Math.atan2(
-      this.tree.data[this.varName].getWorldCenter().y - this.tree.data['position'].y,
-      this.tree.data[this.varName].getWorldCenter().x - this.tree.data['position'].x,
+      this.tree.data[this.varName].y - this.tree.data['position'].y,
+      this.tree.data[this.varName].x - this.tree.data['position'].x,
     );
     this.body.setAngle(targetAngle);
 

@@ -18,9 +18,6 @@ export class Item {
   }
   public set inventory(value: Inventory) {
     this._inventory = value;
-
-    if (this.parent.owner == null) return;
-    this.parent.owner.queueMessage('item', this.serializeForOwner());
   }
 
   public get parent(): Entity {

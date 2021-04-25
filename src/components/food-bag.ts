@@ -24,6 +24,10 @@ export class FoodBag extends Component {
     this.isDirty = false;
   }
 
+  public init() {
+    this.entity.owner.queueMessage('food', this.serialize());
+  }
+
   public serialize(): Buffer {
     const buf = Buffer.allocUnsafe(5);
     // Packet Id

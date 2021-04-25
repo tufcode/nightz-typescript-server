@@ -26,6 +26,11 @@ export enum EntityId {
   MinerStone = 1060,
   MinerReinforced = 1061,
 
+  SpeedBoost = 1062,
+  HealingPad = 1063,
+  RepairPad = 1064,
+  AntiStructure = 1065,
+
   // Items (2001-3001)
   Food = 2001,
   Stick = 2010,

@@ -46,12 +46,14 @@ import { Minimap } from './components/minimap';
 import { Zone } from './components/zone';
 import { ObservableByAll } from './components/observable-by-all';
 import { Regeneration } from './components/regeneration';
-import { CreateZombie } from './entities/zombie';
+import { CreateZombie } from './prefabs/zombie';
 import { Stone } from './components/stone';
 import { Wood } from './components/wood';
-import { createMinerWooden } from './entities/miner-wooden';
+import { createMinerWooden } from './prefabs/miner-wooden';
 import { FoodBag } from './components/food-bag';
 import { ChatSystem } from './systems/chat-system';
+import { createSpeedBoost } from './prefabs/speed-boost';
+import { createPlayer } from './prefabs/player';
 
 const debug = debugModule('GameRoom');
 
@@ -94,10 +96,10 @@ export default class GameRoom extends Room {
     this.addSystem(new AISystem(this));
     this.addSystem(new VisibilitySystem(this));
     this.addSystem(new LeaderboardSystem(this));
-    //this.addSystem(new ChatSystem(this));
+    this.addSystem(new ChatSystem(this));
     this.addSystem(new Spawner());
     this.addSystem(this._gameWorld);
-
+    /*
     {
       const entity = new Entity(EntityId.Zone, this._gameWorld);
       entity.addComponent(new Position(Vec2.zero(), Vec2.zero()));
@@ -105,17 +107,19 @@ export default class GameRoom extends Room {
       entity.addComponent(new ObservableByAll());
       const zone = <Zone>entity.addComponent(new Zone());
       zone.setData('Ground Zero', Vec2(3000, 3000), 102, 0, 0);
-    }
+    }*/
 
     const spawner = <Spawner>this.systems[Spawner.name];
     // Zombie spawner
-    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 10, () => {
+    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 0, () => {
       let pos: Vec2 = null;
       while (true) {
         let canSpawn = true;
         pos = Vec2(
-          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
+          /*randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),*/
+          randomRange(-20, 20),
+          randomRange(-20, 20),
         );
 
         const aabbLower = pos.clone().sub(Vec2(1, 1));
@@ -340,9 +344,9 @@ export default class GameRoom extends Room {
     if (this._dayNightCycleTick >= duration) {
       this._dayNightCycleTick = 0;
       this._isNight = true; //!this._isNight;
-      if (this._isNight) {
-        this._zombieSpawner.spawnChance = 0.9;
-        this._zombieSpawner.maximum = this._playableArea.length() / 2;
+      if (true /*this._isNight*/) {
+        this._zombieSpawner.spawnChance = 1;
+        this._zombieSpawner.maximum = 300;
         this._zombieSpawner.spawnFrequency = 1;
       } else {
         this._zombieSpawner.spawnChance = 0.55;
@@ -394,27 +398,27 @@ export default class GameRoom extends Room {
   }
 
   public onMessage(client: Client, message: Buffer) {
-    const clientData = <GameClient>client.getUserData();
-    if (!clientData) {
-      debug('WARNING: Client ' + client.id + ' has no clientData but sent a message!');
+    const gameClient = <GameClient>client.getUserData();
+    if (!gameClient) {
+      debug('WARNING: Client ' + client.id + ' has no gameClient but sent a message!');
       return;
     }
     const packetId = message.readUInt8(0);
     switch (packetId) {
       case ClientProtocol.InputAngle:
-        clientData.input.angle = message.readFloatLE(1);
+        gameClient.input.angle = message.readFloatLE(1);
         break;
       case ClientProtocol.InputPrimary:
-        clientData.input.primary = message.readUInt8(1) == 1;
-        clientData.input.up = message.readUInt8(2) == 1;
-        clientData.input.down = message.readUInt8(3) == 1;
-        clientData.input.left = message.readUInt8(4) == 1;
-        clientData.input.right = message.readUInt8(5) == 1;
+        gameClient.input.primary = message.readUInt8(1) == 1;
+        gameClient.input.up = message.readUInt8(2) == 1;
+        gameClient.input.down = message.readUInt8(3) == 1;
+        gameClient.input.left = message.readUInt8(4) == 1;
+        gameClient.input.right = message.readUInt8(5) == 1;
         break;
       case ClientProtocol.SelectItem:
-        if (clientData.cameraFollowing == null) break;
-        const equipment = <Equipment>clientData.cameraFollowing.getComponent(Equipment);
-        const inventory = <Inventory>clientData.cameraFollowing.getComponent(Inventory);
+        if (gameClient.controlling == null) break;
+        const equipment = <Equipment>gameClient.controlling.getComponent(Equipment);
+        const inventory = <Inventory>gameClient.controlling.getComponent(Inventory);
         if (!inventory || !equipment) break;
 
         const item = inventory.getItemById(message.readUInt32LE(1));
@@ -425,12 +429,12 @@ export default class GameRoom extends Room {
 
         break;
       case ClientProtocol.SelectUpgrade:
-        if (clientData.cameraFollowing == null) break;
-        const upgrade = <ItemUpgrade>clientData.cameraFollowing.getComponent(ItemUpgrade);
+        if (gameClient.controlling == null) break;
+        const upgrade = <ItemUpgrade>gameClient.controlling.getComponent(ItemUpgrade);
         upgrade.upgrade(message.readUInt16LE(1));
         break;
       case ClientProtocol.ChatMessage:
-        if (clientData.cameraFollowing == null) break;
+        if (gameClient.controlling == null) break;
 
         let t = '';
         const len = message.readUInt16LE(1);
@@ -438,9 +442,21 @@ export default class GameRoom extends Room {
           t += String.fromCharCode(message.readUInt16LE(3 + i * 2));
         }
 
-        const chatMessage = <ChatMessage>clientData.cameraFollowing.getComponent(ChatMessage);
+        const chatMessage = <ChatMessage>gameClient.controlling.getComponent(ChatMessage);
         chatMessage.text = t; // todo check if theres ChatMessage component?
         break;
+      case ClientProtocol.Respawn: {
+        if (gameClient.controlling != null) return;
+        this.spawnPlayer(gameClient);
+        break;
+      }
+      case ClientProtocol.RespawnWithReward: {
+        if (gameClient.controlling != null) return;
+        this.spawnPlayer(gameClient);
+        // noinspection JSObjectNullOrUndefined
+        (<Level>gameClient.controlling.getComponent(Level)).points = gameClient.respawnRewardExp;
+        break;
+      }
       default:
         console.log('unknown packet:', packetId);
         break;
@@ -457,184 +473,9 @@ export default class GameRoom extends Room {
     const gameClient = new GameClient(client);
     client.setUserData(gameClient);
 
-    const body = this._gameWorld.getPhysicsWorld().createBody({
-      type: 'dynamic',
-      position: Vec2(0, 0),
-      fixedRotation: true,
-      linearDamping: 10,
-    });
-    body.createFixture({
-      shape: Circle(0.5),
-      density: 20.0,
-      filterCategoryBits: EntityCategory.PLAYER,
-      filterMaskBits:
-        EntityCategory.BOUNDARY |
-        EntityCategory.STRUCTURE |
-        EntityCategory.RESOURCE |
-        EntityCategory.PLAYER |
-        EntityCategory.NPC |
-        EntityCategory.BULLET |
-        EntityCategory.MELEE |
-        EntityCategory.SENSOR,
-    });
-
-    // Create player entity
-    const entity = new Entity(EntityId.Player, this._gameWorld, gameClient);
-    entity.addComponent(new Gold());
-    entity.addComponent(new Stone());
-    entity.addComponent(new Wood());
-    const equipment = <Equipment>entity.addComponent(new Equipment());
-    entity.addComponent(new Animation());
-    entity.addComponent(new Level());
-    entity.addComponent(new Team(100 + client.id));
-    entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
-    entity.addComponent(new Rotation(body.getAngle()));
-    entity.addComponent(new PhysicsBody(body));
-    entity.addComponent(new Health(100000));
-    entity.addComponent(new Regeneration(0.25));
-    entity.addComponent(new Movement(1000));
-    entity.addComponent(new PlayerInput());
-    (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + client.id);
-    entity.addComponent(new ChatMessage());
-    entity.addComponent(new LeaderboardEntry(client.id));
-    entity.addComponent(new Minimap());
-    entity.addComponent(new FoodBag());
-    entity.addComponent(new Observable());
-
-    // Add items and inventory
-    const inventory = <Inventory>entity.addComponent(new Inventory());
-
-    (<GameClient>client.getUserData()).addOwnedEntity(entity); // todo add for items
-    (<GameClient>client.getUserData()).cameraFollowing = entity;
-
-    inventory.addItem(new Food(EntityId.Food, ItemType.Hand, 0, 0, 1));
-    inventory.addItem(
-      new BuildingBlock(
-        EntityId.WallWooden,
-        ItemType.Hand,
-        0.25,
-        10,
-        3,
-        0,
-        createWoodenBlock(gameClient, new Team(100 + client.id)),
-      ),
-    );
-    inventory.addItem(
-      new BuildingBlock(
-        EntityId.SpikeWooden,
-        ItemType.Hand,
-        0.25,
-        20,
-        10,
-        3,
-        createWoodenSpike(gameClient, new Team(100 + client.id)),
-      ),
-    );
-    inventory.addItem(
-      new BuildingBlock(
-        EntityId.MinerWooden,
-        ItemType.Hand,
-        0.25,
-        10,
-        3,
-        0,
-        (world: World, position: Vec2, angle: number) => {
-          return createMinerWooden(world, position, angle, gameClient);
-        },
-      ),
-    );
-
-    const defaultHand = new MeleeWeapon(EntityId.Stick, 0, 1.5, 2, 2, 1, 4, Box(0.4, 0.5, Vec2(0.9, 0)), 1);
-    const upgradeComponent = <ItemUpgrade>entity.addComponent(new ItemUpgrade());
-    upgradeComponent.addPointsWhen('weapon', [2, 3, 4, 5, 6]);
-
-    const weaponRoot = upgradeComponent.addDefaultUpgrade(
-      'weapon',
-      'weapon',
-      defaultHand.entityId,
-      () => defaultHand,
-      1,
-    );
-
-    // Sword upgrade tree
-    weaponRoot
-      .addUpgrade(
-        EntityId.SwordBasic,
-        () => new MeleeWeapon(EntityId.SwordBasic, 0.5, 2, 6, 3, 1, 12, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
-        2,
-      )
-      .addUpgrade(
-        EntityId.SwordNormal,
-        () => new MeleeWeapon(EntityId.SwordNormal, 0.5, 2.25, 10, 6, 2, 18, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
-        3,
-      )
-      .addUpgrade(
-        EntityId.SwordGreat,
-        () => new MeleeWeapon(EntityId.SwordGreat, 0.5, 2.5, 15, 11, 4, 36, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
-
-        4,
-      );
-
-    // Axe upgrade tree
-    weaponRoot
-      .addUpgrade(
-        EntityId.AxeBasic,
-        () => new MeleeWeapon(EntityId.AxeBasic, 1.6, 1.5, 4, 8, 4, 8, Box(0.5, 0.75, Vec2(1, -0.2)), 1),
-        2,
-      )
-      .addUpgrade(
-        EntityId.AxeNormal,
-        () => new MeleeWeapon(EntityId.AxeNormal, 1.8, 1.75, 8, 12, 8, 12, Box(0.5, 0.75, Vec2(1, -0.2)), 1),
-        3,
-      )
-      .addUpgrade(
-        EntityId.AxeGreat,
-        () => new MeleeWeapon(EntityId.AxeGreat, 2, 2, 16, 24, 16, 24, Box(0.625, 0.875, Vec2(1.25, -0.1)), 1),
-        4,
-      );
-
-    // Spear upgrade tree
-    weaponRoot
-      .addUpgrade(
-        EntityId.SpearBasic,
-        () => new MeleeWeapon(EntityId.SpearBasic, 1.6, 1.25, 16, 3, 1.6, 12, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
-        2,
-      )
-      .addUpgrade(
-        EntityId.SpearNormal,
-        () => new MeleeWeapon(EntityId.SpearNormal, 1.8, 1.5, 24, 6, 3, 18, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
-        3,
-      )
-      .addUpgrade(
-        EntityId.SpearGreat,
-        () => new MeleeWeapon(EntityId.SpearGreat, 2, 1.75, 32, 11, 5.71428571, 31, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
-        4,
-      );
-
-    // Dagger upgrade tree
-    weaponRoot
-      .addUpgrade(
-        EntityId.DaggerBasic,
-        () => new MeleeWeapon(EntityId.DaggerBasic, 0, 3, 5, 1.8, 0.8, 6, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
-        2,
-      )
-      .addUpgrade(
-        EntityId.DaggerNormal,
-        () => new MeleeWeapon(EntityId.DaggerNormal, 0, 3.25, 8.5, 3.5, 1.6, 10, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
-        3,
-      )
-      .addUpgrade(
-        EntityId.DaggerGreat,
-        () => new MeleeWeapon(EntityId.DaggerGreat, 0, 3.5, 12, 8.75, 4, 16.5, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
-        4,
-      );
-
-    equipment.hand = defaultHand;
-
     gameClient.queueMessage('size', getBytes[Protocol.WorldSize](this._playableArea));
-    gameClient.queueMessage('follow', getBytes[Protocol.CameraFollow](entity.objectId));
 
-    client.getUserData().setTier(Tiers.Wood);
+    this.spawnPlayer(gameClient);
   }
 
   public onLeave(client: Client, closeReason: WSCloseCode): void {
@@ -647,6 +488,27 @@ export default class GameRoom extends Room {
 
   public onDispose() {
     console.log('dispose the room');
+  }
+
+  private spawnPlayer(gameClient: GameClient): void {
+    const entity = createPlayer(this._gameWorld, Vec2.zero(), 0, gameClient);
+    const health = <Health>entity.getComponent(Health);
+    health.on('damage', (amount: number, source: Entity) => {
+      if (health.isDead) {
+        gameClient.controlling = null;
+        const levelComponent = <Level>entity.getComponent(Level);
+        gameClient.respawnRewardExp = levelComponent.totalPoints / 2;
+
+        gameClient.queueMessage(
+          'death',
+          getBytes[Protocol.Death](EntityId[source.id], Level.calculateLevel(gameClient.respawnRewardExp)),
+        );
+      }
+    });
+
+    gameClient.queueMessage('alive', getBytes[Protocol.Alive]());
+    gameClient.controlling = entity;
+    gameClient.cameraFollow(entity);
   }
 
   private addSystem(system: System) {

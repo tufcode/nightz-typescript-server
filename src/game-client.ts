@@ -3,6 +3,7 @@ import { Entity } from './entity';
 
 import { getBytes, Protocol } from './protocol';
 import { Tiers } from './data/tiers';
+import { Health } from './components/health';
 
 export interface ITier {
   id: number;
@@ -18,6 +19,7 @@ export interface InputState {
 }
 export class GameClient {
   public client: Client;
+  public controlling: Entity;
   public cameraFollowing: Entity;
   public observing: Entity[] = null;
   public tier: ITier = Tiers.Wood;
@@ -25,9 +27,27 @@ export class GameClient {
   public ownedEntities: Entity[] = [];
 
   private _queuedMessages: [string, Buffer][] = [];
+  public respawnRewardExp: number;
 
   public constructor(client: Client) {
     this.client = client;
+  }
+
+  public cameraFollow(target: Entity): void {
+    this.cameraFollowing = target;
+    this.queueMessage('follow', getBytes[Protocol.CameraFollow](target.objectId));
+
+    const health = <Health>target.getComponent(Health);
+    if (health != null) {
+      health.on('damage', (amount: number, source: Entity) => {
+        if (health.isDead) {
+          this.cameraFollowing = null;
+          if (source != null) {
+            this.cameraFollow(source);
+          }
+        }
+      });
+    }
   }
 
   public queueMessage(id: string, buf: Buffer): void {
@@ -41,7 +61,7 @@ export class GameClient {
 
   public takeMessageFromQueue(): Buffer {
     const m = this._queuedMessages.shift();
-    if (m == undefined) return null;
+    if (m == undefined) return null; // todo unnecessary
 
     return m[1];
   }

@@ -3,7 +3,7 @@ import { Body, Vec2 } from 'planck-js';
 import { BehaviourTree } from '../behaviour-tree';
 import { Movement } from '../../components/movement';
 
-export class Chase extends BehaviourNode {
+export class MoveTowards extends BehaviourNode {
   private varName: string;
   private movement: Movement;
 
@@ -18,8 +18,8 @@ export class Chase extends BehaviourNode {
 
     this.movement.move(
       Vec2(
-        this.tree.data[this.varName].getWorldCenter().x - this.tree.data['position'].x,
-        this.tree.data[this.varName].getWorldCenter().y - this.tree.data['position'].y,
+        this.tree.data[this.varName].x - this.tree.data['position'].x,
+        this.tree.data[this.varName].y - this.tree.data['position'].y,
       ),
     );
 

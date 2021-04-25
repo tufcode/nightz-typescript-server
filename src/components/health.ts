@@ -4,7 +4,7 @@ import { Entity } from '../entity';
 import * as EventEmitter from 'eventemitter3';
 
 export class Health extends Component {
-  public isUnkillable: boolean;
+  public isImmune: boolean;
   public isDirty: boolean;
 
   private _currentHealth = 100;
@@ -30,7 +30,7 @@ export class Health extends Component {
   }
 
   public get isDead(): boolean {
-    return this._currentHealth <= 0;
+    return this._currentHealth == 0;
   }
 
   public get maxHealth(): number {
@@ -53,7 +53,7 @@ export class Health extends Component {
 
   public damage(amount: number, source: Entity): void {
     if (this.isDead) return;
-    if (!this.isUnkillable) {
+    if (!this.isImmune) {
       this.currentHealth -= amount;
       this.lastDamageSource = source;
       this.lastDamageTime = Date.now();

@@ -4,6 +4,7 @@ import { Body, Fixture, Vec2 } from 'planck-js';
 export class GetClosestObject extends BehaviourNode {
   public execute(deltaTime: number): Status {
     const objects = this.tree.data['objectsInRadius'];
+    this.tree.data['closestObject'] = null;
     if (!objects || objects.length == 0 || !this.tree.data['position']) return Status.FAILED;
 
     let bestDistance = Number.MAX_VALUE;
@@ -17,6 +18,7 @@ export class GetClosestObject extends BehaviourNode {
       const distance = Vec2.distance(this.tree.data['position'], objectCenter);
 
       if (distance < bestDistance) {
+        this.tree.data['closestObjectPos'] = objectCenter;
         bestDistance = distance;
         closest = body;
       }

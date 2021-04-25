@@ -79,4 +79,19 @@ export class Level extends Component {
 
     return buf;
   }
+
+  public static calculateLevel(points: number): number {
+    let needed = 100;
+    let level = 1;
+    while (points >= needed) {
+      level++;
+      points = clamp(points - needed, 0, Number.MAX_SAFE_INTEGER);
+      needed = Math.round((needed + 100) * 1.05);
+
+      if (level == 100) {
+        return level;
+      }
+    }
+    return level;
+  }
 }

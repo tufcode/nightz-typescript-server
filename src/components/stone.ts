@@ -25,6 +25,10 @@ export class Stone extends Component {
     this.isDirty = false;
   }
 
+  public init() {
+    this.entity.owner.queueMessage('stone', this.serialize());
+  }
+
   public serialize(): Buffer {
     const buf = Buffer.allocUnsafe(5);
     // Packet Id

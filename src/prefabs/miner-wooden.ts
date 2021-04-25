@@ -26,7 +26,7 @@ import { GetPosition } from '../ai/nodes/get-position';
 import { GetClosestObject } from '../ai/nodes/get-closest-object';
 import { Inverted } from '../ai/nodes/inverted';
 import { InRange } from '../ai/nodes/in-range';
-import { Chase } from '../ai/nodes/chase';
+import { MoveTowards } from '../ai/nodes/move-towards';
 import { RotateTowards } from '../ai/nodes/rotate-towards';
 import { WaitSeconds } from '../ai/nodes/wait-seconds';
 import { GetObjectsInRadius } from '../ai/nodes/get-objects-in-radius';
@@ -64,9 +64,8 @@ export const createMinerWooden = (gameWorld: World, position: Vec2, angle: numbe
   entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
   entity.addComponent(new Rotation(body.getAngle()));
   entity.addComponent(new PhysicsBody(body));
-  entity.addComponent(new Team((<Team>owner.cameraFollowing.getComponent(Team)).id));
+  entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id));
   entity.addComponent(new Health(80));
-  entity.addComponent(new Regeneration(2));
   entity.addComponent(new Minimap());
   entity.addComponent(new Miner(1, 1));
 

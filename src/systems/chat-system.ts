@@ -14,6 +14,7 @@ import { Gold } from '../components/gold';
 import { Wood } from '../components/wood';
 import { Stone } from '../components/stone';
 import { FoodBag } from '../components/food-bag';
+import { Health } from '../components/health';
 
 export class ChatSystem extends System {
   private room: GameRoom;
@@ -64,21 +65,26 @@ export class ChatSystem extends System {
     switch (command) {
       case 'exp': {
         const amount = Number.parseInt(split[1], 10);
-        if (isNaN(amount) || !gameClient.cameraFollowing) return;
-        const level = <Level>gameClient.cameraFollowing.getComponent(Level);
+        if (isNaN(amount) || !gameClient.controlling) return;
+        const level = <Level>gameClient.controlling.getComponent(Level);
 
         if (!level) return;
         level.points += amount;
         break;
       }
       case 'resources': {
-        const wood = <Wood>gameClient.cameraFollowing.getComponent(Wood);
+        const wood = <Wood>gameClient.controlling.getComponent(Wood);
         if (wood != null) wood.amount = 100000;
-        const stone = <Wood>gameClient.cameraFollowing.getComponent(Stone);
+        const stone = <Wood>gameClient.controlling.getComponent(Stone);
         if (stone != null) stone.amount = 100000;
-        const food = <FoodBag>gameClient.cameraFollowing.getComponent(FoodBag);
+        const food = <FoodBag>gameClient.controlling.getComponent(FoodBag);
         if (food != null) food.amount = 100000;
         break;
+      }
+      case 'toggleImmune': {
+        if (!gameClient.controlling) return;
+        const health = <Health>gameClient.controlling.getComponent(Health);
+        if (health != null) health.isImmune = !health.isImmune;
       }
     }
   }

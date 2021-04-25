@@ -46,7 +46,7 @@ export class Observable extends Component {
     if (this._syncComponent != null)
       return this.checkDistance(this._syncComponent.position, clientSyncComponent.position);
 
-    // I can't verify anything if my owner has no controlling entity. I'm invisible.
+    // I can't verify anything if my owner has no cameraFollowing entity. I'm invisible.
     if (this.entity.owner.cameraFollowing == null) return false;
 
     return false; // I don't know how to be visible!

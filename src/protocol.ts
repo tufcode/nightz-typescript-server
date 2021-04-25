@@ -18,6 +18,8 @@ export enum Protocol {
 
   // Player-related (50-99)
   CameraFollow = 50,
+  Alive = 54,
+  Death = 55,
   TierInfo = 60,
   GoldInfo = 61,
   WoodInfo = 64,
@@ -36,6 +38,8 @@ export enum ClientProtocol {
   SelectItem = 2,
   SelectUpgrade = 3,
   ChatMessage = 4,
+  Respawn = 5,
+  RespawnWithReward = 6,
 }
 
 export enum ComponentIds {
@@ -237,6 +241,33 @@ export const getBytes = {
 
     buf.writeUInt8(Protocol.CameraFollow, 0);
     buf.writeUInt32LE(id, 1);
+
+    return buf;
+  },
+  [Protocol.Alive]: () => {
+    const buf = Buffer.allocUnsafe(1);
+
+    buf.writeUInt8(Protocol.Alive, 0);
+
+    return buf;
+  },
+  [Protocol.Death]: (killedBy: string, adRespawnLevel: number) => {
+    const buf = Buffer.allocUnsafe(4 + 2 * killedBy.length);
+
+    let index = 0;
+    buf.writeUInt8(Protocol.Death, index);
+    index++;
+
+    buf.writeUInt8(adRespawnLevel, index);
+    index++;
+
+    buf.writeUInt16LE(killedBy.length, index);
+    index += 2;
+
+    for (let j = 0; j < killedBy.length; j++) {
+      buf.writeUInt16LE(killedBy.charCodeAt(j), index);
+      index += 2;
+    }
 
     return buf;
   },

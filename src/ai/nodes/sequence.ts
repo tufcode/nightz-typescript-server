@@ -26,7 +26,7 @@ export class Sequence extends BehaviourNode {
           return Status.SUCCESS;
       }
     }
-    //console.log('Sequence complete');
     this.currentIndex = 0;
+    return Status.SUCCESS;
   }
 }

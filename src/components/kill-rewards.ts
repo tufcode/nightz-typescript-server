@@ -25,8 +25,8 @@ export class KillRewards extends Component {
         let actualSource = source;
         if (source.owner != null) {
           // todo maybe make it so it returns if owner is null
-          if (source.owner.cameraFollowing) {
-            actualSource = source.owner.cameraFollowing;
+          if (source.owner.controlling) {
+            actualSource = source.owner.controlling;
           }
         }
         // Give gold and exp to the killer

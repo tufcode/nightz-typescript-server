@@ -45,7 +45,7 @@ export class BuildingBlock extends Item {
 
   protected onConsume(): void {
     const body = (<PhysicsBody>this.inventory.entity.getComponent(PhysicsBody)).getBody();
-    const pos = body.getWorldPoint(Vec2(1, 0));
+    const pos = body.getWorldPoint(Vec2(this.radius * 4, 0));
 
     const stoneComponent = <Stone>this.parent.getComponent(Stone);
     const woodComponent = <Wood>this.parent.getComponent(Wood);

@@ -24,6 +24,9 @@ import { ChatMessage } from '../components/chat-message';
 import { Minimap } from '../components/minimap';
 import { Zone } from '../components/zone';
 import { Miner } from '../components/miner';
+import { SpeedBoost } from '../components/speed-boost';
+import { Turret } from '../components/turret';
+import { Projectile } from '../components/projectile';
 
 export class SimpleSystems extends System {
   private room: GameRoom;
@@ -45,6 +48,20 @@ export class SimpleSystems extends System {
     const componentsS = <Spike[]>this.room.getComponentsOfType(Spike.name);
     for (let i = 0; i < componentsS.length; i++) {
       const c = componentsS[i];
+      c.update(deltaTime);
+    }
+
+    // Spikes
+    const componentsTu = <Turret[]>this.room.getComponentsOfType(Turret.name);
+    for (let i = 0; i < componentsTu.length; i++) {
+      const c = componentsTu[i];
+      c.update(deltaTime);
+    }
+
+    // Spikes
+    const componentsPr = <Projectile[]>this.room.getComponentsOfType(Projectile.name);
+    for (let i = 0; i < componentsPr.length; i++) {
+      const c = componentsPr[i];
       c.update(deltaTime);
     }
 
@@ -121,6 +138,13 @@ export class SimpleSystems extends System {
         c.entity.dirtyTick = this.room.currentTick;
         c.entity.componentBuffers[Equipment.name] = { t: this.room.currentTick, buffer: c.serialize() };
       }
+    }
+
+    // Speed Boost
+    const componentsSB = <SpeedBoost[]>this.room.getComponentsOfType(SpeedBoost.name);
+    for (let i = 0; i < componentsSB.length; i++) {
+      const c = componentsSB[i];
+      c.update(deltaTime);
     }
 
     // Minimap

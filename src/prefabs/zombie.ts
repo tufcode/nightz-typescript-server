@@ -26,13 +26,18 @@ import { GetPosition } from '../ai/nodes/get-position';
 import { GetClosestObject } from '../ai/nodes/get-closest-object';
 import { Inverted } from '../ai/nodes/inverted';
 import { InRange } from '../ai/nodes/in-range';
-import { Chase } from '../ai/nodes/chase';
+import { MoveTowards } from '../ai/nodes/move-towards';
 import { RotateTowards } from '../ai/nodes/rotate-towards';
 import { WaitSeconds } from '../ai/nodes/wait-seconds';
 import { GetObjectsInRadius } from '../ai/nodes/get-objects-in-radius';
 import { BetterAI } from '../components/better-ai';
 import { NameTag } from '../components/name-tag';
 import { World } from '../systems/world';
+import { GetPatrolTarget } from '../ai/nodes/get-patrol-target';
+import { FailUnlessSecondsPassed } from '../ai/nodes/fail-unless-seconds-passed';
+import { ShouldGetPatrolTarget } from '../ai/nodes/should-get-patrol-target';
+import { Print } from '../ai/nodes/print';
+import { createZombieBehaviourTree } from '../ai/trees/zombie-tree';
 
 export const CreateZombie = (gameWorld: World, position: Vec2, angle: number): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
@@ -78,50 +83,9 @@ export const CreateZombie = (gameWorld: World, position: Vec2, angle: number): E
   //entity.addComponent(new ZombieAI());
   entity.addComponent(new Observable());
 
-  const tree = new BehaviourTree();
-  const rootSequence = new Sequence(tree);
-
-  const mainSelector = new Selector(tree);
-  mainSelector.addNode(rootSequence);
-  mainSelector.addNode(new ActivateHandItem(tree, false));
-
-  rootSequence.addNode(new GetCurrentHand(tree, equipment));
-  rootSequence.addNode(new GetPosition(tree, body));
-  rootSequence.addNode(new GetClosestObject(tree));
-
-  const selector = new Selector(tree);
-  const chaseSequence = new Sequence(tree);
-
-  chaseSequence.addNode(new Inverted(tree, new InRange(tree, 'closestObject', 1.4)));
-  chaseSequence.addNode(new ActivateHandItem(tree, false));
-  chaseSequence.addNode(new Chase(tree, moveComponent, 'closestObject'));
-  chaseSequence.addNode(new RotateTowards(tree, body, 'closestObject'));
-
-  const attackSequence = new Sequence(tree);
-
-  attackSequence.addNode(new InRange(tree, 'closestObject', 1.4));
-  attackSequence.addNode(new ActivateHandItem(tree, true));
-  attackSequence.addNode(new Chase(tree, moveComponent, 'closestObject'));
-  attackSequence.addNode(new RotateTowards(tree, body, 'closestObject'));
-
-  selector.addNode(chaseSequence);
-  selector.addNode(attackSequence);
-
-  rootSequence.addNode(selector);
-
-  const findSequence = new Sequence(tree);
-  findSequence.addNode(new WaitSeconds(tree, 1));
-  findSequence.addNode(new GetPosition(tree, body));
-  findSequence.addNode(
-    new GetObjectsInRadius(tree, gameWorld.getPhysicsWorld(), 10, (f) => {
-      return (
-        (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
-        (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE
-      );
-    }),
+  (<BetterAI>entity.addComponent(new BetterAI())).addNode(
+    createZombieBehaviourTree(equipment, body, gameWorld, moveComponent),
   );
-
-  (<BetterAI>entity.addComponent(new BetterAI())).addNode(findSequence).addNode(mainSelector);
 
   (<NameTag>entity.addComponent(new NameTag())).setName('Zombie');
 

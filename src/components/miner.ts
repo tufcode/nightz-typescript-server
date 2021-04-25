@@ -22,9 +22,9 @@ export class Miner extends Component {
   }
 
   public update(deltaTime: number): void {
-    if (this.entity.owner.cameraFollowing == null) return; // Can't mine when owner is dead
+    if (this.entity.owner.controlling == null) return; // Can't mine when owner is dead
 
-    const goldComponent = <Gold>this.entity.owner.cameraFollowing.getComponent(Gold);
+    const goldComponent = <Gold>this.entity.owner.controlling.getComponent(Gold);
 
     goldComponent.amount += this.goldPerSecond * deltaTime;
   }
