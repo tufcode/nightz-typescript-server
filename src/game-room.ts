@@ -111,15 +111,13 @@ export default class GameRoom extends Room {
 
     const spawner = <Spawner>this.systems[Spawner.name];
     // Zombie spawner
-    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 0, () => {
+    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 10, () => {
       let pos: Vec2 = null;
       while (true) {
         let canSpawn = true;
         pos = Vec2(
-          /*randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),*/
-          randomRange(-20, 20),
-          randomRange(-20, 20),
+          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
         );
 
         const aabbLower = pos.clone().sub(Vec2(1, 1));

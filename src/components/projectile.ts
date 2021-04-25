@@ -16,7 +16,7 @@ export class Projectile extends Component {
   private readonly damageToPlayers: number = 1;
   private readonly damageToZombies: number = 1;
   private readonly speed: number = 1;
-  private dir: Vec2;
+  public dir: Vec2;
   private body: Body;
   private myTeam: Team;
   public constructor(speed: number, damageToPlayers: number, damageToZombies: number) {

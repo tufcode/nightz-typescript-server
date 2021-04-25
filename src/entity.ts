@@ -21,6 +21,7 @@ export class Entity {
   public dirtyTick = 0;
   private _eventEmitter: EventEmitter;
   public componentBuffers: { [key: string]: { t: number; buffer: Buffer } } = {};
+  private _destroyed: boolean;
 
   public constructor(id: EntityId, world: World, owner?: GameClient) {
     this.id = id;
@@ -40,6 +41,8 @@ export class Entity {
   }
 
   public destroy() {
+    if (this._destroyed) return;
+    this._destroyed = true;
     this._eventEmitter.emit('destroy');
     this._eventEmitter.removeAllListeners();
 
@@ -50,7 +53,20 @@ export class Entity {
       // Remove component
       let parent = Object.getPrototypeOf(this.components[i]);
       while (parent.constructor.name != 'Component') {
-        room.componentCache[parent.constructor.name].splice(room.componentCache[parent.constructor.name].indexOf(c), 1);
+        const idx = room.componentCache[parent.constructor.name].indexOf(c);
+        if (idx == -1) {
+          console.log(
+            parent.constructor.name,
+            'RoomComponentCache Index is -1. Entity:',
+            EntityId[this.id],
+            'Actual Component:',
+            this.components[i].constructor.name,
+            'Size:',
+            room.componentCache[parent.constructor.name].length,
+            'IsNull?',
+            room.componentCache[parent.constructor.name] == null,
+          );
+        } else room.componentCache[parent.constructor.name].splice(idx, 1);
 
         parent = Object.getPrototypeOf(parent);
       }
