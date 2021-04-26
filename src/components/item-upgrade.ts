@@ -1,6 +1,6 @@
 import { Component } from './component';
 import { ComponentIds, Protocol } from '../protocol';
-import { Item } from './items/item';
+import { Item } from '../items/item';
 import { GameClient } from '../game-client';
 import { Level } from './level';
 import { Type } from '../types';
@@ -11,6 +11,7 @@ import GameRoom from '../game-room';
 import { VisibilitySystem } from '../systems/visibility-system';
 
 export class Upgrade {
+  public _parent: Upgrade;
   public _upgrades: Upgrade[] = [];
   public _upgradeLevel: number;
   public _upgradeItemId: EntityId;
@@ -21,6 +22,7 @@ export class Upgrade {
     upgrade._upgradeItemId = upgradedItemId;
     upgrade._upgradeLevel = minimumLevel;
     upgrade._createCallback = createCallback;
+    upgrade._parent = this;
 
     this._upgrades.push(upgrade);
     return upgrade;
@@ -55,7 +57,7 @@ export class ItemUpgrade extends Component {
           if (this._points.hasOwnProperty(pointsId)) {
             this._points[pointsId] += 1;
           } else {
-            this._points[pointsId] = 1;
+            this._points[pointsId] = 100;
           }
           this._totalPoints++;
         }
@@ -68,6 +70,19 @@ export class ItemUpgrade extends Component {
         this.entity.owner.queueMessage('upgrade', this.serialize());
       }
     });
+  }
+
+  public resetUpgradeTree(id: string): void {
+    const tree = this._upgradeTree[id];
+
+    let u = tree.currentUpgrade;
+    while (u._parent != null) {
+      u = u._parent;
+    }
+    tree.currentUpgrade = u;
+
+    if (this.entity.owner == null) return;
+    this.entity.owner.queueMessage('upgrade', this.serialize());
   }
 
   public addDefaultUpgrade(

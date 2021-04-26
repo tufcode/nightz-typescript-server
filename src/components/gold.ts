@@ -1,6 +1,6 @@
 import { Component } from './component';
 import { ComponentIds, Protocol } from '../protocol';
-import { Item } from './items/item';
+import { Item } from '../items/item';
 import { GameClient } from '../game-client';
 
 export class Gold extends Component {

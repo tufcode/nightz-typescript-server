@@ -65,7 +65,7 @@ export enum EntityCategory {
   NPC = 0x0010,
   BULLET = 0x0012,
   MELEE = 0x0014,
-  SENSOR = 0x0016,
+  SHIELD = 0x0016,
 }
 
 export const getBytes = {

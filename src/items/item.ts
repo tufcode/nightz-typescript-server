@@ -1,11 +1,11 @@
-import { Component } from '../component';
-import { Inventory, ItemType } from '../inventory';
+import { Component } from '../components/component';
+import { Inventory, ItemType } from '../components/inventory';
 import { Fixture, Shape, Vec2 } from 'planck-js';
-import { World } from '../../systems/world';
-import { Entity } from '../../entity';
-import { GameClient } from '../../game-client';
-import { Protocol } from '../../protocol';
-import { EntityId } from '../../data/entity-id';
+import { World } from '../systems/world';
+import { Entity } from '../entity';
+import { GameClient } from '../game-client';
+import { Protocol } from '../protocol';
+import { EntityId } from '../data/entity-id';
 
 export enum ItemState {
   IN_INVENTORY,
@@ -28,8 +28,6 @@ export class Item {
   public entityId: EntityId;
   public state: ItemState;
   public type: ItemType;
-  public used = 0;
-  public max = 0;
 
   public requiredWood = 0;
   public requiredStone = 0;

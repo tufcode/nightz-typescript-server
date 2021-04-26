@@ -17,7 +17,7 @@ import { Tier } from '../components/tier';
 import { Equipment } from '../components/equipment';
 import { PlayerInput } from '../components/player-input';
 import { Construction } from '../components/construction';
-import { Item } from '../components/items/item';
+import { Item } from '../items/item';
 import { Animation } from '../components/animation';
 import { Spike } from '../components/spike';
 import { ChatMessage } from '../components/chat-message';
@@ -27,6 +27,7 @@ import { Miner } from '../components/miner';
 import { SpeedBoost } from '../components/speed-boost';
 import { Turret } from '../components/turret';
 import { Projectile } from '../components/projectile';
+import { Shield } from '../items/shield';
 
 export class SimpleSystems extends System {
   private room: GameRoom;

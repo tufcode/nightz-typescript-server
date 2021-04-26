@@ -1,6 +1,6 @@
 import { Component } from './component';
 import { ComponentIds } from '../protocol';
-import { Item } from './items/item';
+import { Item } from '../items/item';
 import { Fixture } from 'planck-js';
 import { EntityId } from '../data/entity-id';
 
@@ -21,6 +21,7 @@ export class Equipment extends Component {
   }
 
   public set hand(value: Item) {
+    this._hand?.onUnequip();
     value.onEquip();
     this._hand = value;
     this.isDirty = true;

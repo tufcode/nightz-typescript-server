@@ -34,13 +34,16 @@ export const createTurretBehaviourTree = (body: Body, gameWorld: World, turret: 
   findSequence.addNode(new GetPosition(tree, body));
   findSequence.addNode(
     new GetObjectsInRadius(tree, gameWorld.getPhysicsWorld(), 10, (f) => {
+      if (
+        !(
+          (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
+          (f.getFilterCategoryBits() & EntityCategory.NPC) == EntityCategory.NPC
+        )
+      )
+        return false;
+
       const otherTeam = <Team>(<Entity>f.getBody().getUserData()).getComponent(Team);
-      return (
-        ((f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
-          (f.getFilterCategoryBits() & EntityCategory.NPC) == EntityCategory.NPC) &&
-        otherTeam != null &&
-        team.isHostileTowards(otherTeam)
-      );
+      return otherTeam != null && team.isHostileTowards(otherTeam);
     }),
   );
   findSequence.addNode(attackSequence);

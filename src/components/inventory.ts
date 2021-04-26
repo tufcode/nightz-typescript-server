@@ -1,5 +1,5 @@
 import { Component } from './component';
-import { Item } from './items/item';
+import { Item } from '../items/item';
 import { getBytes, Protocol } from '../protocol';
 import { GameClient } from '../game-client';
 import { Type } from '../types';
@@ -29,9 +29,7 @@ export class Inventory extends Component {
     this.itemsWithClass[item.constructor.name] = item;
     this.items.push(item);
 
-    if (this.entity.owner != null) {
-      this.entity.owner.queueMessage('inv', this.serialize());
-    }
+    this.sendUpdate();
 
     item.inventory = this;
   }
@@ -41,9 +39,7 @@ export class Inventory extends Component {
     delete this.itemsWithClass[item.constructor.name];
     this.items.splice(this.items.indexOf(item), 1);
 
-    if (this.entity.owner != null) {
-      this.entity.owner.queueMessage('inv', this.serialize());
-    }
+    this.sendUpdate();
 
     item.onDestroy();
   }
@@ -83,5 +79,11 @@ export class Inventory extends Component {
 
   public getItem(item: Type<Item>): Item {
     return this.itemsWithClass[item.name];
+  }
+
+  public sendUpdate(): void {
+    if (this.entity.owner != null) {
+      this.entity.owner.queueMessage('inv', this.serialize());
+    }
   }
 }

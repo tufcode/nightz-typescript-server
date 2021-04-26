@@ -8,12 +8,12 @@ import { PhysicsBody } from './components/physics-body';
 import { NameTag } from './components/name-tag';
 import { Inventory, ItemType } from './components/inventory';
 import { World } from './systems/world';
-import { BuildingBlock } from './components/items/building-block';
+import { BuildingBlock } from './items/building-block';
 import { Position } from './components/position';
 import { Health } from './components/health';
 import { AABB, Box, Circle, Vec2 } from 'planck-js';
 import { Team } from './components/team';
-import { createWoodenBlock, createWoodenSpike } from './components/items/util/create-object';
+import { createWoodenBlock, createWoodenSpike } from './items/util/create-object';
 import { Tiers } from './data/tiers';
 import { Spawner, SpawnerData } from './systems/spawner';
 import { randomRange, randomRangeFloat } from './utils';
@@ -36,8 +36,8 @@ import { AISystem } from './systems/ai-system';
 import { PlayerInput } from './components/player-input';
 import { Animation } from './components/animation';
 import { EntityId } from './data/entity-id';
-import { MeleeWeapon } from './components/items/melee-weapon';
-import { Food } from './components/items/food';
+import { MeleeWeapon } from './items/melee-weapon';
+import { Food } from './items/food';
 import { ItemUpgrade } from './components/item-upgrade';
 import { LeaderboardEntry } from './components/leaderboard-entry';
 import { LeaderboardSystem } from './systems/leaderboard-system';
@@ -111,7 +111,7 @@ export default class GameRoom extends Room {
 
     const spawner = <Spawner>this.systems[Spawner.name];
     // Zombie spawner
-    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 10, () => {
+    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 0, () => {
       let pos: Vec2 = null;
       while (true) {
         let canSpawn = true;
@@ -190,11 +190,13 @@ export default class GameRoom extends Room {
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Health(800));
+      const health = <Health>entity.addComponent(new Health(1));
       entity.addComponent(new Team(1));
       entity.addComponent(new Mine(false, true, false, false));
       entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
+
+      health.isImmune = true;
 
       return entity;
     });
@@ -251,11 +253,13 @@ export default class GameRoom extends Room {
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Health(800));
+      const health = <Health>entity.addComponent(new Health(1));
       entity.addComponent(new Team(1));
       entity.addComponent(new Mine(false, false, true, false));
       entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
+
+      health.isImmune = true;
 
       return entity;
     });
@@ -312,11 +316,13 @@ export default class GameRoom extends Room {
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      entity.addComponent(new Health(800));
+      const health = <Health>entity.addComponent(new Health(1));
       entity.addComponent(new Team(1));
       entity.addComponent(new Mine(false, false, false, true));
       entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
+
+      health.isImmune = true;
 
       return entity;
     });

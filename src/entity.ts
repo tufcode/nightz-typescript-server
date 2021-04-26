@@ -21,7 +21,7 @@ export class Entity {
   public dirtyTick = 0;
   private _eventEmitter: EventEmitter;
   public componentBuffers: { [key: string]: { t: number; buffer: Buffer } } = {};
-  private _destroyed: boolean;
+  public _destroyed: boolean;
 
   public constructor(id: EntityId, world: World, owner?: GameClient) {
     this.id = id;
@@ -124,12 +124,14 @@ export class Entity {
   }
 
   public onCollisionEnter(me: Fixture, other: Fixture): void {
+    if (this._destroyed) return;
     // Components
     for (let i = 0; i < this.components.length; i++) {
       this.components[i].onCollisionEnter(me, other);
     }
   }
   public onCollisionExit(me: Fixture, other: Fixture): void {
+    if (this._destroyed) return;
     // Components
     for (let i = 0; i < this.components.length; i++) {
       this.components[i].onCollisionExit(me, other);
@@ -137,12 +139,14 @@ export class Entity {
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {
+    if (this._destroyed) return;
     // Components
     for (let i = 0; i < this.components.length; i++) {
       this.components[i].onTriggerEnter(me, other);
     }
   }
   public onTriggerExit(me: Fixture, other: Fixture): void {
+    if (this._destroyed) return;
     // Components
     for (let i = 0; i < this.components.length; i++) {
       this.components[i].onTriggerExit(me, other);

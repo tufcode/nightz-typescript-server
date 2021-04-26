@@ -4,7 +4,7 @@ import { Entity } from '../entity';
 import { Level } from './level';
 import { Gold } from './gold';
 import { Inventory, ItemType } from './inventory';
-import { Food } from './items/food';
+import { Food } from '../items/food';
 import { Animation } from './animation';
 
 export class Miner extends Component {

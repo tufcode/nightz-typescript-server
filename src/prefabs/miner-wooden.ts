@@ -15,7 +15,7 @@ import { Movement } from '../components/movement';
 import { Inventory } from '../components/inventory';
 import { Equipment } from '../components/equipment';
 import { Minimap } from '../components/minimap';
-import { MeleeWeapon } from '../components/items/melee-weapon';
+import { MeleeWeapon } from '../items/melee-weapon';
 import { Observable } from '../components/observable';
 import { BehaviourTree } from '../ai/behaviour-tree';
 import { Sequence } from '../ai/nodes/sequence';
@@ -56,7 +56,7 @@ export const createMinerWooden = (gameWorld: World, position: Vec2, angle: numbe
       EntityCategory.NPC |
       EntityCategory.BULLET |
       EntityCategory.MELEE |
-      EntityCategory.SENSOR,
+      EntityCategory.SHIELD,
   });
   // Create AI entity
   const entity = new Entity(EntityId.MinerWooden, gameWorld, owner);

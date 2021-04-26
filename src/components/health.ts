@@ -2,6 +2,7 @@ import { Component } from './component';
 import { ComponentIds } from '../protocol';
 import { Entity } from '../entity';
 import * as EventEmitter from 'eventemitter3';
+import { Fixture } from 'planck-js';
 
 export class Health extends Component {
   public isImmune: boolean;
@@ -11,7 +12,7 @@ export class Health extends Component {
   private _maxHealth = 100;
   private _eventEmitter: EventEmitter;
 
-  private lastDamageSource: Entity;
+  private lastDamageSource: Entity | Fixture;
   private lastDamageTime: number;
   private lastDamageAmount: number;
   public get damagedRecently(): boolean {
@@ -25,8 +26,12 @@ export class Health extends Component {
     this._currentHealth = maxHealth;
   }
 
-  public on(event: 'damage' | 'heal', fn: (...args: any[]) => void): EventEmitter {
-    return this._eventEmitter.on(event, fn);
+  public on(event: 'damage' | 'heal', fn: (...args: any[]) => void): void {
+    this._eventEmitter.on(event, fn);
+  }
+
+  public off(event: 'damage' | 'heal', listener: (...args: any[]) => void): void {
+    this._eventEmitter.removeListener(event, listener);
   }
 
   public get isDead(): boolean {
@@ -37,7 +42,7 @@ export class Health extends Component {
     return this._maxHealth;
   }
   public set maxHealth(value: number) {
-    this._maxHealth = Math.max(value, 0);
+    this._maxHealth = Math.max(value, 1);
     this.isDirty = true;
   }
 
@@ -45,14 +50,14 @@ export class Health extends Component {
     return this._currentHealth;
   }
   public set currentHealth(value: number) {
-    if (this.isDead) return;
-
-    this._currentHealth = Math.max(Math.min(value, this._maxHealth), 0);
+    if ((this.isDead && value == this._currentHealth) || value == this._currentHealth) return;
+    this._currentHealth = value;
     this.isDirty = true;
   }
 
-  public damage(amount: number, source: Entity): void {
+  public damage(amount: number, source: Entity | Fixture): void {
     if (this.isDead) return;
+    amount = Math.min(Math.min(amount, this._maxHealth), this._currentHealth);
     if (!this.isImmune) {
       this.currentHealth -= amount;
       this.lastDamageSource = source;

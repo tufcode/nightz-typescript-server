@@ -13,7 +13,7 @@ import { Movement } from '../components/movement';
 import { Inventory, ItemType } from '../components/inventory';
 import { Equipment } from '../components/equipment';
 import { Minimap } from '../components/minimap';
-import { MeleeWeapon } from '../components/items/melee-weapon';
+import { MeleeWeapon } from '../items/melee-weapon';
 import { Observable } from '../components/observable';
 import { NameTag } from '../components/name-tag';
 import { World } from '../systems/world';
@@ -26,13 +26,13 @@ import { PlayerInput } from '../components/player-input';
 import { ChatMessage } from '../components/chat-message';
 import { LeaderboardEntry } from '../components/leaderboard-entry';
 import { FoodBag } from '../components/food-bag';
-import { Food } from '../components/items/food';
-import { BuildingBlock } from '../components/items/building-block';
-import { createWoodenBlock, createWoodenSpike } from '../components/items/util/create-object';
+import { Food } from '../items/food';
+import { BuildingBlock } from '../items/building-block';
+import { createWoodenBlock, createWoodenSpike } from '../items/util/create-object';
 import { createMinerWooden } from './miner-wooden';
-import { createSpeedBoost } from './speed-boost';
 import { ItemUpgrade } from '../components/item-upgrade';
 import { createWoodenTurret } from './turret-wooden';
+import { Shield } from '../items/shield';
 
 export const createPlayer = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
@@ -53,7 +53,7 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
       EntityCategory.NPC |
       EntityCategory.BULLET |
       EntityCategory.MELEE |
-      EntityCategory.SENSOR,
+      EntityCategory.SHIELD,
   });
 
   // Create player entity
@@ -84,7 +84,8 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   // Add items and inventory
   const inventory = <Inventory>entity.addComponent(new Inventory());
 
-  inventory.addItem(new Food(EntityId.Food, ItemType.Hand, 0, 0, 1));
+  inventory.addItem(new Shield(EntityId.ShieldBasic, ItemType.Hand, 0, 0));
+  inventory.addItem(new Food(EntityId.Food, ItemType.Hand, 0, 1, 0));
   inventory.addItem(
     new BuildingBlock(
       EntityId.WallWooden,
@@ -93,6 +94,7 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
       10,
       3,
       0,
+      8,
       createWoodenBlock(owner, new Team(100 + owner.client.id)),
     ),
   );
@@ -104,6 +106,7 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
       20,
       10,
       3,
+      8,
       createWoodenSpike(owner, new Team(100 + owner.client.id)),
     ),
   );
@@ -115,6 +118,7 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
       10,
       3,
       0,
+      8,
       (world: World, position: Vec2, angle: number) => {
         return createMinerWooden(world, position, angle, owner);
       },
@@ -128,13 +132,15 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
       0,
       0,
       0,
+      8,
       (world: World, position: Vec2, angle: number) => {
         return createWoodenTurret(world, position, angle, owner);
       },
     ),
   );
 
-  const defaultHand = new MeleeWeapon(EntityId.Stick, 0, 1.5, 2, 2, 1, 4, Box(0.4, 0.5, Vec2(0.9, 0)), 1);
+  const defaultHand = new MeleeWeapon(EntityId.Stick, 0, 1.5, 2, 2, 1, 4, 20, Box(0.4, 0.5, Vec2(0.9, 0)), 1);
+
   const upgradeComponent = <ItemUpgrade>entity.addComponent(new ItemUpgrade());
   upgradeComponent.addPointsWhen('weapon', [2, 3, 4, 5, 6]);
 
@@ -144,17 +150,17 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   weaponRoot
     .addUpgrade(
       EntityId.SwordBasic,
-      () => new MeleeWeapon(EntityId.SwordBasic, 0.5, 2, 6, 3, 1, 12, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
+      () => new MeleeWeapon(EntityId.SwordBasic, 0.5, 2, 6, 3, 1, 12, 40, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
       2,
     )
     .addUpgrade(
       EntityId.SwordNormal,
-      () => new MeleeWeapon(EntityId.SwordNormal, 0.5, 2.25, 10, 6, 2, 18, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
+      () => new MeleeWeapon(EntityId.SwordNormal, 0.5, 2.25, 10, 6, 2, 18, 40, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
       3,
     )
     .addUpgrade(
       EntityId.SwordGreat,
-      () => new MeleeWeapon(EntityId.SwordGreat, 0.5, 2.5, 15, 11, 4, 36, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
+      () => new MeleeWeapon(EntityId.SwordGreat, 0.5, 2.5, 15, 11, 4, 36, 40, Box(0.65, 0.75, Vec2(1.15, 0.5)), 4),
 
       4,
     );
@@ -163,17 +169,17 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   weaponRoot
     .addUpgrade(
       EntityId.AxeBasic,
-      () => new MeleeWeapon(EntityId.AxeBasic, 1.6, 1.5, 4, 8, 4, 8, Box(0.5, 0.75, Vec2(1, -0.2)), 1),
+      () => new MeleeWeapon(EntityId.AxeBasic, 1.6, 1.5, 4, 8, 4, 8, 70, Box(0.5, 0.75, Vec2(1, -0.2)), 1),
       2,
     )
     .addUpgrade(
       EntityId.AxeNormal,
-      () => new MeleeWeapon(EntityId.AxeNormal, 1.8, 1.75, 8, 12, 8, 12, Box(0.5, 0.75, Vec2(1, -0.2)), 1),
+      () => new MeleeWeapon(EntityId.AxeNormal, 1.8, 1.75, 8, 12, 8, 12, 70, Box(0.5, 0.75, Vec2(1, -0.2)), 1),
       3,
     )
     .addUpgrade(
       EntityId.AxeGreat,
-      () => new MeleeWeapon(EntityId.AxeGreat, 2, 2, 16, 24, 16, 24, Box(0.625, 0.875, Vec2(1.25, -0.1)), 1),
+      () => new MeleeWeapon(EntityId.AxeGreat, 2, 2, 16, 24, 16, 24, 70, Box(0.625, 0.875, Vec2(1.25, -0.1)), 1),
       4,
     );
 
@@ -181,17 +187,17 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   weaponRoot
     .addUpgrade(
       EntityId.SpearBasic,
-      () => new MeleeWeapon(EntityId.SpearBasic, 1.6, 1.25, 16, 3, 1.6, 12, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
+      () => new MeleeWeapon(EntityId.SpearBasic, 1.6, 1.25, 16, 3, 1.6, 12, 60, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
       2,
     )
     .addUpgrade(
       EntityId.SpearNormal,
-      () => new MeleeWeapon(EntityId.SpearNormal, 1.8, 1.5, 24, 6, 3, 18, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
+      () => new MeleeWeapon(EntityId.SpearNormal, 1.8, 1.5, 24, 6, 3, 18, 60, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
       3,
     )
     .addUpgrade(
       EntityId.SpearGreat,
-      () => new MeleeWeapon(EntityId.SpearGreat, 2, 1.75, 32, 11, 5.71428571, 31, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
+      () => new MeleeWeapon(EntityId.SpearGreat, 2, 1.75, 32, 11, 5.71428571, 31, 60, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
       4,
     );
 
@@ -199,17 +205,17 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   weaponRoot
     .addUpgrade(
       EntityId.DaggerBasic,
-      () => new MeleeWeapon(EntityId.DaggerBasic, 0, 3, 5, 1.8, 0.8, 6, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
+      () => new MeleeWeapon(EntityId.DaggerBasic, 0, 3, 5, 1.8, 0.8, 6, 15, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
       2,
     )
     .addUpgrade(
       EntityId.DaggerNormal,
-      () => new MeleeWeapon(EntityId.DaggerNormal, 0, 3.25, 8.5, 3.5, 1.6, 10, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
+      () => new MeleeWeapon(EntityId.DaggerNormal, 0, 3.25, 8.5, 3.5, 1.6, 10, 15, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
       3,
     )
     .addUpgrade(
       EntityId.DaggerGreat,
-      () => new MeleeWeapon(EntityId.DaggerGreat, 0, 3.5, 12, 8.75, 4, 16.5, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
+      () => new MeleeWeapon(EntityId.DaggerGreat, 0, 3.5, 12, 8.75, 4, 16.5, 15, Box(0.55, 0.5, Vec2(1.05, 0)), 2),
       4,
     );
 

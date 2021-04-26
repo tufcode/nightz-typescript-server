@@ -49,6 +49,9 @@ export enum EntityId {
   BowBasic = 2060,
   BowNormal = 2061,
   BowGreat = 2062,
+  ShieldBasic = 2070,
+  ShieldNormal = 2071,
+  ShieldGreat = 2072,
 
   // Projectiles 3002-4002
   ArrowBasic = 3002,

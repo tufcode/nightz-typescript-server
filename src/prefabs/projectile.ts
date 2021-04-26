@@ -15,7 +15,7 @@ import { Movement } from '../components/movement';
 import { Inventory } from '../components/inventory';
 import { Equipment } from '../components/equipment';
 import { Minimap } from '../components/minimap';
-import { MeleeWeapon } from '../components/items/melee-weapon';
+import { MeleeWeapon } from '../items/melee-weapon';
 import { Observable } from '../components/observable';
 import { BehaviourTree } from '../ai/behaviour-tree';
 import { Sequence } from '../ai/nodes/sequence';
@@ -71,7 +71,7 @@ export const createProjectile = (
   entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
   entity.addComponent(new Rotation(body.getAngle()));
   entity.addComponent(new PhysicsBody(body));
-  entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id));
+  entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id * 2)); // todo bug "TypeError: Cannot read property 'getComponent' of null" on death
   entity.addComponent(projectile);
 
   entity.addComponent(new Observable());

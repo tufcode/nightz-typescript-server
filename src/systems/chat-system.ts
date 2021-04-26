@@ -15,6 +15,11 @@ import { Wood } from '../components/wood';
 import { Stone } from '../components/stone';
 import { FoodBag } from '../components/food-bag';
 import { Health } from '../components/health';
+import { MeleeWeapon } from '../items/melee-weapon';
+import { EntityId } from '../data/entity-id';
+import { Box, Vec2 } from 'planck-js';
+import { Equipment } from '../components/equipment';
+import { ItemUpgrade } from '../components/item-upgrade';
 
 export class ChatSystem extends System {
   private room: GameRoom;
@@ -85,6 +90,13 @@ export class ChatSystem extends System {
         if (!gameClient.controlling) return;
         const health = <Health>gameClient.controlling.getComponent(Health);
         if (health != null) health.isImmune = !health.isImmune;
+        break;
+      }
+      case 'resetHand': {
+        if (!gameClient.controlling) return;
+        const up = <ItemUpgrade>gameClient.controlling.getComponent(ItemUpgrade);
+        up.resetUpgradeTree('weapon');
+        break;
       }
     }
   }

@@ -1,20 +1,21 @@
 import { Consumable } from './consumable';
 import { AABB, Vec2 } from 'planck-js';
-import { Entity } from '../../entity';
-import { PhysicsBody } from '../physics-body';
-import { EntityCategory, getBytes, Protocol } from '../../protocol';
-import { ItemType } from '../inventory';
-import { World } from '../../systems/world';
-import { Construction } from '../construction';
-import { EntityId } from '../../data/entity-id';
-import { Position } from '../position';
-import { Rotation } from '../rotation';
-import { Observable } from '../observable';
-import { Gold } from '../gold';
-import { Wood } from '../wood';
-import { Stone } from '../stone';
+import { Entity } from '../entity';
+import { PhysicsBody } from '../components/physics-body';
+import { EntityCategory, getBytes, Protocol } from '../protocol';
+import { ItemType } from '../components/inventory';
+import { World } from '../systems/world';
+import { Construction } from '../components/construction';
+import { EntityId } from '../data/entity-id';
+import { Position } from '../components/position';
+import { Rotation } from '../components/rotation';
+import { Observable } from '../components/observable';
+import { Gold } from '../components/gold';
+import { Wood } from '../components/wood';
+import { Stone } from '../components/stone';
 import { Item } from './item';
-import { FoodBag } from '../food-bag';
+import { FoodBag } from '../components/food-bag';
+import { Health } from '../components/health';
 
 export class BuildingBlock extends Item {
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;
@@ -29,11 +30,13 @@ export class BuildingBlock extends Item {
     requiredWood: number,
     requiredStone: number,
     requiredFood: number,
+    maximumUse: number,
     createCallback: (world: World, position: Vec2, angle: number) => Entity,
   ) {
     super(entityId, type, requiredStone, requiredFood, requiredWood);
     this.radius = radius;
     this.createCallback = createCallback;
+    this.maximumUse = maximumUse;
   }
 
   public setPrimary(b: boolean): void {
@@ -44,6 +47,7 @@ export class BuildingBlock extends Item {
   }
 
   protected onConsume(): void {
+    if (this.currentUse >= this.maximumUse) return;
     const body = (<PhysicsBody>this.inventory.entity.getComponent(PhysicsBody)).getBody();
     const pos = body.getWorldPoint(Vec2(this.radius * 4, 0));
 
@@ -86,14 +90,26 @@ export class BuildingBlock extends Item {
     this.parent.world.getPhysicsWorld().queryAABB(aabb, (f) => {
       canPlace =
         (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
-        (f.getFilterCategoryBits() & EntityCategory.SENSOR) == EntityCategory.SENSOR ||
+        (f.getFilterCategoryBits() & EntityCategory.SHIELD) == EntityCategory.SHIELD ||
         (f.getFilterCategoryBits() & EntityCategory.MELEE) == EntityCategory.MELEE ||
         (f.getFilterCategoryBits() & EntityCategory.BULLET) == EntityCategory.BULLET;
       return canPlace;
     });
 
-    if (canPlace) this.createCallback(this.parent.world, pos, body.getAngle());
-    else {
+    if (canPlace) {
+      const createdHealth = <Health>this.createCallback(this.parent.world, pos, body.getAngle()).getComponent(Health);
+      if (createdHealth != null) {
+        createdHealth.on('damage', () => {
+          if (createdHealth.isDead) {
+            this.currentUse--;
+            this.inventory.sendUpdate();
+          }
+        });
+      }
+
+      this.currentUse++;
+      this.inventory.sendUpdate();
+    } else {
       if (this.requiredStone > 0) {
         stoneComponent.amount += this.requiredStone;
       }

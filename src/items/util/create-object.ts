@@ -1,20 +1,20 @@
 import * as planck from 'planck-js';
 import { Vec2 } from 'planck-js';
-import { EntityCategory } from '../../../protocol';
-import { Entity } from '../../../entity';
-import { Health } from '../../health';
-import { Team } from '../../team';
-import { PhysicsBody } from '../../physics-body';
-import { Position } from '../../position';
-import { World } from '../../../systems/world';
+import { EntityCategory } from '../../protocol';
+import { Entity } from '../../entity';
+import { Health } from '../../components/health';
+import { Team } from '../../components/team';
+import { PhysicsBody } from '../../components/physics-body';
+import { Position } from '../../components/position';
+import { World } from '../../systems/world';
 import { Client } from 'elsa';
 import { MeleeWeapon } from '../melee-weapon';
 import { Item } from '../item';
-import { Observable } from '../../observable';
-import { Rotation } from '../../rotation';
-import { EntityId } from '../../../data/entity-id';
-import { Spike } from '../../spike';
-import { GameClient } from '../../../game-client';
+import { Observable } from '../../components/observable';
+import { Rotation } from '../../components/rotation';
+import { EntityId } from '../../data/entity-id';
+import { Spike } from '../../components/spike';
+import { GameClient } from '../../game-client';
 
 export const createWoodenBlock = (
   owner?: GameClient,
@@ -39,7 +39,7 @@ export const createWoodenBlock = (
         EntityCategory.NPC |
         EntityCategory.BULLET |
         EntityCategory.MELEE |
-        EntityCategory.SENSOR,
+        EntityCategory.SHIELD,
     });
 
     // Create entity

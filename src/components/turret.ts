@@ -30,12 +30,12 @@ export class Turret extends Component {
     const targetAngle = Math.atan2(pos.y - this.body.getWorldCenter().y, pos.x - this.body.getWorldCenter().x);
     this.body.setAngle(targetAngle);
 
-    if (this._fireTick < 0.5) {
+    if (this._fireTick < 0.2) {
       return;
     }
     this._fireTick = 0;
 
-    const projectile = new Projectile(6, 10, 8, 8);
+    const projectile = new Projectile(16, 10, 8, 8, 10, 20);
     projectile.setDir(this.body.getWorldVector(Vec2(1, 0)).clone());
     createProjectile(
       EntityId.TurretArrowBasic,

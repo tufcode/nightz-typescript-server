@@ -15,7 +15,7 @@ import { Movement } from '../components/movement';
 import { Inventory } from '../components/inventory';
 import { Equipment } from '../components/equipment';
 import { Minimap } from '../components/minimap';
-import { MeleeWeapon } from '../components/items/melee-weapon';
+import { MeleeWeapon } from '../items/melee-weapon';
 import { Observable } from '../components/observable';
 import { BehaviourTree } from '../ai/behaviour-tree';
 import { Sequence } from '../ai/nodes/sequence';
@@ -59,7 +59,7 @@ export const createWoodenTurret = (gameWorld: World, position: Vec2, angle: numb
       EntityCategory.NPC |
       EntityCategory.BULLET |
       EntityCategory.MELEE |
-      EntityCategory.SENSOR,
+      EntityCategory.SHIELD,
   });
   const turret = new Turret(1, 1, 1);
   // Create AI entity
@@ -68,7 +68,7 @@ export const createWoodenTurret = (gameWorld: World, position: Vec2, angle: numb
   entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
   entity.addComponent(new Rotation(body.getAngle()));
   entity.addComponent(new PhysicsBody(body));
-  const team = <Team>entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id));
+  const team = <Team>entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id * 2));
   entity.addComponent(new Health(40));
   entity.addComponent(turret);
 

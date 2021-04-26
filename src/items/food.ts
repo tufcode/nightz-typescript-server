@@ -1,13 +1,13 @@
-import { Health } from '../health';
-import { Animation } from '../animation';
+import { Health } from '../components/health';
+import { Animation } from '../components/animation';
 import { Item } from './item';
-import { FoodBag } from '../food-bag';
+import { FoodBag } from '../components/food-bag';
 
 export class Food extends Item {
   private foodComponent: FoodBag;
   public set isEating(value: boolean) {
     this._isEating = value;
-    if (value) this.animationComponent.setAnimation(3, 3);
+    if (value) this.animationComponent.setAnimation(1, 3);
     else this.animationComponent.setAnimation(0, 0);
   }
   private _isEating: boolean;
