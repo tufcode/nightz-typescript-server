@@ -3,10 +3,13 @@ import { ComponentIds } from '../protocol';
 import { Item } from '../items/item';
 import { Fixture } from 'planck-js';
 import { EntityId } from '../data/entity-id';
+import { Movement } from './movement';
 
 export class Equipment extends Component {
   private _hand: Item;
   private _hat: Item;
+  private _movementComponent: Movement;
+  private _handSpeedChange = 0;
 
   public get hat(): Item {
     return this._hat;
@@ -21,10 +24,19 @@ export class Equipment extends Component {
   }
 
   public set hand(value: Item) {
+    this._movementComponent.speed += this._handSpeedChange;
     this._hand?.onUnequip();
     value.onEquip();
     this._hand = value;
     this.isDirty = true;
+
+    this._handSpeedChange =
+      this._movementComponent.speed - this._movementComponent.speed * this._hand.movementSpeedMultiplier;
+    this._movementComponent.speed -= this._handSpeedChange;
+  }
+
+  public init(): void {
+    this._movementComponent = <Movement>this.entity.getComponent(Movement);
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {

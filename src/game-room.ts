@@ -190,10 +190,9 @@ export default class GameRoom extends Room {
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      const health = <Health>entity.addComponent(new Health(1));
+      const health = <Health>entity.addComponent(new Health(100));
       entity.addComponent(new Team(1));
       entity.addComponent(new Mine(false, true, false, false));
-      entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
 
       health.isImmune = true;
@@ -253,10 +252,9 @@ export default class GameRoom extends Room {
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      const health = <Health>entity.addComponent(new Health(1));
+      const health = <Health>entity.addComponent(new Health(100));
       entity.addComponent(new Team(1));
       entity.addComponent(new Mine(false, false, true, false));
-      entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
 
       health.isImmune = true;
@@ -316,11 +314,73 @@ export default class GameRoom extends Room {
       entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
       entity.addComponent(new Rotation(body.getAngle()));
       entity.addComponent(new PhysicsBody(body));
-      const health = <Health>entity.addComponent(new Health(1));
+      const health = <Health>entity.addComponent(new Health(100));
       entity.addComponent(new Team(1));
       entity.addComponent(new Mine(false, false, false, true));
-      entity.addComponent(new Minimap());
       entity.addComponent(new Observable());
+
+      health.isImmune = true;
+
+      return entity;
+    });
+    // Gold Mine spawner
+    spawner.addSpawn(3, 1, 1, 3, () => {
+      // Get unoccupied pos
+      let pos: Vec2 = null;
+      while (true) {
+        let canSpawn = true;
+        pos = Vec2(
+          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
+        );
+
+        const aabbLower = pos.clone().sub(Vec2(1, 1));
+        const aabbUpper = pos.clone().add(Vec2(1, 1));
+        const aabb = new AABB(aabbLower, aabbUpper);
+        this._gameWorld.getPhysicsWorld().queryAABB(aabb, (f) => {
+          canSpawn = !(
+            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE ||
+            (f.getFilterCategoryBits() & EntityCategory.RESOURCE) == EntityCategory.RESOURCE ||
+            (f.getFilterCategoryBits() & EntityCategory.BOUNDARY) == EntityCategory.BOUNDARY
+          );
+          return canSpawn;
+        });
+
+        if (canSpawn) break;
+      }
+      // Create
+      const angle = Math.random() * Math.PI * 2;
+      const body = this._gameWorld.getPhysicsWorld().createBody({
+        type: 'static',
+        position: Vec2(
+          randomRangeFloat(-(this._playableArea.x / 2), this._playableArea.x / 2),
+          randomRangeFloat(-(this._playableArea.y / 2), this._playableArea.y / 2),
+        ),
+        angle,
+      });
+      body.createFixture({
+        shape: Circle(1.25),
+        friction: 0,
+        filterCategoryBits: EntityCategory.RESOURCE,
+        filterMaskBits:
+          EntityCategory.BOUNDARY |
+          EntityCategory.STRUCTURE |
+          EntityCategory.RESOURCE |
+          EntityCategory.PLAYER |
+          EntityCategory.NPC |
+          EntityCategory.BULLET |
+          EntityCategory.MELEE,
+      });
+
+      const entity = new Entity(EntityId.GoldMine, this._gameWorld);
+      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
+      entity.addComponent(new Rotation(body.getAngle()));
+      entity.addComponent(new PhysicsBody(body));
+      const health = <Health>entity.addComponent(new Health(100));
+      entity.addComponent(new Team(1));
+      entity.addComponent(new Mine(true, false, false, false));
+      entity.addComponent(new Minimap());
+      entity.addComponent(new ObservableByAll());
 
       health.isImmune = true;
 

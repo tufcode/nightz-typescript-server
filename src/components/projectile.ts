@@ -76,12 +76,7 @@ export class Projectile extends Component {
 
       target.health.damage(amount, this.entity);
       // Apply knockback
-      console.log('knock', this.dir.clone().mul(knockbackForce));
-      target.body.applyLinearImpulse(
-        this.dir.clone().mul(knockbackForce), // todo shouldn't this be the opposite? why did it pull?
-        target.body.getWorldCenter(),
-        true,
-      );
+      target.body.applyLinearImpulse(this.dir.clone().mul(knockbackForce), target.body.getWorldCenter(), true);
       this.entity.destroy();
       return;
     }

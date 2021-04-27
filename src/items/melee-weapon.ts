@@ -10,6 +10,7 @@ import { randomRange } from '../utils';
 import { Animation } from '../components/animation';
 import { EntityId } from '../data/entity-id';
 import { NameTag } from '../components/name-tag';
+import { Shield } from './shield';
 
 export enum DamageSourceType {
   MELEE,
@@ -65,7 +66,7 @@ export class MeleeWeapon extends Item {
 
   public constructor(
     entityId: EntityId,
-    mass: number,
+    movementSpeedMultiplier: number,
     attackSpeed: number,
     damageToPlayers: number,
     damageToStructures: number,
@@ -75,8 +76,7 @@ export class MeleeWeapon extends Item {
     hitShape: Shape,
     animationId = 2,
   ) {
-    super(entityId, ItemType.Hand);
-    this.mass = mass;
+    super(entityId, ItemType.Hand, movementSpeedMultiplier);
     this.attackSpeed = attackSpeed;
     this.damageToPlayers = damageToPlayers;
     this.damageToStructures = damageToStructures;
@@ -132,36 +132,20 @@ export class MeleeWeapon extends Item {
     if (healthComponent != null) {
       // There is a health component, we can damage this entity.
       // Get damage
-      let damage = 0;
-      let knockback = 0;
-      switch (other.getFilterCategoryBits()) {
-        case EntityCategory.PLAYER:
-          damage = this.damageToPlayers;
-          knockback = this.knockbackForce;
-          break;
-        case EntityCategory.STRUCTURE:
-          damage = this.damageToStructures;
-          break;
-        case EntityCategory.RESOURCE:
-          damage = this.damageToResources;
-          break;
-        case EntityCategory.NPC:
-          damage = this.damageToZombies;
-          break;
-        default:
-          break;
+      const categoryInfo = this.getCategoryDamage(other);
+
+      if (categoryInfo[0] == 0) {
+        return;
       }
 
-      if (damage == 0) return;
-
       this.source.targets[entity.objectId] = {
-        amount: damage,
-        knockbackForce: knockback,
+        amount: categoryInfo[0],
+        knockbackForce: categoryInfo[1],
         source: this.source,
         health: healthComponent,
         body: other.getBody(),
         data: {},
-        effects: {},
+        effects: categoryInfo[2],
       };
     }
   }
@@ -195,14 +179,44 @@ export class MeleeWeapon extends Item {
       for (const key in this.source.targets) {
         const target = this.source.targets[key];
 
-        target.health.damage(target.amount, this.parent);
+        let amount = target.amount;
+        let knockbackForce = target.knockbackForce;
+        for (const key in target.effects) {
+          const effect = target.effects[key](amount, knockbackForce);
+          amount = effect.damage;
+          knockbackForce = effect.knockbackForce;
+        }
+
+        target.health.damage(amount, this.parent);
         // Apply knockback
         target.body.applyLinearImpulse(
-          Vec2.sub(target.body.getPosition(), this.parentBody.getPosition()).mul(target.knockbackForce),
+          Vec2.sub(target.body.getPosition(), this.parentBody.getPosition()).mul(knockbackForce),
           target.body.getWorldCenter(),
           true,
         );
       }
+    }
+  }
+
+  private getCategoryDamage(
+    fixture: Fixture,
+    effects: { [key: string]: (damage: number, knockbackForce: number) => DamageEffect } = {},
+  ): [number, number, { [key: string]: (damage: number, knockbackForce: number) => DamageEffect }] {
+    switch (fixture.getFilterCategoryBits()) {
+      case EntityCategory.PLAYER:
+        return [this.damageToPlayers, this.knockbackForce, effects];
+      case EntityCategory.STRUCTURE:
+        return [this.damageToStructures, 0, effects];
+      case EntityCategory.RESOURCE:
+        return [this.damageToResources, 0, effects];
+      case EntityCategory.NPC:
+        return [this.damageToZombies, this.knockbackForce, effects];
+      case EntityCategory.SHIELD:
+        const shield = <Shield>fixture.getUserData();
+        effects['SH' + shield.parent.objectId] = shield.effect;
+        return this.getCategoryDamage(fixture.getNext(), effects);
+      default:
+        return [0, 0, effects];
     }
   }
 }

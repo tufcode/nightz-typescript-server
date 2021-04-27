@@ -28,6 +28,7 @@ export class Item {
   public entityId: EntityId;
   public state: ItemState;
   public type: ItemType;
+  public movementSpeedMultiplier: number;
 
   public requiredWood = 0;
   public requiredStone = 0;
@@ -38,9 +39,17 @@ export class Item {
   protected _primary: boolean;
   private _inventory: Inventory;
 
-  public constructor(entityId: EntityId, type: ItemType, requiredStone = 0, requiredFood = 0, requiredWood = 0) {
+  public constructor(
+    entityId: EntityId,
+    type: ItemType,
+    movementSpeedMultiplier: number,
+    requiredStone = 0,
+    requiredFood = 0,
+    requiredWood = 0,
+  ) {
     this.entityId = entityId;
     this.type = type;
+    this.movementSpeedMultiplier = movementSpeedMultiplier;
     this.requiredWood = requiredWood;
     this.requiredStone = requiredStone;
     this.requiredFood = requiredFood;
@@ -57,20 +66,6 @@ export class Item {
 
   public setPrimary(b: boolean): void {
     this._primary = b;
-  }
-
-  public serializeForOwner(): Buffer {
-    const buf = Buffer.allocUnsafe(15);
-
-    buf.writeUInt8(Protocol.ItemInfo, 0);
-    buf.writeUInt32LE(this.id, 1);
-    buf.writeUInt16LE(this.requiredWood, 5);
-    buf.writeUInt16LE(this.requiredStone, 7);
-    buf.writeUInt16LE(this.requiredFood, 9);
-    buf.writeUInt16LE(this.currentUse, 11);
-    buf.writeUInt16LE(this.maximumUse, 13);
-
-    return buf;
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture) {}

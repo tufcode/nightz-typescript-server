@@ -27,13 +27,14 @@ export class BuildingBlock extends Item {
     entityId: EntityId,
     type: ItemType,
     radius: number,
+    movementSpeedMultiplier: number,
     requiredWood: number,
     requiredStone: number,
     requiredFood: number,
     maximumUse: number,
     createCallback: (world: World, position: Vec2, angle: number) => Entity,
   ) {
-    super(entityId, type, requiredStone, requiredFood, requiredWood);
+    super(entityId, type, movementSpeedMultiplier, requiredStone, requiredFood, requiredWood);
     this.radius = radius;
     this.createCallback = createCallback;
     this.maximumUse = maximumUse;

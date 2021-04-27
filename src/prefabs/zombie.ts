@@ -76,7 +76,7 @@ export const CreateZombie = (gameWorld: World, position: Vec2, angle: number): E
   const inventory = <Inventory>entity.addComponent(new Inventory());
   const equipment = <Equipment>entity.addComponent(new Equipment());
   entity.addComponent(new Minimap());
-  const item = new MeleeWeapon(EntityId.None, 0, 2.5, 4, 3.2, 0, 0, 0, Box(0.1, 0.4, Vec2(0.5 + 0.1, 0)), 5);
+  const item = new MeleeWeapon(EntityId.None, 1, 2.5, 4, 3.2, 0, 0, 0, Box(0.1, 0.4, Vec2(0.5 + 0.1, 0)), 5);
   inventory.addItem(item);
   equipment.hand = item;
 
