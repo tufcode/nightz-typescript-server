@@ -42,6 +42,7 @@ export class Spawner extends System {
           const amountToSpawn = Math.min(data.spawnAmount, data.maximum - data._spawned.length);
           for (let i = 0; i < amountToSpawn; i++) {
             const entity = data.spawnCallback();
+            if (entity == null) continue;
             data._spawned.push(entity);
             entity.once('destroy', () => {
               data._spawned.splice(data._spawned.indexOf(entity), 1);

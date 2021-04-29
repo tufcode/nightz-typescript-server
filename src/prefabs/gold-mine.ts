@@ -1,5 +1,5 @@
 import { Box, Circle, Vec2 } from 'planck-js';
-import { randomRange } from '../utils';
+import { randomRange, randomRangeFloat } from '../utils';
 import { EntityCategory } from '../protocol';
 import { Entity } from '../entity';
 import { EntityId } from '../data/entity-id';
@@ -16,18 +16,20 @@ import * as planck from 'planck-js';
 import { GameClient } from '../game-client';
 import { Miner } from '../components/miner';
 import { SpeedBoost } from '../components/speed-boost';
+import { Mine } from '../components/mine';
+import { Minimap } from '../components/minimap';
+import { ObservableByAll } from '../components/observable-by-all';
 
-export const createSpeedBoost = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
+export const createGoldMine = (gameWorld: World, position: Vec2, angle: number): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
     type: 'static',
-    position: position,
-    fixedRotation: true,
-    angle: angle,
+    position,
+    angle,
   });
   body.createFixture({
-    shape: planck.Circle(0.7875),
-    density: 0.0,
-    filterCategoryBits: EntityCategory.STRUCTURE,
+    shape: Circle(1.25),
+    friction: 0,
+    filterCategoryBits: EntityCategory.RESOURCE,
     filterMaskBits:
       EntityCategory.BOUNDARY |
       EntityCategory.STRUCTURE |
@@ -35,22 +37,20 @@ export const createSpeedBoost = (gameWorld: World, position: Vec2, angle: number
       EntityCategory.PLAYER |
       EntityCategory.NPC |
       EntityCategory.BULLET |
-      EntityCategory.MELEE |
-      EntityCategory.SHIELD,
-    isSensor: true,
+      EntityCategory.MELEE,
   });
-  // Create AI entity
-  const entity = new Entity(EntityId.SpeedBoost, gameWorld, owner);
-  entity.addComponent(new Animation());
+
+  const entity = new Entity(EntityId.GoldMine, gameWorld);
   entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
   entity.addComponent(new Rotation(body.getAngle()));
   entity.addComponent(new PhysicsBody(body));
-  entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id));
-  entity.addComponent(new Health(80));
-  entity.addComponent(new Regeneration(2));
-  entity.addComponent(new SpeedBoost());
+  const health = <Health>entity.addComponent(new Health(100));
+  entity.addComponent(new Team(1));
+  entity.addComponent(new Mine(true, false, false, false));
+  entity.addComponent(new Minimap());
+  entity.addComponent(new ObservableByAll());
 
-  entity.addComponent(new Observable());
+  health.isImmune = true;
 
   return entity;
 };

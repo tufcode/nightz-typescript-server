@@ -4,56 +4,35 @@ import * as http from 'http';
 import { Entity } from './entity';
 import { ClientProtocol, EntityCategory, getBytes, Protocol } from './protocol';
 import { GameClient } from './game-client';
-import { PhysicsBody } from './components/physics-body';
-import { NameTag } from './components/name-tag';
 import { Inventory, ItemType } from './components/inventory';
 import { World } from './systems/world';
-import { BuildingBlock } from './items/building-block';
-import { Position } from './components/position';
 import { Health } from './components/health';
-import { AABB, Box, Circle, Vec2 } from 'planck-js';
-import { Team } from './components/team';
-import { createWoodenBlock, createWoodenSpike } from './items/util/create-object';
-import { Tiers } from './data/tiers';
+import { AABB, Vec2 } from 'planck-js';
 import { Spawner, SpawnerData } from './systems/spawner';
-import { randomRange, randomRangeFloat } from './utils';
-import { Mine } from './components/mine';
-import { Observable } from './components/observable';
+import { randomRange } from './utils';
 import { Level } from './components/level';
-import { Rotation } from './components/rotation';
 import { performance } from 'perf_hooks';
 import { System } from './systems/system';
 import { VisibilitySystem } from './systems/visibility-system';
 import { Component } from './components/component';
-import { Movement } from './components/movement';
 import { Equipment } from './components/equipment';
-import { Gold } from './components/gold';
 import { SimpleSystems } from './systems/simple-systems';
 import { MovementSystem } from './systems/movement-system';
 import { LevelSystem } from './systems/level-system';
 import { HealthSystem } from './systems/health-system';
 import { AISystem } from './systems/ai-system';
-import { PlayerInput } from './components/player-input';
-import { Animation } from './components/animation';
 import { EntityId } from './data/entity-id';
-import { MeleeWeapon } from './items/melee-weapon';
-import { Food } from './items/food';
 import { ItemUpgrade } from './components/item-upgrade';
-import { LeaderboardEntry } from './components/leaderboard-entry';
 import { LeaderboardSystem } from './systems/leaderboard-system';
 import { ChatMessage } from './components/chat-message';
-import { Minimap } from './components/minimap';
-import { Zone } from './components/zone';
-import { ObservableByAll } from './components/observable-by-all';
-import { Regeneration } from './components/regeneration';
 import { CreateZombie } from './prefabs/zombie';
-import { Stone } from './components/stone';
-import { Wood } from './components/wood';
-import { createMinerWooden } from './prefabs/miner-wooden';
-import { FoodBag } from './components/food-bag';
 import { ChatSystem } from './systems/chat-system';
-import { createSpeedBoost } from './prefabs/speed-boost';
 import { createPlayer } from './prefabs/player';
+import { createGoldMine } from './prefabs/gold-mine';
+import { createFoodMine } from './prefabs/food-mine';
+import { createStoneMine } from './prefabs/stone-mine';
+import { createWoodMine } from './prefabs/wood-mine';
+import { findUnoccupiedPos } from './utils/find-unoccupied-position';
 
 const debug = debugModule('GameRoom');
 
@@ -111,287 +90,72 @@ export default class GameRoom extends Room {
 
     const spawner = <Spawner>this.systems[Spawner.name];
     // Zombie spawner
-    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 0, () => {
-      let pos: Vec2 = null;
-      while (true) {
-        let canSpawn = true;
-        pos = Vec2(
-          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
-        );
-
-        const aabbLower = pos.clone().sub(Vec2(1, 1));
-        const aabbUpper = pos.clone().add(Vec2(1, 1));
-        const aabb = new AABB(aabbLower, aabbUpper);
-        this._gameWorld.getPhysicsWorld().queryAABB(aabb, (f) => {
-          canSpawn = !(
-            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE ||
-            (f.getFilterCategoryBits() & EntityCategory.RESOURCE) == EntityCategory.RESOURCE ||
-            (f.getFilterCategoryBits() & EntityCategory.BOUNDARY) == EntityCategory.BOUNDARY
-          );
-          return canSpawn;
-        });
-
-        if (canSpawn) break;
-      }
+    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 20, () => {
+      // Get unoccupied pos
+      const pos = findUnoccupiedPos(this._gameWorld, 5, this._playableArea, [
+        EntityCategory.STRUCTURE,
+        EntityCategory.RESOURCE,
+        EntityCategory.BOUNDARY,
+      ]);
+      if (!pos) return null;
       return CreateZombie(this._gameWorld, pos, Math.random() * Math.PI * 2);
     });
 
     // Tree spawner
     spawner.addSpawn(this._playableArea.length() / 3, 2, 1, 500, () => {
       // Get unoccupied pos
-      let pos: Vec2 = null;
-      while (true) {
-        let canSpawn = true;
-        pos = Vec2(
-          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
-        );
-
-        const aabbLower = pos.clone().sub(Vec2(1, 1));
-        const aabbUpper = pos.clone().add(Vec2(1, 1));
-        const aabb = new AABB(aabbLower, aabbUpper);
-        this._gameWorld.getPhysicsWorld().queryAABB(aabb, (f) => {
-          canSpawn = !(
-            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE ||
-            (f.getFilterCategoryBits() & EntityCategory.RESOURCE) == EntityCategory.RESOURCE ||
-            (f.getFilterCategoryBits() & EntityCategory.BOUNDARY) == EntityCategory.BOUNDARY
-          );
-          return canSpawn;
-        });
-
-        if (canSpawn) break;
-      }
+      const pos = findUnoccupiedPos(this._gameWorld, 5, this._playableArea, [
+        EntityCategory.STRUCTURE,
+        EntityCategory.RESOURCE,
+        EntityCategory.BOUNDARY,
+      ]);
+      if (!pos) return null;
       // Create
       const angle = Math.random() * Math.PI * 2;
-      const body = this._gameWorld.getPhysicsWorld().createBody({
-        type: 'static',
-        position: Vec2(
-          randomRangeFloat(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRangeFloat(-(this._playableArea.y / 2), this._playableArea.y / 2),
-        ),
-        angle,
-      });
-      body.createFixture({
-        shape: Circle(1.25),
-        friction: 0,
-        filterCategoryBits: EntityCategory.RESOURCE,
-        filterMaskBits:
-          EntityCategory.BOUNDARY |
-          EntityCategory.STRUCTURE |
-          EntityCategory.RESOURCE |
-          EntityCategory.PLAYER |
-          EntityCategory.NPC |
-          EntityCategory.BULLET |
-          EntityCategory.MELEE,
-      });
-
-      const entity = new Entity(EntityId.WoodMine, this._gameWorld);
-      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
-      entity.addComponent(new Rotation(body.getAngle()));
-      entity.addComponent(new PhysicsBody(body));
-      const health = <Health>entity.addComponent(new Health(100));
-      entity.addComponent(new Team(1));
-      entity.addComponent(new Mine(false, true, false, false));
-      entity.addComponent(new Observable());
-
-      health.isImmune = true;
-
-      return entity;
+      return createWoodMine(this._gameWorld, pos, angle);
     });
     // Stone spawner
     spawner.addSpawn(this._playableArea.length() / 3, 2, 1, 500, () => {
       // Get unoccupied pos
-      let pos: Vec2 = null;
-      while (true) {
-        let canSpawn = true;
-        pos = Vec2(
-          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
-        );
-
-        const aabbLower = pos.clone().sub(Vec2(1, 1));
-        const aabbUpper = pos.clone().add(Vec2(1, 1));
-        const aabb = new AABB(aabbLower, aabbUpper);
-        this._gameWorld.getPhysicsWorld().queryAABB(aabb, (f) => {
-          canSpawn = !(
-            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE ||
-            (f.getFilterCategoryBits() & EntityCategory.RESOURCE) == EntityCategory.RESOURCE ||
-            (f.getFilterCategoryBits() & EntityCategory.BOUNDARY) == EntityCategory.BOUNDARY
-          );
-          return canSpawn;
-        });
-
-        if (canSpawn) break;
-      }
+      const pos = findUnoccupiedPos(this._gameWorld, 5, this._playableArea, [
+        EntityCategory.STRUCTURE,
+        EntityCategory.RESOURCE,
+        EntityCategory.BOUNDARY,
+      ]);
+      if (!pos) return null;
       // Create
       const angle = Math.random() * Math.PI * 2;
-      const body = this._gameWorld.getPhysicsWorld().createBody({
-        type: 'static',
-        position: Vec2(
-          randomRangeFloat(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRangeFloat(-(this._playableArea.y / 2), this._playableArea.y / 2),
-        ),
-        angle,
-      });
-      body.createFixture({
-        shape: Circle(1.25),
-        friction: 0,
-        filterCategoryBits: EntityCategory.RESOURCE,
-        filterMaskBits:
-          EntityCategory.BOUNDARY |
-          EntityCategory.STRUCTURE |
-          EntityCategory.RESOURCE |
-          EntityCategory.PLAYER |
-          EntityCategory.NPC |
-          EntityCategory.BULLET |
-          EntityCategory.MELEE,
-      });
-
-      const entity = new Entity(EntityId.StoneMine, this._gameWorld);
-      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
-      entity.addComponent(new Rotation(body.getAngle()));
-      entity.addComponent(new PhysicsBody(body));
-      const health = <Health>entity.addComponent(new Health(100));
-      entity.addComponent(new Team(1));
-      entity.addComponent(new Mine(false, false, true, false));
-      entity.addComponent(new Observable());
-
-      health.isImmune = true;
-
-      return entity;
+      return createStoneMine(this._gameWorld, pos, angle);
     });
     // FoodBush spawner
     spawner.addSpawn(this._playableArea.length() / 4, 2, 1, 500, () => {
       // Get unoccupied pos
-      let pos: Vec2 = null;
-      while (true) {
-        let canSpawn = true;
-        pos = Vec2(
-          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
-        );
-
-        const aabbLower = pos.clone().sub(Vec2(1, 1));
-        const aabbUpper = pos.clone().add(Vec2(1, 1));
-        const aabb = new AABB(aabbLower, aabbUpper);
-        this._gameWorld.getPhysicsWorld().queryAABB(aabb, (f) => {
-          canSpawn = !(
-            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE ||
-            (f.getFilterCategoryBits() & EntityCategory.RESOURCE) == EntityCategory.RESOURCE ||
-            (f.getFilterCategoryBits() & EntityCategory.BOUNDARY) == EntityCategory.BOUNDARY
-          );
-          return canSpawn;
-        });
-
-        if (canSpawn) break;
-      }
+      const pos = findUnoccupiedPos(this._gameWorld, 5, this._playableArea, [
+        EntityCategory.STRUCTURE,
+        EntityCategory.RESOURCE,
+        EntityCategory.BOUNDARY,
+      ]);
+      if (!pos) return null;
       // Create
       const angle = Math.random() * Math.PI * 2;
-      const body = this._gameWorld.getPhysicsWorld().createBody({
-        type: 'static',
-        position: Vec2(
-          randomRangeFloat(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRangeFloat(-(this._playableArea.y / 2), this._playableArea.y / 2),
-        ),
-        angle,
-      });
-      body.createFixture({
-        shape: Circle(0.95),
-        friction: 0,
-        filterCategoryBits: EntityCategory.RESOURCE,
-        filterMaskBits:
-          EntityCategory.BOUNDARY |
-          EntityCategory.STRUCTURE |
-          EntityCategory.RESOURCE |
-          EntityCategory.PLAYER |
-          EntityCategory.NPC |
-          EntityCategory.BULLET |
-          EntityCategory.MELEE,
-      });
-
-      const entity = new Entity(EntityId.FoodMine, this._gameWorld);
-      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
-      entity.addComponent(new Rotation(body.getAngle()));
-      entity.addComponent(new PhysicsBody(body));
-      const health = <Health>entity.addComponent(new Health(100));
-      entity.addComponent(new Team(1));
-      entity.addComponent(new Mine(false, false, false, true));
-      entity.addComponent(new Observable());
-
-      health.isImmune = true;
-
-      return entity;
+      return createFoodMine(this._gameWorld, pos, angle);
     });
     // Gold Mine spawner
     spawner.addSpawn(3, 1, 1, 3, () => {
       // Get unoccupied pos
-      let pos: Vec2 = null;
-      while (true) {
-        let canSpawn = true;
-        pos = Vec2(
-          randomRange(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRange(-(this._playableArea.y / 2), this._playableArea.y / 2),
-        );
-
-        const aabbLower = pos.clone().sub(Vec2(1, 1));
-        const aabbUpper = pos.clone().add(Vec2(1, 1));
-        const aabb = new AABB(aabbLower, aabbUpper);
-        this._gameWorld.getPhysicsWorld().queryAABB(aabb, (f) => {
-          canSpawn = !(
-            (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE ||
-            (f.getFilterCategoryBits() & EntityCategory.RESOURCE) == EntityCategory.RESOURCE ||
-            (f.getFilterCategoryBits() & EntityCategory.BOUNDARY) == EntityCategory.BOUNDARY
-          );
-          return canSpawn;
-        });
-
-        if (canSpawn) break;
-      }
+      const pos = findUnoccupiedPos(this._gameWorld, 5, this._playableArea, [
+        EntityCategory.STRUCTURE,
+        EntityCategory.RESOURCE,
+        EntityCategory.BOUNDARY,
+      ]);
+      if (!pos) return null;
       // Create
       const angle = Math.random() * Math.PI * 2;
-      const body = this._gameWorld.getPhysicsWorld().createBody({
-        type: 'static',
-        position: Vec2(
-          randomRangeFloat(-(this._playableArea.x / 2), this._playableArea.x / 2),
-          randomRangeFloat(-(this._playableArea.y / 2), this._playableArea.y / 2),
-        ),
-        angle,
-      });
-      body.createFixture({
-        shape: Circle(1.25),
-        friction: 0,
-        filterCategoryBits: EntityCategory.RESOURCE,
-        filterMaskBits:
-          EntityCategory.BOUNDARY |
-          EntityCategory.STRUCTURE |
-          EntityCategory.RESOURCE |
-          EntityCategory.PLAYER |
-          EntityCategory.NPC |
-          EntityCategory.BULLET |
-          EntityCategory.MELEE,
-      });
-
-      const entity = new Entity(EntityId.GoldMine, this._gameWorld);
-      entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
-      entity.addComponent(new Rotation(body.getAngle()));
-      entity.addComponent(new PhysicsBody(body));
-      const health = <Health>entity.addComponent(new Health(100));
-      entity.addComponent(new Team(1));
-      entity.addComponent(new Mine(true, false, false, false));
-      entity.addComponent(new Minimap());
-      entity.addComponent(new ObservableByAll());
-
-      health.isImmune = true;
-
-      return entity;
+      return createGoldMine(this._gameWorld, pos, angle);
     });
 
     // Add timers
-    //this.addSimulationInterval(this.systems[World.name].tick.bind(this.systems[World.name]), 1000 / 30);
-    //this.addSimulationInterval(this.systems[Visibility.name].tick.bind(this.systems[Visibility.name]), 1000 / 10);
     this.addSimulationInterval(this.update.bind(this), 1000 / 30);
-    //this.addSimulationInterval(this.gameWorld.step.bind(this.gameWorld), 1000 / 10);
   }
 
   public update(deltaTime: number): void {

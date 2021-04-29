@@ -154,7 +154,7 @@ export class MeleeWeapon extends Item {
     const myData = me.getUserData();
     if (!(myData instanceof DamageSource) || (<DamageSource>myData).entity.objectId != this.parent.objectId) return;
     const entity = <Entity>other.getBody().getUserData();
-    delete this.source.targets[entity.objectId];
+    delete this.source.targets[entity.objectId]; // todo player takes no damage after shield exit
   }
 
   public setPrimary(b: boolean) {

@@ -28,7 +28,7 @@ import { LeaderboardEntry } from '../components/leaderboard-entry';
 import { FoodBag } from '../components/food-bag';
 import { Food } from '../items/food';
 import { BuildingBlock } from '../items/building-block';
-import { createWoodenBlock, createWoodenSpike } from '../items/util/create-object';
+import { createWoodenBlock, createWoodenSpike } from '../utils/create-object';
 import { createMinerWooden } from './miner-wooden';
 import { ItemUpgrade } from '../components/item-upgrade';
 import { createWoodenTurret } from './turret-wooden';
@@ -184,7 +184,7 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
     )
     .addUpgrade(
       EntityId.AxeGreat,
-      () => new MeleeWeapon(EntityId.AxeGreat, 0.9, 2, 16, 24, 16, 24, 70, Box(0.625, 0.875, Vec2(1.25, -0.1)), 1),
+      () => new MeleeWeapon(EntityId.AxeGreat, 0.9, 2, 16, 24, 16, 24, 70, Box(0.625, 0.875, Vec2(1.125, -0.1)), 1),
       4,
     );
 
@@ -192,18 +192,29 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   weaponRoot
     .addUpgrade(
       EntityId.SpearBasic,
-      () => new MeleeWeapon(EntityId.SpearBasic, 0.98, 1.25, 16, 3, 1.6, 12, 60, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
+      () => new MeleeWeapon(EntityId.SpearBasic, 0.98, 1.25, 16, 3, 1.6, 12, 60, Box(0.875, 0.5, Vec2(1.375, 0)), 3),
       2,
     )
     .addUpgrade(
       EntityId.SpearNormal,
-      () => new MeleeWeapon(EntityId.SpearNormal, 0.98, 1.5, 24, 6, 3, 18, 60, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
+      () => new MeleeWeapon(EntityId.SpearNormal, 0.98, 1.5, 24, 6, 3, 18, 60, Box(0.875, 0.5, Vec2(1.375, 0)), 3),
       3,
     )
     .addUpgrade(
       EntityId.SpearGreat,
       () =>
-        new MeleeWeapon(EntityId.SpearGreat, 0.98, 1.75, 32, 11, 5.71428571, 31, 60, Box(0.875, 0.5, Vec2(1.4, 0)), 3),
+        new MeleeWeapon(
+          EntityId.SpearGreat,
+          0.98,
+          1.75,
+          32,
+          11,
+          5.71428571,
+          31,
+          60,
+          Box(0.875, 0.5, Vec2(1.375, 0)),
+          3,
+        ),
       4,
     );
 
