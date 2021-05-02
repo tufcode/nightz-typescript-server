@@ -1,15 +1,13 @@
 import { Item } from './item';
 import { Entity } from '../entity';
-import { Body, Box, Fixture, Shape, Vec2 } from 'planck-js';
+import { Body, Fixture, Shape, Vec2 } from 'planck-js';
 import { EntityCategory } from '../protocol';
 import { PhysicsBody } from '../components/physics-body';
 import { ItemType } from '../components/inventory';
 import { Team } from '../components/team';
 import { Health } from '../components/health';
-import { randomRange } from '../utils';
 import { Animation } from '../components/animation';
 import { EntityId } from '../data/entity-id';
-import { NameTag } from '../components/name-tag';
 import { Shield } from './shield';
 
 export enum DamageSourceType {
@@ -28,10 +26,9 @@ export interface DamageTarget {
   source: DamageSource;
   body: Body;
   health: Health;
+  team: Team;
   amount: number;
   knockbackForce: number;
-  data: { [key: string]: any };
-  effects: { [key: string]: (damage: number, knockbackForce: number) => DamageEffect };
 }
 
 export class DamageSource {
@@ -119,6 +116,7 @@ export class MeleeWeapon extends Item {
   }
 
   public onTriggerEnter(me: Fixture, other: Fixture): void {
+    const otherCategory = <EntityCategory>other.getFilterCategoryBits();
     const myData = me.getUserData();
     if (!(myData instanceof DamageSource) || (<DamageSource>myData).entity.objectId != this.parent.objectId) return;
     if (
@@ -134,7 +132,12 @@ export class MeleeWeapon extends Item {
     // Get teams
     const teamComponent = <Team>entity.getComponent(Team);
     // Compare teams
-    if (teamComponent == null || teamComponent.id == this.myTeam.id) return;
+    if (teamComponent == null) return;
+    if (teamComponent.id == this.myTeam.id) {
+      if (otherCategory != EntityCategory.STRUCTURE) {
+        return;
+      }
+    }
     // Get entity health component
     const healthComponent = <Health>entity.getComponent(Health);
 
@@ -145,15 +148,12 @@ export class MeleeWeapon extends Item {
       if (other.getFilterCategoryBits() == EntityCategory.SHIELD) {
         const shield = <Shield>other.getUserData();
         if (this.source.targets[entity.objectId]) {
-          console.log('applyshi');
           this.source.targets[entity.objectId].shieldEffect = shield.effect;
         } else {
-          console.log('addshi');
           this.source.targets[entity.objectId] = {
+            team: undefined,
             amount: 0,
             body: undefined,
-            data: {},
-            effects: {},
             health: undefined,
             knockbackForce: 0,
             source: undefined,
@@ -186,8 +186,7 @@ export class MeleeWeapon extends Item {
           source: this.source,
           health: healthComponent,
           body: other.getBody(),
-          data: {},
-          effects: {},
+          team: teamComponent,
         };
       }
     }
@@ -242,8 +241,12 @@ export class MeleeWeapon extends Item {
 
         let damage = target.amount;
         let knockbackForce = target.knockbackForce;
-        console.log('shield?', !!target.shieldEffect);
-        if (target.shieldEffect) ({ damage, knockbackForce } = target.shieldEffect(damage, knockbackForce));
+        if (
+          target.team.id == this.myTeam.id &&
+          target.body.getFixtureList().getFilterCategoryBits() == EntityCategory.STRUCTURE
+        ) {
+          damage = target.health.maxHealth / 5;
+        } else if (target.shieldEffect) ({ damage, knockbackForce } = target.shieldEffect(damage, knockbackForce));
 
         target.health.damage(damage, this.parent);
         // Apply knockback
