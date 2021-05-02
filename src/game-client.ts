@@ -28,6 +28,7 @@ export class GameClient {
 
   private _queuedMessages: [string, Buffer][] = [];
   public respawnRewardExp: number;
+  public nickname = 'Player';
 
   public constructor(client: Client) {
     this.client = client;

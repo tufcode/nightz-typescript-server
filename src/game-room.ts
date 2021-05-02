@@ -285,6 +285,18 @@ export default class GameRoom extends Room {
         (<Level>gameClient.controlling.getComponent(Level)).points = gameClient.respawnRewardExp;
         break;
       }
+      case ClientProtocol.SetNickname: {
+        if (gameClient.controlling != null) return;
+
+        let t = '';
+        const len = message.readUInt16LE(1);
+        for (let i = 0; i < len; i++) {
+          t += String.fromCharCode(message.readUInt16LE(3 + i * 2));
+        }
+        gameClient.nickname = t;
+        this.spawnPlayer(gameClient);
+        break;
+      }
       default:
         console.log('unknown packet:', packetId);
         break;
@@ -302,8 +314,6 @@ export default class GameRoom extends Room {
     client.setUserData(gameClient);
 
     gameClient.queueMessage('size', getBytes[Protocol.WorldSize](this._playableArea));
-
-    this.spawnPlayer(gameClient);
   }
 
   public onLeave(client: Client, closeReason: WSCloseCode): void {

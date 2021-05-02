@@ -76,8 +76,7 @@ export const createZombieBehaviourTree = (
   findSequence.addNode(
     new GetObjectsInRadius(tree, gameWorld.getPhysicsWorld(), 10, (f) => {
       return (
-        (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
-        (f.getFilterCategoryBits() & EntityCategory.STRUCTURE) == EntityCategory.STRUCTURE
+        f.getFilterCategoryBits() == EntityCategory.PLAYER || f.getFilterCategoryBits() == EntityCategory.STRUCTURE
       );
     }),
   );

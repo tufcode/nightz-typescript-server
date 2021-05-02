@@ -34,12 +34,7 @@ export const createTurretBehaviourTree = (body: Body, gameWorld: World, turret: 
   findSequence.addNode(new GetPosition(tree, body));
   findSequence.addNode(
     new GetObjectsInRadius(tree, gameWorld.getPhysicsWorld(), 10, (f) => {
-      if (
-        !(
-          (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
-          (f.getFilterCategoryBits() & EntityCategory.NPC) == EntityCategory.NPC
-        )
-      )
+      if (f.getFilterCategoryBits() != EntityCategory.PLAYER && f.getFilterCategoryBits() != EntityCategory.NPC)
         return false;
 
       const otherTeam = <Team>(<Entity>f.getBody().getUserData()).getComponent(Team);

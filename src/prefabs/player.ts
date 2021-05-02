@@ -70,7 +70,7 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   entity.addComponent(new Health(10000));
   entity.addComponent(new Regeneration(0.25));
   entity.addComponent(new Movement(1000));
-  (<NameTag>entity.addComponent(new NameTag())).setName('Player ' + owner.client.id);
+  (<NameTag>entity.addComponent(new NameTag())).setName(owner.nickname);
   entity.addComponent(new ChatMessage());
   entity.addComponent(new LeaderboardEntry(owner.client.id));
   entity.addComponent(new Minimap());

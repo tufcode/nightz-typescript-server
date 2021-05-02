@@ -24,6 +24,7 @@ export interface DamageEffect {
 }
 
 export interface DamageTarget {
+  shieldEffect?: (damage: number, knockbackForce: number) => DamageEffect;
   source: DamageSource;
   body: Body;
   health: Health;
@@ -120,6 +121,14 @@ export class MeleeWeapon extends Item {
   public onTriggerEnter(me: Fixture, other: Fixture): void {
     const myData = me.getUserData();
     if (!(myData instanceof DamageSource) || (<DamageSource>myData).entity.objectId != this.parent.objectId) return;
+    if (
+      other.getFilterCategoryBits() != EntityCategory.PLAYER &&
+      other.getFilterCategoryBits() != EntityCategory.STRUCTURE &&
+      other.getFilterCategoryBits() != EntityCategory.NPC &&
+      other.getFilterCategoryBits() != EntityCategory.RESOURCE &&
+      other.getFilterCategoryBits() != EntityCategory.SHIELD
+    )
+      return;
 
     const entity = <Entity>other.getBody().getUserData();
     // Get teams
@@ -131,6 +140,29 @@ export class MeleeWeapon extends Item {
 
     if (healthComponent != null) {
       // There is a health component, we can damage this entity.
+
+      // Add shieldEffect if it is a shield
+      if (other.getFilterCategoryBits() == EntityCategory.SHIELD) {
+        const shield = <Shield>other.getUserData();
+        if (this.source.targets[entity.objectId]) {
+          console.log('applyshi');
+          this.source.targets[entity.objectId].shieldEffect = shield.effect;
+        } else {
+          console.log('addshi');
+          this.source.targets[entity.objectId] = {
+            amount: 0,
+            body: undefined,
+            data: {},
+            effects: {},
+            health: undefined,
+            knockbackForce: 0,
+            source: undefined,
+            shieldEffect: shield.effect,
+          };
+        }
+        return;
+      }
+
       // Get damage
       const categoryInfo = this.getCategoryDamage(other);
 
@@ -138,23 +170,51 @@ export class MeleeWeapon extends Item {
         return;
       }
 
-      this.source.targets[entity.objectId] = {
-        amount: categoryInfo[0],
-        knockbackForce: categoryInfo[1],
-        source: this.source,
-        health: healthComponent,
-        body: other.getBody(),
-        data: {},
-        effects: categoryInfo[2],
-      };
+      // Add target
+      if (this.source.targets[entity.objectId]) {
+        // A shield effect(?) already exists, overwrite other data
+        this.source.targets[entity.objectId].amount = categoryInfo[0];
+        this.source.targets[entity.objectId].knockbackForce = categoryInfo[1];
+        this.source.targets[entity.objectId].source = this.source;
+        this.source.targets[entity.objectId].health = healthComponent;
+        this.source.targets[entity.objectId].body = other.getBody();
+      } else {
+        // No shield effect here.
+        this.source.targets[entity.objectId] = {
+          amount: categoryInfo[0],
+          knockbackForce: categoryInfo[1],
+          source: this.source,
+          health: healthComponent,
+          body: other.getBody(),
+          data: {},
+          effects: {},
+        };
+      }
     }
   }
 
   public onTriggerExit(me: Fixture, other: Fixture): void {
     const myData = me.getUserData();
     if (!(myData instanceof DamageSource) || (<DamageSource>myData).entity.objectId != this.parent.objectId) return;
+    if (
+      other.getFilterCategoryBits() != EntityCategory.PLAYER &&
+      other.getFilterCategoryBits() != EntityCategory.STRUCTURE &&
+      other.getFilterCategoryBits() != EntityCategory.NPC &&
+      other.getFilterCategoryBits() != EntityCategory.RESOURCE &&
+      other.getFilterCategoryBits() != EntityCategory.SHIELD
+    )
+      return;
+
     const entity = <Entity>other.getBody().getUserData();
-    delete this.source.targets[entity.objectId]; // todo player takes no damage after shield exit
+    if (!this.source.targets[entity.objectId]) return;
+
+    if (other.getFilterCategoryBits() == EntityCategory.SHIELD) {
+      this.source.targets[entity.objectId].shieldEffect = undefined;
+      // Return only if health is not null. We never collided with player so we can delete the target only if health is null.
+      if (this.source.targets[entity.objectId].health != null) return;
+    }
+
+    delete this.source.targets[entity.objectId];
   }
 
   public setPrimary(b: boolean) {
@@ -178,16 +238,14 @@ export class MeleeWeapon extends Item {
       this._damageTick = 0;
       for (const key in this.source.targets) {
         const target = this.source.targets[key];
+        if (target.amount == 0) continue;
 
-        let amount = target.amount;
+        let damage = target.amount;
         let knockbackForce = target.knockbackForce;
-        for (const key in target.effects) {
-          const effect = target.effects[key](amount, knockbackForce);
-          amount = effect.damage;
-          knockbackForce = effect.knockbackForce;
-        }
+        console.log('shield?', !!target.shieldEffect);
+        if (target.shieldEffect) ({ damage, knockbackForce } = target.shieldEffect(damage, knockbackForce));
 
-        target.health.damage(amount, this.parent);
+        target.health.damage(damage, this.parent);
         // Apply knockback
         target.body.applyLinearImpulse(
           Vec2.sub(target.body.getPosition(), this.parentBody.getPosition()).mul(knockbackForce),
@@ -198,25 +256,18 @@ export class MeleeWeapon extends Item {
     }
   }
 
-  private getCategoryDamage(
-    fixture: Fixture,
-    effects: { [key: string]: (damage: number, knockbackForce: number) => DamageEffect } = {},
-  ): [number, number, { [key: string]: (damage: number, knockbackForce: number) => DamageEffect }] {
+  private getCategoryDamage(fixture: Fixture): [number, number] {
     switch (fixture.getFilterCategoryBits()) {
       case EntityCategory.PLAYER:
-        return [this.damageToPlayers, this.knockbackForce, effects];
+        return [this.damageToPlayers, this.knockbackForce];
       case EntityCategory.STRUCTURE:
-        return [this.damageToStructures, 0, effects];
+        return [this.damageToStructures, 0];
       case EntityCategory.RESOURCE:
-        return [this.damageToResources, 0, effects];
+        return [this.damageToResources, 0];
       case EntityCategory.NPC:
-        return [this.damageToZombies, this.knockbackForce, effects];
-      case EntityCategory.SHIELD:
-        const shield = <Shield>fixture.getUserData();
-        effects['SH' + shield.parent.objectId] = shield.effect;
-        return this.getCategoryDamage(fixture.getNext(), effects);
+        return [this.damageToZombies, this.knockbackForce];
       default:
-        return [0, 0, effects];
+        return [0, 0];
     }
   }
 }

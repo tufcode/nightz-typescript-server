@@ -40,6 +40,7 @@ export enum ClientProtocol {
   ChatMessage = 4,
   Respawn = 5,
   RespawnWithReward = 6,
+  SetNickname = 7,
 }
 
 export enum ComponentIds {
