@@ -70,6 +70,8 @@ export class ItemUpgrade extends Component {
         this.entity.owner.queueMessage('upgrade', this.serialize());
       }
     });
+    if (this.entity.owner == null) return;
+    this.entity.owner.queueMessage('upgrade', this.serialize());
   }
 
   public resetUpgradeTree(id: string): void {
@@ -88,9 +90,9 @@ export class ItemUpgrade extends Component {
   public addDefaultUpgrade(
     id: string,
     pointsId: string,
-    upgradedItemId: EntityId,
-    createCallback: () => Item,
-    minimumLevel: number,
+    upgradedItemId?: EntityId,
+    createCallback?: () => Item,
+    minimumLevel?: number,
   ): Upgrade {
     const upgrade = new Upgrade();
     upgrade._upgradeItemId = upgradedItemId;
@@ -101,6 +103,8 @@ export class ItemUpgrade extends Component {
       pointsId,
       currentUpgrade: upgrade,
     };
+
+    if (upgradedItemId == null) return upgrade; // Default upgrade may be null
 
     const item = createCallback();
     if (this._upgradeTree[id].currentItem) this._inventoryComponent.removeItem(this._upgradeTree[id].currentItem);

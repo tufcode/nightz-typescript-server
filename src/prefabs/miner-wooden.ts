@@ -36,6 +36,7 @@ import { World } from '../systems/world';
 import * as planck from 'planck-js';
 import { GameClient } from '../game-client';
 import { Miner } from '../components/miner';
+import { DecayOnOwnerLeave } from '../components/decay-on-owner-leave';
 
 export const createMinerWooden = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
@@ -68,6 +69,7 @@ export const createMinerWooden = (gameWorld: World, position: Vec2, angle: numbe
   entity.addComponent(new Health(80));
   entity.addComponent(new Minimap());
   entity.addComponent(new Miner(1, 1));
+  entity.addComponent(new DecayOnOwnerLeave());
 
   entity.addComponent(new Observable());
 

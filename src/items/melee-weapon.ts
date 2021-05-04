@@ -16,19 +16,20 @@ export enum DamageSourceType {
   TOUCH,
 }
 
-export interface DamageEffect {
+export interface DamageData {
   damage: number;
   knockbackForce: number;
 }
 
 export interface DamageTarget {
-  shieldEffect?: (damage: number, knockbackForce: number) => DamageEffect;
   source: DamageSource;
   body: Body;
   health: Health;
   team: Team;
   amount: number;
   knockbackForce: number;
+  shieldDamageMultiplier: number;
+  shieldKnockbackMultiplier: number;
 }
 
 export class DamageSource {
@@ -131,13 +132,8 @@ export class MeleeWeapon extends Item {
     const entity = <Entity>other.getBody().getUserData();
     // Get teams
     const teamComponent = <Team>entity.getComponent(Team);
-    // Compare teams
     if (teamComponent == null) return;
-    if (teamComponent.id == this.myTeam.id) {
-      if (otherCategory != EntityCategory.STRUCTURE) {
-        return;
-      }
-    }
+
     // Get entity health component
     const healthComponent = <Health>entity.getComponent(Health);
 
@@ -148,16 +144,18 @@ export class MeleeWeapon extends Item {
       if (other.getFilterCategoryBits() == EntityCategory.SHIELD) {
         const shield = <Shield>other.getUserData();
         if (this.source.targets[entity.objectId]) {
-          this.source.targets[entity.objectId].shieldEffect = shield.effect;
+          this.source.targets[entity.objectId].shieldDamageMultiplier = shield.damageMultiplier;
+          this.source.targets[entity.objectId].shieldKnockbackMultiplier = shield.knockbackMultiplier;
         } else {
           this.source.targets[entity.objectId] = {
+            shieldDamageMultiplier: shield.damageMultiplier,
+            shieldKnockbackMultiplier: shield.knockbackMultiplier,
             team: undefined,
             amount: 0,
             body: undefined,
             health: undefined,
             knockbackForce: 0,
             source: undefined,
-            shieldEffect: shield.effect,
           };
         }
         return;
@@ -181,6 +179,8 @@ export class MeleeWeapon extends Item {
       } else {
         // No shield effect here.
         this.source.targets[entity.objectId] = {
+          shieldDamageMultiplier: 1,
+          shieldKnockbackMultiplier: 1,
           amount: categoryInfo[0],
           knockbackForce: categoryInfo[1],
           source: this.source,
@@ -208,7 +208,8 @@ export class MeleeWeapon extends Item {
     if (!this.source.targets[entity.objectId]) return;
 
     if (other.getFilterCategoryBits() == EntityCategory.SHIELD) {
-      this.source.targets[entity.objectId].shieldEffect = undefined;
+      this.source.targets[entity.objectId].shieldDamageMultiplier = 1;
+      this.source.targets[entity.objectId].shieldKnockbackMultiplier = 1;
       // Return only if health is not null. We never collided with player so we can delete the target only if health is null.
       if (this.source.targets[entity.objectId].health != null) return;
     }
@@ -239,14 +240,15 @@ export class MeleeWeapon extends Item {
         const target = this.source.targets[key];
         if (target.amount == 0) continue;
 
-        let damage = target.amount;
-        let knockbackForce = target.knockbackForce;
+        let damage = target.amount * target.shieldDamageMultiplier;
+        let knockbackForce = target.knockbackForce * target.shieldKnockbackMultiplier;
         if (
           target.team.id == this.myTeam.id &&
           target.body.getFixtureList().getFilterCategoryBits() == EntityCategory.STRUCTURE
         ) {
           damage = target.health.maxHealth / 5;
-        } else if (target.shieldEffect) ({ damage, knockbackForce } = target.shieldEffect(damage, knockbackForce));
+          knockbackForce = 0;
+        }
 
         target.health.damage(damage, this.parent);
         // Apply knockback

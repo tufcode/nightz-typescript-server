@@ -28,12 +28,13 @@ import { LeaderboardEntry } from '../components/leaderboard-entry';
 import { FoodBag } from '../components/food-bag';
 import { Food } from '../items/food';
 import { BuildingBlock } from '../items/building-block';
-import { createWoodenBlock, createWoodenSpike } from '../utils/create-object';
 import { createMinerWooden } from './miner-wooden';
 import { ItemUpgrade } from '../components/item-upgrade';
-import { createWoodenTurret } from './turret-wooden';
+import { createTurretWooden } from './turret-wooden';
 import { Shield } from '../items/shield';
 import { Bow } from '../items/bow';
+import { createWallWooden } from './wall-wooden';
+import { createSpikeWooden } from './spike-wooden';
 
 export const createPlayer = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
@@ -87,7 +88,6 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   const inventory = <Inventory>entity.addComponent(new Inventory());
 
   //inventory.addItem(new Shield(EntityId.ShieldBasic, ItemType.Hand, 0.8, 0, 0, 0));
-  inventory.addItem(new Bow(EntityId.BowBasic, ItemType.Hand, 0.9, 0, 0, 0));
   inventory.addItem(new Food(EntityId.Food, ItemType.Hand, 1, 1, 0, 0));
   inventory.addItem(
     new BuildingBlock(
@@ -99,7 +99,9 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
       3,
       0,
       8,
-      createWoodenBlock(owner, new Team(100 + owner.client.id)),
+      (world: World, position: Vec2, angle: number) => {
+        return createWallWooden(world, position, angle, owner);
+      },
     ),
   );
   inventory.addItem(
@@ -112,7 +114,9 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
       10,
       3,
       8,
-      createWoodenSpike(owner, new Team(100 + owner.client.id)),
+      (world: World, position: Vec2, angle: number) => {
+        return createSpikeWooden(world, position, angle, owner);
+      },
     ),
   );
   inventory.addItem(
@@ -141,7 +145,7 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
       0,
       8,
       (world: World, position: Vec2, angle: number) => {
-        return createWoodenTurret(world, position, angle, owner);
+        return createTurretWooden(world, position, angle, owner);
       },
     ),
   );
@@ -149,8 +153,9 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   const defaultHand = new MeleeWeapon(EntityId.Stick, 1, 1.5, 2, 2, 1, 4, 20, Box(0.4, 0.5, Vec2(0.9, 0)), 2);
 
   const upgradeComponent = <ItemUpgrade>entity.addComponent(new ItemUpgrade());
-  upgradeComponent.addPointsWhen('weapon', [2, 3, 4, 5, 6]);
 
+  //region Weapon Upgrade Tree
+  upgradeComponent.addPointsWhen('weapon', [2, 7, 9]);
   const weaponRoot = upgradeComponent.addDefaultUpgrade('weapon', 'weapon', defaultHand.entityId, () => defaultHand, 1);
 
   // Sword upgrade tree
@@ -237,6 +242,286 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
       () => new MeleeWeapon(EntityId.DaggerGreat, 1, 3.5, 12, 8.75, 4, 16.5, 15, Box(0.55, 0.5, Vec2(1.05, 0)), 3),
       4,
     );
+  //endregion
+  //region Secondary Upgrade Tree
+  upgradeComponent.addPointsWhen('secondary', [5, 11, 14]);
+  const secondaryTree = upgradeComponent.addDefaultUpgrade('secondary', 'secondary');
+  secondaryTree
+    .addUpgrade(EntityId.ShieldBasic, () => new Shield(EntityId.ShieldBasic, ItemType.Hand, 0.8, 0, 0, 0, 0.6, 0.5), 5)
+    .addUpgrade(
+      EntityId.ShieldNormal,
+      () => new Shield(EntityId.ShieldNormal, ItemType.Hand, 0.8, 0, 0, 0, 0.4, 0.5),
+      11,
+    )
+    .addUpgrade(
+      EntityId.ShieldGreat,
+      () => new Shield(EntityId.ShieldGreat, ItemType.Hand, 0.8, 0, 0, 0, 0.2, 0.5),
+      14,
+    );
+  secondaryTree
+    .addUpgrade(
+      EntityId.BowBasic,
+      () => new Bow(EntityId.BowBasic, ItemType.Hand, 0.9, 0, 0, 2, 1, 10, 5, 12, 400, 12),
+      5,
+    )
+    .addUpgrade(
+      EntityId.BowNormal,
+      () => new Bow(EntityId.BowNormal, ItemType.Hand, 0.9, 2, 0, 5, 1.25, 20, 10, 24, 500, 12),
+      11,
+    )
+    .addUpgrade(
+      EntityId.BowGreat,
+      () => new Bow(EntityId.BowGreat, ItemType.Hand, 0.9, 4, 0, 8, 1.5, 30, 20, 38, 600, 12),
+      14,
+    );
+  //endregion
+  //region Structure Upgrade Tree
+  upgradeComponent.addPointsWhen('structure', [3, 4, 6, 8, 10, 12, 13, 15, 16, 17, 18, 19]);
+  //region Wall
+  const wallUpgradeTree = upgradeComponent
+    .addDefaultUpgrade(
+      'structure',
+      'structure',
+      EntityId.WallWooden,
+      () =>
+        new BuildingBlock(
+          EntityId.WallWooden,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          10,
+          5,
+          0,
+          32,
+          (world: World, position: Vec2, angle: number) => {
+            return createWallWooden(world, position, angle, owner);
+          },
+        ),
+      1,
+    )
+    .addUpgrade(
+      EntityId.WallStone,
+      () =>
+        new BuildingBlock(
+          EntityId.WallStone,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          15,
+          10,
+          0,
+          32,
+          (world: World, position: Vec2, angle: number) => {
+            return createWallWooden(world, position, angle, owner);
+          },
+        ),
+      3,
+    )
+    .addUpgrade(
+      EntityId.WallReinforced,
+      () =>
+        new BuildingBlock(
+          EntityId.WallReinforced,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          50,
+          30,
+          0,
+          32,
+          (world: World, position: Vec2, angle: number) => {
+            return createWallWooden(world, position, angle, owner);
+          },
+        ),
+      10,
+    );
+  //endregion
+  //region Spike
+  const spikeUpgradeTree = upgradeComponent.addDefaultUpgrade('structure', 'structure');
+  spikeUpgradeTree
+    .addUpgrade(
+      EntityId.SpikeWooden,
+      () =>
+        new BuildingBlock(
+          EntityId.SpikeWooden,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          10,
+          10,
+          0,
+          16,
+          (world: World, position: Vec2, angle: number) => {
+            return createSpikeWooden(world, position, angle, owner);
+          },
+        ),
+      3,
+    )
+    .addUpgrade(
+      EntityId.SpikeStone,
+      () =>
+        new BuildingBlock(
+          EntityId.SpikeStone,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          20,
+          30,
+          0,
+          16,
+          (world: World, position: Vec2, angle: number) => {
+            return createSpikeWooden(world, position, angle, owner);
+          },
+        ),
+      6,
+    )
+    .addUpgrade(
+      EntityId.SpikeReinforced,
+      () =>
+        new BuildingBlock(
+          EntityId.SpikeReinforced,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          50,
+          100,
+          0,
+          16,
+          (world: World, position: Vec2, angle: number) => {
+            return createSpikeWooden(world, position, angle, owner);
+          },
+        ),
+      10,
+    );
+  //endregion
+  //region Pads
+  const padUpgradeTree = upgradeComponent.addDefaultUpgrade('structure', 'structure');
+  padUpgradeTree.addUpgrade(EntityId.RepairPad, () => null, 8);
+  padUpgradeTree.addUpgrade(EntityId.HealingPad, () => null, 8);
+  //endregion
+  //region Turret
+  const turretUpgradeTree = upgradeComponent.addDefaultUpgrade('structure', 'structure');
+  turretUpgradeTree
+    .addUpgrade(
+      EntityId.TurretWooden,
+      () =>
+        new BuildingBlock(
+          EntityId.TurretWooden,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          50,
+          25,
+          0,
+          3,
+          (world: World, position: Vec2, angle: number) => {
+            return createTurretWooden(world, position, angle, owner);
+          },
+        ),
+      4,
+    )
+    .addUpgrade(
+      EntityId.TurretStone,
+      () =>
+        new BuildingBlock(
+          EntityId.TurretStone,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          75,
+          100,
+          0,
+          3,
+          (world: World, position: Vec2, angle: number) => {
+            return createTurretWooden(world, position, angle, owner);
+          },
+        ),
+      6,
+    )
+    .addUpgrade(
+      EntityId.TurretReinforced,
+      () =>
+        new BuildingBlock(
+          EntityId.TurretReinforced,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          175,
+          300,
+          0,
+          3,
+          (world: World, position: Vec2, angle: number) => {
+            return createTurretWooden(world, position, angle, owner);
+          },
+        ),
+      10,
+    );
+  //endregion
+  //region Miner
+  upgradeComponent
+    .addDefaultUpgrade(
+      'structure',
+      'structure',
+      EntityId.MinerWooden,
+      () =>
+        new BuildingBlock(
+          EntityId.MinerWooden,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          10,
+          5,
+          0,
+          12,
+          (world: World, position: Vec2, angle: number) => {
+            return createMinerWooden(world, position, angle, owner);
+          },
+        ),
+      1,
+    )
+    .addUpgrade(
+      EntityId.MinerStone,
+      () =>
+        new BuildingBlock(
+          EntityId.MinerStone,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          15,
+          30,
+          0,
+          12,
+          (world: World, position: Vec2, angle: number) => {
+            return createMinerWooden(world, position, angle, owner);
+          },
+        ),
+      4,
+    )
+    .addUpgrade(
+      EntityId.MinerReinforced,
+      () =>
+        new BuildingBlock(
+          EntityId.MinerReinforced,
+          ItemType.Hand,
+          0.25,
+          0.5,
+          75,
+          100,
+          0,
+          12,
+          (world: World, position: Vec2, angle: number) => {
+            return createMinerWooden(world, position, angle, owner);
+          },
+        ),
+      10,
+    );
+  //endregion
+  //region Other
+  const otherUpgradeTree = upgradeComponent.addDefaultUpgrade('structure', 'structure');
+  otherUpgradeTree.addUpgrade(EntityId.AntiStructure, () => null, 4);
+  otherUpgradeTree.addUpgrade(EntityId.SpeedBoost, () => null, 4);
+  //endregion
+  //endregion
 
   equipment.hand = defaultHand;
 

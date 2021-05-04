@@ -1,4 +1,4 @@
-import { Box, Circle, Vec2 } from 'planck-js';
+import { Box, Circle, Shape, Vec2 } from 'planck-js';
 import { randomRange } from '../utils';
 import { EntityCategory } from '../protocol';
 import { Entity } from '../entity';
@@ -44,7 +44,9 @@ export const createProjectile = (
   gameWorld: World,
   position: Vec2,
   angle: number,
-  owner: GameClient,
+  shape: Shape,
+  teamId: number,
+  owner?: GameClient,
 ): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
     type: 'dynamic',
@@ -54,7 +56,7 @@ export const createProjectile = (
     bullet: true,
   });
   body.createFixture({
-    shape: planck.Box(0.275, 0.15),
+    shape: shape,
     density: 0.0,
     filterCategoryBits: EntityCategory.BULLET,
     filterMaskBits:
@@ -71,7 +73,7 @@ export const createProjectile = (
   entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
   entity.addComponent(new Rotation(body.getAngle()));
   entity.addComponent(new PhysicsBody(body));
-  entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id * 2)); // todo bug "TypeError: Cannot read property 'getComponent' of null" on death
+  entity.addComponent(new Team(teamId));
   entity.addComponent(projectile);
 
   entity.addComponent(new Observable());

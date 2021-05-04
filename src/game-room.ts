@@ -90,7 +90,7 @@ export default class GameRoom extends Room {
 
     const spawner = <Spawner>this.systems[Spawner.name];
     // Zombie spawner
-    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 20, () => {
+    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 0, () => {
       // Get unoccupied pos
       const pos = findUnoccupiedPos(this._gameWorld, 5, this._playableArea, [
         EntityCategory.STRUCTURE,
@@ -337,9 +337,17 @@ export default class GameRoom extends Room {
         const levelComponent = <Level>entity.getComponent(Level);
         gameClient.respawnRewardExp = levelComponent.totalPoints / 2;
 
+        let killedBy = 'unknown';
+        if (source != null) {
+          killedBy = EntityId[source.id];
+          if (source.owner) {
+            killedBy = source.owner.nickname;
+          }
+        }
+
         gameClient.queueMessage(
           'death',
-          getBytes[Protocol.Death](EntityId[source.id], Level.calculateLevel(gameClient.respawnRewardExp)),
+          getBytes[Protocol.Death](killedBy, Level.calculateLevel(gameClient.respawnRewardExp)),
         );
       }
     });

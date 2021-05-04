@@ -43,7 +43,11 @@ export class GameClient {
       health.on('damage', (amount: number, source: Entity) => {
         if (health.isDead) {
           this.cameraFollowing = null;
-          if (source != null) {
+          // Follow killer
+          if (source == null) return;
+          if (source.owner && source.owner.controlling) {
+            this.cameraFollow(source.owner.controlling);
+          } else {
             this.cameraFollow(source);
           }
         }

@@ -7,14 +7,31 @@ import { Body, Box, Fixture, Vec2 } from 'planck-js';
 import { PhysicsBody } from '../components/physics-body';
 import { EntityCategory } from '../protocol';
 import { Team } from '../components/team';
-import { DamageEffect, DamageSource, DamageTarget } from './melee-weapon';
+import { DamageData, DamageSource, DamageTarget } from './melee-weapon';
+import { EntityId } from '../data/entity-id';
+import { ItemType } from '../components/inventory';
 
 export class Shield extends Item {
-  private parentHealth: Health;
   private parentBody: Body;
   private fixture: Fixture;
   private myTeam: Team;
-  private sources: DamageSource[] = [];
+  public damageMultiplier = 0.1;
+  public knockbackMultiplier = 0.1;
+
+  public constructor(
+    entityId: EntityId,
+    type: ItemType,
+    movementSpeedMultiplier: number,
+    requiredStone = 0,
+    requiredFood = 0,
+    requiredWood = 0,
+    damageMultiplier: number,
+    knockbackMultiplier: number,
+  ) {
+    super(entityId, type, movementSpeedMultiplier, requiredStone, requiredFood, requiredWood);
+    this.damageMultiplier = damageMultiplier;
+    this.knockbackMultiplier = knockbackMultiplier;
+  }
 
   public onEquip(): void {
     super.onEquip();
@@ -33,10 +50,5 @@ export class Shield extends Item {
 
   public onUnequip(): void {
     this.parentBody.destroyFixture(this.fixture);
-    this.sources = [];
-  }
-
-  public effect(damage: number, knockbackForce: number): DamageEffect {
-    return { damage: damage / 4, knockbackForce: knockbackForce / 4 };
   }
 }

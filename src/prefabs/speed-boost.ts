@@ -16,6 +16,7 @@ import * as planck from 'planck-js';
 import { GameClient } from '../game-client';
 import { Miner } from '../components/miner';
 import { SpeedBoost } from '../components/speed-boost';
+import { DecayOnOwnerLeave } from '../components/decay-on-owner-leave';
 
 export const createSpeedBoost = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
@@ -49,6 +50,7 @@ export const createSpeedBoost = (gameWorld: World, position: Vec2, angle: number
   entity.addComponent(new Health(80));
   entity.addComponent(new Regeneration(2));
   entity.addComponent(new SpeedBoost());
+  entity.addComponent(new DecayOnOwnerLeave());
 
   entity.addComponent(new Observable());
 

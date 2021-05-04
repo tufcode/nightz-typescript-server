@@ -60,6 +60,8 @@ export class Equipment extends Component {
     buf.writeUInt16LE(this._hand != null ? this._hand.entityId : EntityId.None, 1);
     buf.writeUInt16LE(this._hat != null ? this._hat.entityId : EntityId.None, 3);
 
+    console.log('serializeEq', this._hand != null ? this._hand.entityId : EntityId.None);
+
     return buf;
   }
 }

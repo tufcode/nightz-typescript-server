@@ -19,7 +19,7 @@ import { PlayerInput } from '../components/player-input';
 import { Construction } from '../components/construction';
 import { Item } from '../items/item';
 import { Animation } from '../components/animation';
-import { Spike } from '../components/spike';
+import { DamageOnTouch } from '../components/damage-on-touch';
 import { ChatMessage } from '../components/chat-message';
 import { Minimap } from '../components/minimap';
 import { Zone } from '../components/zone';
@@ -28,6 +28,7 @@ import { SpeedBoost } from '../components/speed-boost';
 import { Turret } from '../components/turret';
 import { Projectile } from '../components/projectile';
 import { Shield } from '../items/shield';
+import { DecayOnOwnerLeave } from '../components/decay-on-owner-leave';
 
 export class SimpleSystems extends System {
   private room: GameRoom;
@@ -46,7 +47,7 @@ export class SimpleSystems extends System {
     }
 
     // Spikes
-    const componentsS = <Spike[]>this.room.getComponentsOfType(Spike.name);
+    const componentsS = <DamageOnTouch[]>this.room.getComponentsOfType(DamageOnTouch.name);
     for (let i = 0; i < componentsS.length; i++) {
       const c = componentsS[i];
       c.update(deltaTime);
@@ -63,6 +64,13 @@ export class SimpleSystems extends System {
     const componentsPr = <Projectile[]>this.room.getComponentsOfType(Projectile.name);
     for (let i = 0; i < componentsPr.length; i++) {
       const c = componentsPr[i];
+      c.update(deltaTime);
+    }
+
+    // Decay
+    const componentsDe = <DecayOnOwnerLeave[]>this.room.getComponentsOfType(DecayOnOwnerLeave.name);
+    for (let i = 0; i < componentsDe.length; i++) {
+      const c = componentsDe[i];
       c.update(deltaTime);
     }
 

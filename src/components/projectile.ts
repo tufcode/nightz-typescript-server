@@ -11,7 +11,7 @@ import { PhysicsBody } from './physics-body';
 import { Team } from './team';
 import { EntityCategory } from '../protocol';
 import { EntityId } from '../data/entity-id';
-import { DamageEffect, DamageSource, DamageSourceType } from '../items/melee-weapon';
+import { DamageData, DamageSource, DamageSourceType } from '../items/melee-weapon';
 import { Shield } from '../items/shield';
 
 export class Projectile extends Component {
@@ -67,9 +67,8 @@ export class Projectile extends Component {
       const target = this.source.targets[key];
       if (target.amount == 0) continue;
 
-      let damage = target.amount;
-      let knockbackForce = target.knockbackForce;
-      if (target.shieldEffect) ({ damage, knockbackForce } = target.shieldEffect(damage, knockbackForce));
+      const damage = target.amount * target.shieldDamageMultiplier;
+      const knockbackForce = target.knockbackForce * target.shieldKnockbackMultiplier;
 
       target.health.damage(damage, this.entity);
       // Apply knockback
@@ -97,16 +96,18 @@ export class Projectile extends Component {
       if (other.getFilterCategoryBits() == EntityCategory.SHIELD) {
         const shield = <Shield>other.getUserData();
         if (this.source.targets[entity.objectId]) {
-          this.source.targets[entity.objectId].shieldEffect = shield.effect;
+          this.source.targets[entity.objectId].shieldDamageMultiplier = shield.damageMultiplier;
+          this.source.targets[entity.objectId].shieldKnockbackMultiplier = shield.knockbackMultiplier;
         } else {
           this.source.targets[entity.objectId] = {
+            shieldDamageMultiplier: shield.damageMultiplier,
+            shieldKnockbackMultiplier: shield.knockbackMultiplier,
             team: undefined,
             amount: 0,
             body: undefined,
             health: undefined,
             knockbackForce: 0,
             source: undefined,
-            shieldEffect: shield.effect,
           };
         }
         return;
@@ -131,12 +132,14 @@ export class Projectile extends Component {
       } else {
         // No shield effect here.
         this.source.targets[entity.objectId] = {
-          team: teamComponent,
+          shieldDamageMultiplier: 1,
+          shieldKnockbackMultiplier: 1,
           amount: categoryInfo[0],
           knockbackForce: categoryInfo[1],
           source: this.source,
           health: healthComponent,
           body: other.getBody(),
+          team: teamComponent,
         };
       }
     }

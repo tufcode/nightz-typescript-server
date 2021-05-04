@@ -6,7 +6,7 @@ import { Health } from './health';
 import { EntityId } from '../data/entity-id';
 import { Component } from './component';
 
-export class Spike extends Component {
+export class DamageOnTouch extends Component {
   private _entitiesToDamage: { type: number; health: Health }[] = [];
   private _damageTick = 0;
   private myTeam: Team;
@@ -40,7 +40,7 @@ export class Spike extends Component {
     delete this._entitiesToDamage[entity.objectId];
   }
 
-  public update(deltaTime: number) {
+  public update(deltaTime: number): void {
     this._damageTick += deltaTime;
     if (this._damageTick >= 1 / this.attackSpeed) {
       this._damageTick = 0;
