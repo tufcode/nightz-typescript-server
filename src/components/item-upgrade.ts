@@ -57,7 +57,7 @@ export class ItemUpgrade extends Component {
           if (this._points.hasOwnProperty(pointsId)) {
             this._points[pointsId] += 1;
           } else {
-            this._points[pointsId] = 100;
+            this._points[pointsId] = 1;
           }
           this._totalPoints++;
         }
@@ -178,6 +178,7 @@ export class ItemUpgrade extends Component {
     const keys = Object.keys(this._upgradeTree);
     for (let i = 0; i < keys.length; i++) {
       const tree = this._upgradeTree[keys[i]];
+      console.log('go for tree: ' + keys[i]);
       // Has enough points?
       if (this._points[tree.pointsId]) {
         for (let j = 0; j < tree.currentUpgrade._upgrades.length; j++) {

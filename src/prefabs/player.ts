@@ -35,6 +35,8 @@ import { Shield } from '../items/shield';
 import { Bow } from '../items/bow';
 import { createWallWooden } from './wall-wooden';
 import { createSpikeWooden } from './spike-wooden';
+import { createMinerStone } from './miner-stone';
+import { createMinerReinforced } from './miner-reinforced';
 
 export const createPlayer = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
@@ -89,66 +91,6 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
 
   //inventory.addItem(new Shield(EntityId.ShieldBasic, ItemType.Hand, 0.8, 0, 0, 0));
   inventory.addItem(new Food(EntityId.Food, ItemType.Hand, 1, 1, 0, 0));
-  inventory.addItem(
-    new BuildingBlock(
-      EntityId.WallWooden,
-      ItemType.Hand,
-      0.25,
-      0.5,
-      10,
-      3,
-      0,
-      8,
-      (world: World, position: Vec2, angle: number) => {
-        return createWallWooden(world, position, angle, owner);
-      },
-    ),
-  );
-  inventory.addItem(
-    new BuildingBlock(
-      EntityId.SpikeWooden,
-      ItemType.Hand,
-      0.25,
-      0.5,
-      20,
-      10,
-      3,
-      8,
-      (world: World, position: Vec2, angle: number) => {
-        return createSpikeWooden(world, position, angle, owner);
-      },
-    ),
-  );
-  inventory.addItem(
-    new BuildingBlock(
-      EntityId.MinerWooden,
-      ItemType.Hand,
-      0.25,
-      0.5,
-      10,
-      3,
-      0,
-      8,
-      (world: World, position: Vec2, angle: number) => {
-        return createMinerWooden(world, position, angle, owner);
-      },
-    ),
-  );
-  inventory.addItem(
-    new BuildingBlock(
-      EntityId.TurretWooden,
-      ItemType.Hand,
-      0.25,
-      0.5,
-      0,
-      0,
-      0,
-      8,
-      (world: World, position: Vec2, angle: number) => {
-        return createTurretWooden(world, position, angle, owner);
-      },
-    ),
-  );
 
   const defaultHand = new MeleeWeapon(EntityId.Stick, 1, 1.5, 2, 2, 1, 4, 20, Box(0.4, 0.5, Vec2(0.9, 0)), 2);
 
@@ -280,7 +222,7 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   //region Wall
   const wallUpgradeTree = upgradeComponent
     .addDefaultUpgrade(
-      'structure',
+      'structure_wall',
       'structure',
       EntityId.WallWooden,
       () =>
@@ -337,8 +279,8 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
     );
   //endregion
   //region Spike
-  const spikeUpgradeTree = upgradeComponent.addDefaultUpgrade('structure', 'structure');
-  spikeUpgradeTree
+  upgradeComponent
+    .addDefaultUpgrade('structure_spike', 'structure')
     .addUpgrade(
       EntityId.SpikeWooden,
       () =>
@@ -395,13 +337,13 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
     );
   //endregion
   //region Pads
-  const padUpgradeTree = upgradeComponent.addDefaultUpgrade('structure', 'structure');
+  const padUpgradeTree = upgradeComponent.addDefaultUpgrade('structure_pad', 'structure');
   padUpgradeTree.addUpgrade(EntityId.RepairPad, () => null, 8);
   padUpgradeTree.addUpgrade(EntityId.HealingPad, () => null, 8);
   //endregion
   //region Turret
-  const turretUpgradeTree = upgradeComponent.addDefaultUpgrade('structure', 'structure');
-  turretUpgradeTree
+  upgradeComponent
+    .addDefaultUpgrade('structure_turret', 'structure')
     .addUpgrade(
       EntityId.TurretWooden,
       () =>
@@ -460,7 +402,7 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
   //region Miner
   upgradeComponent
     .addDefaultUpgrade(
-      'structure',
+      'structure_miner',
       'structure',
       EntityId.MinerWooden,
       () =>
@@ -492,7 +434,7 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
           0,
           12,
           (world: World, position: Vec2, angle: number) => {
-            return createMinerWooden(world, position, angle, owner);
+            return createMinerStone(world, position, angle, owner);
           },
         ),
       4,
@@ -510,14 +452,14 @@ export const createPlayer = (gameWorld: World, position: Vec2, angle: number, ow
           0,
           12,
           (world: World, position: Vec2, angle: number) => {
-            return createMinerWooden(world, position, angle, owner);
+            return createMinerReinforced(world, position, angle, owner);
           },
         ),
       10,
     );
   //endregion
   //region Other
-  const otherUpgradeTree = upgradeComponent.addDefaultUpgrade('structure', 'structure');
+  const otherUpgradeTree = upgradeComponent.addDefaultUpgrade('structure_other', 'structure');
   otherUpgradeTree.addUpgrade(EntityId.AntiStructure, () => null, 4);
   otherUpgradeTree.addUpgrade(EntityId.SpeedBoost, () => null, 4);
   //endregion

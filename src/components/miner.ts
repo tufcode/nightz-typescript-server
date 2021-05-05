@@ -18,7 +18,7 @@ export class Miner extends Component {
 
   public init(): void {
     super.init();
-    (<Animation>this.entity.getComponent(Animation)).setAnimation(6, this.animationSpeed); // todo stop animation on owner death
+    (<Animation>this.entity.getComponent(Animation)).setAnimation(7, this.animationSpeed); // todo stop animation on owner death
   }
 
   public update(deltaTime: number): void {

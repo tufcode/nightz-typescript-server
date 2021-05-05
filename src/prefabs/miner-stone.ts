@@ -38,7 +38,7 @@ import { GameClient } from '../game-client';
 import { Miner } from '../components/miner';
 import { DecayOnOwnerLeave } from '../components/decay-on-owner-leave';
 
-export const createMinerWooden = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
+export const createMinerStone = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
     type: 'static',
     position: position,
@@ -60,14 +60,14 @@ export const createMinerWooden = (gameWorld: World, position: Vec2, angle: numbe
       EntityCategory.SHIELD,
   });
   // Create AI entity
-  const entity = new Entity(EntityId.MinerWooden, gameWorld, owner);
+  const entity = new Entity(EntityId.MinerStone, gameWorld, owner);
   entity.addComponent(new Animation());
   entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
   entity.addComponent(new Rotation(body.getAngle()));
   entity.addComponent(new PhysicsBody(body));
   entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id));
-  entity.addComponent(new Health(50));
-  entity.addComponent(new Miner(1, 1));
+  entity.addComponent(new Health(100));
+  entity.addComponent(new Miner(2, 2));
   entity.addComponent(new DecayOnOwnerLeave());
 
   entity.addComponent(new Observable());
