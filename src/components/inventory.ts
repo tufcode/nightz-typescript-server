@@ -14,6 +14,7 @@ export class Inventory extends Component {
   private items: Item[] = [];
   private itemsWithId: { [key: number]: Item } = {};
   private itemsWithClass: { [key: string]: Item } = {};
+  public itemUses: { [key: string]: number } = {};
   private lastItemId = 0;
 
   public constructor() {
@@ -64,7 +65,7 @@ export class Inventory extends Component {
       index += 2;
       buf.writeUInt16LE(this.items[i].requiredFood, index);
       index += 2;
-      buf.writeUInt16LE(this.items[i].currentUse, index);
+      buf.writeUInt16LE(this.itemUses[this.items[i].usageMeterId] ?? 0, index);
       index += 2;
       buf.writeUInt16LE(this.items[i].maximumUse, index);
       index += 2;

@@ -34,7 +34,7 @@ export class Item {
   public requiredStone = 0;
   public requiredFood = 0;
   public maximumUse = 0;
-  public currentUse = 0;
+  public usageMeterId: string;
 
   protected _primary: boolean;
   private _inventory: Inventory;
@@ -46,6 +46,7 @@ export class Item {
     requiredStone = 0,
     requiredFood = 0,
     requiredWood = 0,
+    usageMeterId?: string,
   ) {
     this.entityId = entityId;
     this.type = type;
@@ -53,6 +54,7 @@ export class Item {
     this.requiredWood = requiredWood;
     this.requiredStone = requiredStone;
     this.requiredFood = requiredFood;
+    this.usageMeterId = usageMeterId;
   }
 
   public update(deltaTime: number): void {}

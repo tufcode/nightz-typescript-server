@@ -90,7 +90,7 @@ export default class GameRoom extends Room {
 
     const spawner = <Spawner>this.systems[Spawner.name];
     // Zombie spawner
-    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 0, () => {
+    this._zombieSpawner = spawner.addSpawn(this._playableArea.length() / 4, 3, 0.55, 40, () => {
       // Get unoccupied pos
       const pos = findUnoccupiedPos(this._gameWorld, 5, this._playableArea, [
         EntityCategory.STRUCTURE,

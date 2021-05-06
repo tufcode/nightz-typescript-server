@@ -24,7 +24,7 @@ export class DamageOnTouch extends Component {
     // Get teams
     const teamComponent = <Team>entity.getComponent(Team);
     // Compare teams
-    if (teamComponent == null || teamComponent.id == this.myTeam.id) return;
+    if (teamComponent == null || teamComponent.id == this.myTeam.id) return; // todo id of undefined
     // Get entity health component
     const healthComponent = <Health>entity.getComponent(Health);
 

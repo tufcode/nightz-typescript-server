@@ -57,7 +57,8 @@ export const createWallWooden = (gameWorld: World, position: Vec2, angle: number
       EntityCategory.NPC |
       EntityCategory.BULLET |
       EntityCategory.MELEE |
-      EntityCategory.SHIELD,
+      EntityCategory.SHIELD |
+      EntityCategory.SENSOR,
   });
 
   // Create entity
@@ -66,6 +67,7 @@ export const createWallWooden = (gameWorld: World, position: Vec2, angle: number
   entity.addComponent(new Position(position, Vec2.zero()));
   entity.addComponent(new Rotation(angle));
   entity.addComponent(new PhysicsBody(body));
+  const team = <Team>entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id));
   entity.addComponent(new DecayOnOwnerLeave());
   entity.addComponent(new Observable());
 

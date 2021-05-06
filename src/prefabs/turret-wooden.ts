@@ -60,17 +60,18 @@ export const createTurretWooden = (gameWorld: World, position: Vec2, angle: numb
       EntityCategory.NPC |
       EntityCategory.BULLET |
       EntityCategory.MELEE |
-      EntityCategory.SHIELD,
+      EntityCategory.SHIELD |
+      EntityCategory.SENSOR,
   });
-  const turret = new Turret(1, 1, 1);
+  const turret = new Turret(2, 8, 8, 4, 10, 16, 12, EntityId.TurretArrowBasic);
   // Create AI entity
   const entity = new Entity(EntityId.TurretWooden, gameWorld, owner);
   entity.addComponent(new Animation());
   entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
   entity.addComponent(new Rotation(body.getAngle()));
   entity.addComponent(new PhysicsBody(body));
-  const team = <Team>entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id * 2));
-  entity.addComponent(new Health(40));
+  const team = <Team>entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id));
+  entity.addComponent(new Health(60));
   entity.addComponent(turret);
 
   (<BetterAI>entity.addComponent(new BetterAI())).addNode(createTurretBehaviourTree(body, gameWorld, turret, team));

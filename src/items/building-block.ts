@@ -19,10 +19,7 @@ import { Health } from '../components/health';
 
 export class BuildingBlock extends Item {
   private createCallback: (world: World, position: Vec2, angle: number) => Entity;
-  private permissionCallback: (position: Vec2, angle: number) => boolean;
-  private failureCallback: () => void;
   private radius: number;
-  private requiredGold: number;
   public constructor(
     entityId: EntityId,
     type: ItemType,
@@ -32,9 +29,10 @@ export class BuildingBlock extends Item {
     requiredStone: number,
     requiredFood: number,
     maximumUse: number,
+    usageMeterId: string,
     createCallback: (world: World, position: Vec2, angle: number) => Entity,
   ) {
-    super(entityId, type, movementSpeedMultiplier, requiredStone, requiredFood, requiredWood);
+    super(entityId, type, movementSpeedMultiplier, requiredStone, requiredFood, requiredWood, usageMeterId);
     this.radius = radius;
     this.createCallback = createCallback;
     this.maximumUse = maximumUse;
@@ -48,7 +46,9 @@ export class BuildingBlock extends Item {
   }
 
   protected onConsume(): void {
-    if (this.currentUse >= this.maximumUse) return;
+    if (!this.inventory.itemUses.hasOwnProperty(this.usageMeterId)) this.inventory.itemUses[this.usageMeterId] = 0;
+    if (this.inventory.itemUses[this.usageMeterId] >= this.maximumUse) return;
+
     const body = (<PhysicsBody>this.inventory.entity.getComponent(PhysicsBody)).getBody();
     const pos = body.getWorldPoint(Vec2(this.radius * 4, 0));
 
@@ -93,7 +93,8 @@ export class BuildingBlock extends Item {
         (f.getFilterCategoryBits() & EntityCategory.PLAYER) == EntityCategory.PLAYER ||
         (f.getFilterCategoryBits() & EntityCategory.SHIELD) == EntityCategory.SHIELD ||
         (f.getFilterCategoryBits() & EntityCategory.MELEE) == EntityCategory.MELEE ||
-        (f.getFilterCategoryBits() & EntityCategory.BULLET) == EntityCategory.BULLET;
+        (f.getFilterCategoryBits() & EntityCategory.BULLET) == EntityCategory.BULLET ||
+        (f.getFilterCategoryBits() & EntityCategory.SENSOR) == EntityCategory.SENSOR;
       return canPlace;
     });
 
@@ -102,13 +103,13 @@ export class BuildingBlock extends Item {
       if (createdHealth != null) {
         createdHealth.on('damage', () => {
           if (createdHealth.isDead) {
-            this.currentUse--;
+            this.inventory.itemUses[this.usageMeterId]--;
             this.inventory.sendUpdate();
           }
         });
       }
 
-      this.currentUse++;
+      this.inventory.itemUses[this.usageMeterId]++;
       this.inventory.sendUpdate();
     } else {
       if (this.requiredStone > 0) {

@@ -36,10 +36,13 @@ import { World } from '../systems/world';
 import * as planck from 'planck-js';
 import { GameClient } from '../game-client';
 import { Miner } from '../components/miner';
+import { Turret } from '../components/turret';
+import { createZombieBehaviourTree } from '../ai/trees/zombie-tree';
+import { createTurretBehaviourTree } from '../ai/trees/turret-tree';
 import { DecayOnOwnerLeave } from '../components/decay-on-owner-leave';
-import { DamageOnTouch } from '../components/damage-on-touch';
+import { RepairStructuresInRange } from '../components/repair-structures-in-range';
 
-export const createSpikeWooden = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
+export const createRepairPad = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
     type: 'static',
     position: position,
@@ -61,15 +64,17 @@ export const createSpikeWooden = (gameWorld: World, position: Vec2, angle: numbe
       EntityCategory.SHIELD |
       EntityCategory.SENSOR,
   });
-
-  // Create entity
-  const entity = new Entity(EntityId.SpikeWooden, gameWorld, owner);
-  entity.addComponent(new Health(220));
-  entity.addComponent(new Position(position, Vec2.zero()));
-  entity.addComponent(new Rotation(angle));
+  // Create AI entity
+  const entity = new Entity(EntityId.RepairPad, gameWorld, owner);
+  entity.addComponent(new Animation());
+  entity.addComponent(new Position(body.getPosition(), body.getLinearVelocity()));
+  entity.addComponent(new Rotation(body.getAngle()));
   entity.addComponent(new PhysicsBody(body));
-  entity.addComponent(new DamageOnTouch());
+  const team = <Team>entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id));
+  entity.addComponent(new Health(30));
+  entity.addComponent(new RepairStructuresInRange(1, 10, 5));
   entity.addComponent(new DecayOnOwnerLeave());
+
   entity.addComponent(new Observable());
 
   return entity;

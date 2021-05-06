@@ -37,9 +37,8 @@ import * as planck from 'planck-js';
 import { GameClient } from '../game-client';
 import { Miner } from '../components/miner';
 import { DecayOnOwnerLeave } from '../components/decay-on-owner-leave';
-import { DamageOnTouch } from '../components/damage-on-touch';
 
-export const createSpikeWooden = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
+export const createWallReinforced = (gameWorld: World, position: Vec2, angle: number, owner: GameClient): Entity => {
   const body = gameWorld.getPhysicsWorld().createBody({
     type: 'static',
     position: position,
@@ -63,12 +62,12 @@ export const createSpikeWooden = (gameWorld: World, position: Vec2, angle: numbe
   });
 
   // Create entity
-  const entity = new Entity(EntityId.SpikeWooden, gameWorld, owner);
-  entity.addComponent(new Health(220));
+  const entity = new Entity(EntityId.WallReinforced, gameWorld, owner);
+  entity.addComponent(new Health(900));
   entity.addComponent(new Position(position, Vec2.zero()));
   entity.addComponent(new Rotation(angle));
   entity.addComponent(new PhysicsBody(body));
-  entity.addComponent(new DamageOnTouch());
+  const team = <Team>entity.addComponent(new Team((<Team>owner.controlling.getComponent(Team)).id));
   entity.addComponent(new DecayOnOwnerLeave());
   entity.addComponent(new Observable());
 

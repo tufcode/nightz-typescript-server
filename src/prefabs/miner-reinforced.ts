@@ -57,7 +57,8 @@ export const createMinerReinforced = (gameWorld: World, position: Vec2, angle: n
       EntityCategory.NPC |
       EntityCategory.BULLET |
       EntityCategory.MELEE |
-      EntityCategory.SHIELD,
+      EntityCategory.SHIELD |
+      EntityCategory.SENSOR,
   });
   // Create AI entity
   const entity = new Entity(EntityId.MinerReinforced, gameWorld, owner);

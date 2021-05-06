@@ -57,16 +57,18 @@ export enum ComponentIds {
   ChatMessage = 10,
   Minimap = 11,
   Zone = 12,
+  RepairPad = 13,
 }
 export enum EntityCategory {
-  BOUNDARY = 0x0001,
-  STRUCTURE = 0x0002,
-  RESOURCE = 0x0004,
-  PLAYER = 0x0008,
-  NPC = 0x0010,
-  BULLET = 0x0012,
-  MELEE = 0x0014,
-  SHIELD = 0x0016,
+  BOUNDARY = 1,
+  STRUCTURE = 2,
+  RESOURCE = 4,
+  PLAYER = 8,
+  NPC = 16,
+  BULLET = 32,
+  MELEE = 64,
+  SHIELD = 128,
+  SENSOR = 256,
 }
 
 export const getBytes = {

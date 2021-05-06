@@ -57,7 +57,8 @@ export const createMinerWooden = (gameWorld: World, position: Vec2, angle: numbe
       EntityCategory.NPC |
       EntityCategory.BULLET |
       EntityCategory.MELEE |
-      EntityCategory.SHIELD,
+      EntityCategory.SHIELD |
+      EntityCategory.SENSOR,
   });
   // Create AI entity
   const entity = new Entity(EntityId.MinerWooden, gameWorld, owner);

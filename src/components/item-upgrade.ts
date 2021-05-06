@@ -90,9 +90,9 @@ export class ItemUpgrade extends Component {
   public addDefaultUpgrade(
     id: string,
     pointsId: string,
-    upgradedItemId?: EntityId,
-    createCallback?: () => Item,
-    minimumLevel?: number,
+    upgradedItemId: EntityId,
+    createCallback: () => Item,
+    minimumLevel: number,
   ): Upgrade {
     const upgrade = new Upgrade();
     upgrade._upgradeItemId = upgradedItemId;
@@ -104,7 +104,7 @@ export class ItemUpgrade extends Component {
       currentUpgrade: upgrade,
     };
 
-    if (upgradedItemId == null) return upgrade; // Default upgrade may be null
+    if (createCallback == null) return upgrade; // Default upgrade may be null
 
     const item = createCallback();
     if (this._upgradeTree[id].currentItem) this._inventoryComponent.removeItem(this._upgradeTree[id].currentItem);
@@ -178,7 +178,6 @@ export class ItemUpgrade extends Component {
     const keys = Object.keys(this._upgradeTree);
     for (let i = 0; i < keys.length; i++) {
       const tree = this._upgradeTree[keys[i]];
-      console.log('go for tree: ' + keys[i]);
       // Has enough points?
       if (this._points[tree.pointsId]) {
         for (let j = 0; j < tree.currentUpgrade._upgrades.length; j++) {

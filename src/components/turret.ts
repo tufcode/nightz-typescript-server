@@ -14,11 +14,30 @@ export class Turret extends Component {
   private body: Body;
   private _fireTick = 0;
   private myTeam: Team;
-  public constructor(attackSpeed: number, damageToPlayers: number, damageToZombies: number) {
+  private damageToStructures: number;
+  private knockbackForce: number;
+  private projectileEntity: EntityId;
+  private projectileSpeed: number;
+  private projectileRange: number;
+  public constructor(
+    attackSpeed: number,
+    damageToPlayers: number,
+    damageToZombies: number,
+    damageToStructures: number,
+    knockbackForce: number,
+    projectileSpeed: number,
+    projectileRange: number,
+    projectileEntity: EntityId,
+  ) {
     super();
     this.attackSpeed = attackSpeed;
     this.damageToPlayers = damageToPlayers;
     this.damageToZombies = damageToZombies;
+    this.damageToStructures = damageToStructures;
+    this.knockbackForce = knockbackForce;
+    this.projectileSpeed = projectileSpeed;
+    this.projectileRange = projectileRange;
+    this.projectileEntity = projectileEntity;
   }
 
   public init(): void {
@@ -34,15 +53,22 @@ export class Turret extends Component {
     const targetAngle = Math.atan2(pos.y - this.body.getWorldCenter().y, pos.x - this.body.getWorldCenter().x);
     this.body.setAngle(targetAngle);
 
-    if (this._fireTick < 0.2) {
+    if (this._fireTick < 1 / this.attackSpeed) {
       return;
     }
     this._fireTick = 0;
 
-    const projectile = new Projectile(16, 10, 8, 8, 10, 20);
+    const projectile = new Projectile(
+      this.projectileSpeed,
+      this.projectileRange,
+      this.damageToPlayers,
+      this.damageToZombies,
+      this.damageToStructures,
+      this.knockbackForce,
+    );
     projectile.setDir(this.body.getWorldVector(Vec2(1, 0)).clone());
     createProjectile(
-      EntityId.TurretArrowBasic,
+      this.projectileEntity,
       projectile,
       this.entity.world,
       this.body

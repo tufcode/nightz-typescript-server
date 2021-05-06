@@ -92,10 +92,17 @@ export class ChatSystem extends System {
         if (health != null) health.isImmune = !health.isImmune;
         break;
       }
-      case 'resetHand': {
+      case 'resetUpgrades': {
         if (!gameClient.controlling) return;
         const up = <ItemUpgrade>gameClient.controlling.getComponent(ItemUpgrade);
         up.resetUpgradeTree('weapon');
+        up.resetUpgradeTree('secondary'); // todo doesnt reset
+        up.resetUpgradeTree('structure_wall');
+        up.resetUpgradeTree('structure_spike');
+        up.resetUpgradeTree('structure_turret');
+        up.resetUpgradeTree('structure_miner');
+        up.resetUpgradeTree('structure_other');
+        up.resetUpgradeTree('structure_pad');
         break;
       }
     }

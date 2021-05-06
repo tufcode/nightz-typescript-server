@@ -57,7 +57,8 @@ export const createMinerStone = (gameWorld: World, position: Vec2, angle: number
       EntityCategory.NPC |
       EntityCategory.BULLET |
       EntityCategory.MELEE |
-      EntityCategory.SHIELD,
+      EntityCategory.SHIELD |
+      EntityCategory.SENSOR,
   });
   // Create AI entity
   const entity = new Entity(EntityId.MinerStone, gameWorld, owner);

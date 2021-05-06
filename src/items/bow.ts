@@ -23,6 +23,7 @@ export class Bow extends Item {
   private damageToZombies: number;
   private knockbackForce: number;
   private maxTravelDistance: number;
+  private projectileEntityId: EntityId;
 
   public constructor(
     entityId: EntityId,
@@ -37,6 +38,7 @@ export class Bow extends Item {
     damageToZombies: number,
     knockbackForce: number,
     maxTravelDistance: number,
+    projectileEntityId: EntityId,
   ) {
     super(entityId, type, movementSpeedMultiplier, requiredStone, requiredFood, requiredWood);
     this.attackSpeed = attackSpeed;
@@ -45,6 +47,7 @@ export class Bow extends Item {
     this.damageToZombies = damageToZombies;
     this.knockbackForce = knockbackForce;
     this.maxTravelDistance = maxTravelDistance;
+    this.projectileEntityId = projectileEntityId;
   }
 
   public onEquip() {
@@ -102,7 +105,7 @@ export class Bow extends Item {
         );
         projectile.setDir(this.parentBody.getWorldVector(Vec2(1, 0)).clone());
         createProjectile(
-          EntityId.ArrowBasic,
+          this.projectileEntityId,
           projectile,
           this.parent.world,
           this.parentBody

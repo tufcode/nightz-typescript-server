@@ -37,7 +37,8 @@ export const createSpeedBoost = (gameWorld: World, position: Vec2, angle: number
       EntityCategory.NPC |
       EntityCategory.BULLET |
       EntityCategory.MELEE |
-      EntityCategory.SHIELD,
+      EntityCategory.SHIELD |
+      EntityCategory.SENSOR,
     isSensor: true,
   });
   // Create AI entity
