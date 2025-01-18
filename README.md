@@ -1,7 +1,7 @@
 # NightZ.io TypeScript Server
 This is the TypeScript game server from early prototype days of the multiplayer browser zombie survival game nightz.io.
 
-I switched to using an Unity server right before release, and I don't quite remember why, but if I had to guess I wanted to use the same code in server and client and using C# for client/JS for server wasn't too easy. This was working, and probably even production-ready. Definitely better than the Unity server I ended up using.
+I switched to using a Unity server right before release, and I don't quite remember why, but if I had to guess I wanted to use the same code in server and client and using C# for client/JS for server wasn't too easy. This was working, and probably even production-ready. Definitely better than the Unity server I ended up using.
 
 Here's a few videos of me playing the prototype, using this game server.
 
