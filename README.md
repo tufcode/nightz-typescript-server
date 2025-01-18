@@ -16,7 +16,12 @@ There were no code examples (at least, ones that did not use existing libraries 
 ***DO NOT THINK THIS REPO IS A PERFECT EXAMPLE, IT IS NOT DOING MOST THINGS RIGHT***
 
 This was my second multiplayer game server, I didn't know many things, first one was even worse than this. I was beginning to learn game development. I like to learn stuff by doing, so there is a lot of things I made up or did wrong here. This is a very old project that was never used in production.
-**This is by no means perfect, and I would do pretty much everything differently today**, so this is not a "good" example, but it is an example nevertheless. FYI, this is not actually ECS, but things are named Entity/Component/System, so it is confusing.
+**This is by no means perfect, or even good. I would do pretty much everything differently today**, so this is not a "good" example, but it is an example nevertheless. FYI, this is not actually ECS, but things are named Entity/Component/System, so it is confusing.
+
+*Also, please do not check commits, it is embarrassing, lol. Commits were just my way of backing up the project to the cloud.*
+
+## License
+Do whatever you want with it, I doubt it is very useful. However, you can **not** use the NightZ (NightZ.io) name or any of its assets.
 
 ## Implemented stuff
 > ⚠️ Just because I say implemented **does not mean they're complete or correct**. I did not check all of this. Reference at your own risk.
